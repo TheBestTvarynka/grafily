@@ -17,6 +17,7 @@
 		"strictBindCallApply": true,
 		"allowSyntheticDefaultImports": true,
 		"useUnknownInCatchVariables": true,
+		"jsx": "react-jsx",
 		"lib": [
 			"DOM",
 			"ES5",
