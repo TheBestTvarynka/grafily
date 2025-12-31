@@ -29,6 +29,7 @@
 		"@xyflow/react": "^12.10.0",
 		"obsidian": "latest",
 		"react": "^19.2.3",
-		"react-dom": "^19.2.3"
+		"react-dom": "^19.2.3",
+		"uuid": "^13.0.0"
 	}
 }

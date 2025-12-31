@@ -1,4 +1,5 @@
 import { Node } from '@xyflow/react';
+import { v4 as uuidv4 } from 'uuid';
 
 import { Index, Marriage } from 'model';
 
@@ -123,10 +124,10 @@ function calculateShift(siblingLeft: Id, leftShift: number, singlingRight: Id, r
     return Math.max(shift, calculateShift(nextLeftSibling, leftShift, nextRightSibling, rightShift, preNodes, family));
 }
 
-function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, PreNode>, preX: number, siblings: Id[]): PreNode {
+function getParentNodesIds(id: Id, family: Index): Id[] {
     let parents: Id[] = [];
-    if (perspectiveId.type === PERSON_TYPE) {
-        const marriageId = family.personParents.get(perspectiveId.id);
+    if (id.type === PERSON_TYPE) {
+        const marriageId = family.personParents.get(id.id);
 
         if (!marriageId) {
             parents = [];
@@ -134,10 +135,10 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
             parents = [{ type: MARRIAGE_TYPE, id: marriageId }];
         }
     } else {
-        const marriage = family.marriageById.get(perspectiveId.id);
+        const marriage = family.marriageById.get(id.id);
 
         if (!marriage) {
-            throw new Error(`Expected marriage to exist for id ${perspectiveId.id}`);
+            throw new Error(`Expected marriage to exist for id ${id.id}`);
         }
 
         if (marriage.parent1_id) {
@@ -154,6 +155,12 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
             }
         }
     }
+
+    return parents;
+}
+
+function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, PreNode>, preX: number, siblings: Id[]): PreNode {
+    const parents = getParentNodesIds(perspectiveId, family);
 
     if (parents.length === 0) {
         const preNode: PreNode = {
@@ -192,7 +199,6 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
             id: perspectiveId,
             x,
             mod,
-            // TODO: properly calculate shift.
             shift: 0,
         };
 
@@ -246,7 +252,6 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
         id: perspectiveId,
         x,
         mod,
-        // TODO: properly calculate shift.
         shift: 0,
     };
 
@@ -264,6 +269,119 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
     return preNode;
 }
 
+function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: Index, nodes: Node[], level: number, mod: number) {
+    const parents = getParentNodesIds(node, family);
+
+    for (const parent of parents) {
+        const preNode = preNodes.get(parent.id);
+        if (!preNode) {
+            throw new Error(`Expected pre-node to exist for id ${parent.id}`);
+        }
+
+        finalizeNodesLayout(parent, preNodes, family, nodes, level + 1, mod + preNode.mod + preNode.shift);
+    }
+
+    const preNode = preNodes.get(node.id);
+    if (!preNode) {
+        throw new Error(`Expected pre-node to exist for id ${node.id}`);
+    }
+
+    const x = preNode.x + mod + preNode.shift;
+    const y = level * (NODE_HEIGHT + NODES_GAP);
+
+    if (node.type === MARRIAGE_TYPE) {
+        const marriage = family.marriageById.get(node.id);
+        if (!marriage) {
+            throw new Error(`Expected marriage to exist for id ${node.id}`);
+        }
+
+        if (marriage.parent1_id) {
+            const person = family.personById.get(marriage.parent1_id);
+            if (!person) {
+                throw new Error(`Expected person to exist for id ${marriage.parent1_id}`);
+            }
+
+            nodes.push({
+                id: marriage.parent1_id,
+                data: { label: person.name },
+                position: { x, y },
+                type: 'personNode',
+                style: {
+                    color: '#222',
+                }
+            });
+        } else {
+            nodes.push({
+                id: uuidv4(),
+                data: { label: 'Unknown' },
+                position: { x, y },
+                type: 'personNode',
+                style: {
+                    color: '#222',
+                }
+            });
+        }
+
+        nodes.push({
+            id: marriage.id,
+            data: { label: '' },
+            type: 'marriageNode',
+            position: { x: x + NODE_WIDTH + MARRIAGE_GAP, y: y + NODE_HEIGHT / 2 },
+            style: {
+                width: 10,
+                height: 10,
+                borderRadius: 4,
+                background: '#555',
+                color: '#fff',
+                fontSize: 8,
+                textAlign: 'center',
+            },
+        });
+
+        if (marriage.parent2_id) {
+            const person = family.personById.get(marriage.parent2_id);
+            if (!person) {
+                throw new Error(`Expected person to exist for id ${marriage.parent2_id}`);
+            }
+
+            nodes.push({
+                id: marriage.parent2_id,
+                data: { label: person.name },
+                position: { x: x + NODE_WIDTH + 2 * MARRIAGE_GAP, y },
+                type: 'personNode',
+                style: {
+                    color: '#222',
+                }
+            });
+        } else {
+            nodes.push({
+                id: uuidv4(),
+                data: { label: 'Unknown' },
+                position: { x: x + NODE_WIDTH + 2 * MARRIAGE_GAP, y },
+                type: 'personNode',
+                style: {
+                    color: '#222',
+                }
+            });
+        }
+    } else {
+        const person = family.personById.get(node.id);
+        if (!person) {
+            throw new Error(`Expected person to exist for id ${node.id}`);
+        }
+        
+        nodes.push({
+            id: node.id,
+            data: { label: person.name },
+            position: { x, y },
+            type: 'personNode',
+            style: {
+                color: '#222',
+            }
+        });
+    }
+}
+
 export function buildNodes(perspectiveId: string, family: Index): Node[] {
     const preNodes = new Map<string, PreNode>();
 
@@ -278,7 +396,12 @@ export function buildNodes(perspectiveId: string, family: Index): Node[] {
         id = { type: PERSON_TYPE, id: perspectiveId };
     }
 
+    // First walk: calculate preliminary X, mod, and shift values.
     const rootPreNode = buildPreNodes(id, family, preNodes, 0, [id]);
 
-    return [];
+    const nodes: Node[] = [];
+    // Second walk: calculate final X and Y values, and create nodes.
+    finalizeNodesLayout(rootPreNode.id, preNodes, family, nodes, 0, 0);
+
+    return nodes;
 }
