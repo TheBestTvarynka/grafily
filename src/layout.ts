@@ -6,7 +6,7 @@ import { Index, Marriage } from 'model';
 const NODE_WIDTH = 100;
 const NODE_HEIGHT = 40;
 const MARRIAGE_NODE_SIZE = 10;
-const MARRIAGE_GAP = 40;
+const MARRIAGE_GAP = 20;
 const NODES_GAP = 40;
 
 // +------------+                             +------------+
@@ -48,56 +48,72 @@ function nodeWidth(id: Id): number {
     }
 }
 
-function getParent(id: Id, family: Index, selectParent: (marriage: Marriage) => string): Id | null {
-    let parentId: string;
-
+function getRightmostParent(id: Id, family: Index): Id | null {
     if (id.type === MARRIAGE_TYPE) {
         const marriage = family.marriageById.get(id.id);
         if (!marriage) {
             throw new Error(`Expected marriage to exist for id ${id.id}`);
         }
 
-        parentId = selectParent(marriage);
-    } else {
-        // Currently, this case is not supported, but let's handle it.
-        parentId = id.id;
-    }
+        if (marriage.parent2_id) {
+            const parents = family.personParents.get(marriage.parent2_id);
+            if (parents) {
+                return { type: MARRIAGE_TYPE, id: parents };
+            }
+        }
 
-    const parents = family.personParents.get(parentId);
+        if (marriage.parent1_id) {
+            const parents = family.personParents.get(marriage.parent1_id);
+            if (parents) {
+                return { type: MARRIAGE_TYPE, id: parents };
+            }
+        }
 
-    if (!parents) {
         return null;
     } else {
-        return { type: MARRIAGE_TYPE, id: parents };
-    }
-}
+        // Currently, this case is not supported, but let's handle it.
+        const parents = family.personParents.get(id.id);
 
-function getRightmostParent(id: Id, family: Index): Id | null {
-    const selectRightParent = (marriage: Marriage) => {
-        if (marriage.parent2_id) {
-            return marriage.parent2_id;
-        } else if (marriage.parent1_id) {
-            return marriage.parent1_id;
+        if (!parents) {
+            return null;
         } else {
-            throw new Error(`Expected at least one parent to exist for marriage id ${marriage.id}`);
+            return { type: MARRIAGE_TYPE, id: parents };
         }
-    };
-
-    return getParent(id, family, selectRightParent);
+    }
 }
 
 function getLeftmostParent(id: Id, family: Index): Id | null {
-    const selectLeftParent = (marriage: Marriage) => {
-        if (marriage.parent1_id) {
-            return marriage.parent1_id;
-        } else if (marriage.parent2_id) {
-            return marriage.parent2_id;
-        } else {
-            throw new Error(`Expected at least one parent to exist for marriage id ${marriage.id}`);
+    if (id.type === MARRIAGE_TYPE) {
+        const marriage = family.marriageById.get(id.id);
+        if (!marriage) {
+            throw new Error(`Expected marriage to exist for id ${id.id}`);
         }
-    };
 
-    return getParent(id, family, selectLeftParent);
+        if (marriage.parent1_id) {
+            const parents = family.personParents.get(marriage.parent1_id);
+            if (parents) {
+                return { type: MARRIAGE_TYPE, id: parents };
+            }
+        }
+
+        if (marriage.parent2_id) {
+            const parents = family.personParents.get(marriage.parent2_id);
+            if (parents) {
+                return { type: MARRIAGE_TYPE, id: parents };
+            }
+        }
+
+        return null;
+    } else {
+        // Currently, this case is not supported, but let's handle it.
+        const parents = family.personParents.get(id.id);
+
+        if (!parents) {
+            return null;
+        } else {
+            return { type: MARRIAGE_TYPE, id: parents };
+        }
+    }
 }
 
 function calculateShift(siblingLeft: Id, leftShift: number, singlingRight: Id, rightShift: number, preNodes: Map<string, PreNode>, family: Index): number {
@@ -249,11 +265,13 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
     let x: number;
     let mod: number;
     if (preX === 0) {
-        x = (firstPreNode.x + secondPreNode.x) / 2;
+        // x = (firstPreNode.x + secondPreNode.x) / 2;
+        x = ((firstPreNode.x + firstPreNode.shift) + (secondPreNode.x + secondPreNode.shift)) / 2;
         mod = 0;
     } else {
         x = preX;
-        mod = x - (firstPreNode.x + secondPreNode.x) / 2;
+        // mod = x - (firstPreNode.x + secondPreNode.x) / 2;
+        mod = x - ((firstPreNode.x + firstPreNode.shift) + (secondPreNode.x + secondPreNode.shift)) / 2;
     }
 
     const preNode: PreNode = {
@@ -271,6 +289,7 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
         }
 
         const shift = calculateShift(sibling, 0, perspectiveId, 0, preNodes, family);
+        console.log(`Applying shift ${shift} to node ${perspectiveId.id} (sibling ${sibling.id})`);
         preNode.shift += shift;
     }
 
@@ -333,7 +352,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
             id: marriage.id,
             data: { label: '' },
             type: 'marriageNode',
-            position: { x: x + NODE_WIDTH + MARRIAGE_GAP, y: y + NODE_HEIGHT / 2 },
+            position: { x: x + NODE_WIDTH + MARRIAGE_GAP - MARRIAGE_NODE_SIZE / 2, y: y + NODE_HEIGHT / 2 - MARRIAGE_NODE_SIZE / 2 },
             style: {
                 width: 10,
                 height: 10,

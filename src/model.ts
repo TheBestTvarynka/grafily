@@ -37,6 +37,15 @@ export function defaultFamily(): Family {
     const oleksii_t = { id: 'oleksii_t', name: 'Oleksii T' };
     const hanna = { id: 'hanna', name: 'Hanna' };
 
+    const yu_dada = { id: 'yu_dada', name: 'Yu Dada' };
+    const yu_mama = { id: 'yu_mama', name: 'Yu Mama' };
+
+    const da_data = { id: 'da_data', name: 'Da Data' };
+    const da_mama = { id: 'da_mama', name: 'Da Mama' };
+
+    const ku_data = { id: 'ku_data', name: 'Ku Data' };
+    const ku_mama = { id: 'ku_mama', name: 'Ku Mama' };
+
     const yaroslav_halia: Marriage = {
         id: 'yaroslav_halia',
         parent1_id: yaroslav.id,
@@ -79,10 +88,28 @@ export function defaultFamily(): Family {
         parent2_id: hanna.id,
         children_ids: [maria.id],
     };
+    const yu_dada_yu_mama: Marriage = {
+        id: 'yu_dada_yu_mama',
+        parent1_id: yu_dada.id,
+        parent2_id: yu_mama.id,
+        children_ids: [yuhym.id],
+    };
+    const da_data_da_mama: Marriage = {
+        id: 'da_data_da_mama',
+        parent1_id: da_data.id,
+        parent2_id: da_mama.id,
+        children_ids: [davyd.id],
+    };
+    const ku_data_ku_mama: Marriage = {
+        id: 'ku_data_ku_mama',
+        parent1_id: ku_data.id,
+        parent2_id: ku_mama.id,
+        children_ids: [kulyna.id],
+    };
 
     return {
-        persons: [yaroslav, halia, oleksii, nina, ivan, maria, yuhym, prosia, davyd, kulyna, ivan_h, olena, oleksii_t, hanna],
-        marriages: [yaroslav_halia, oleksii_nina, ivan_maria, yuhym_prosia, davyd_kulyna, ivan_hr_olena, oleksii_t_hanna],
+        persons: [yaroslav, halia, oleksii, nina, ivan, maria, yuhym, prosia, davyd, kulyna, ivan_h, olena, oleksii_t, hanna, yu_dada, yu_mama, da_data, da_mama, ku_data, ku_mama],
+        marriages: [yaroslav_halia, oleksii_nina, ivan_maria, yuhym_prosia, davyd_kulyna, ivan_hr_olena, oleksii_t_hanna, yu_dada_yu_mama, da_data_da_mama, ku_data_ku_mama],
     };
 };
 
