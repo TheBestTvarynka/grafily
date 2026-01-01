@@ -1,18 +1,19 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
-import MyPlugin from "./main";
 
-export interface MyPluginSettings {
+import Grafily from "./main";
+
+export interface GrafilySettings {
     mySetting: string;
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
+export const DEFAULT_SETTINGS: GrafilySettings = {
     mySetting: 'default'
 }
 
-export class SampleSettingTab extends PluginSettingTab {
-    plugin: MyPlugin;
+export class GrafilySettingTab extends PluginSettingTab {
+    plugin: Grafily;
 
-    constructor(app: App, plugin: MyPlugin) {
+    constructor(app: App, plugin: Grafily) {
         super(app, plugin);
         this.plugin = plugin;
     }

@@ -1,11 +1,14 @@
-import { StrictMode, useState } from 'react';
+import { StrictMode } from 'react';
 import { ItemView, TFile, WorkspaceLeaf } from 'obsidian';
 import { Root, createRoot } from 'react-dom/client';
-import { buildIndex, defaultFamily } from 'model';
-import { ReactFlow, Node, Edge, Background, Controls, ReactFlowProvider, BackgroundVariant, Handle, Position } from '@xyflow/react';
-import { buildNodes } from 'layout';
+import { ReactFlow, Background, Controls, ReactFlowProvider, BackgroundVariant, Handle, Position } from '@xyflow/react';
 
+import { buildNodes } from 'layout';
+import { buildIndex, defaultFamily } from 'model';
+
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 function PersonNode({ data }: any) {
+
     return (
         <div style={{
             padding: '0.5em',
@@ -17,7 +20,10 @@ function PersonNode({ data }: any) {
             display: 'inline-flex',
             justifyContent: 'center',
         }}>
-            <div>{data.label}</div>
+            <div>{
+                /* eslint-disable  @typescript-eslint/no-unsafe-member-access */
+                data.label
+            }</div>
             <Handle type="target" position={Position.Top} id='top' />
             <Handle type="target" position={Position.Bottom} id='bottom' />
             <Handle type="target" position={Position.Left} id='left' />
@@ -42,8 +48,6 @@ const nodeTypes = {
 };
 
 function FamilyGraph() {
-    const [variant, setVariant] = useState(BackgroundVariant.Dots);
-
     const family = defaultFamily();
     const index = buildIndex(family);
 
@@ -51,7 +55,7 @@ function FamilyGraph() {
 
     return (
         <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes}>
-            <Background color="skyblue" variant={variant} />
+            <Background color="skyblue" variant={BackgroundVariant.Dots} />
             <Controls />
         </ReactFlow>
     );
@@ -77,7 +81,7 @@ export const ReactView = ({ name, files }: { name: string, files: TFile[] }) => 
     );
 };
 
-export class MyCanvasView extends ItemView {
+export class GrafilyView extends ItemView {
     root: Root | null = null;
 
     constructor(leaf: WorkspaceLeaf) {
@@ -89,7 +93,7 @@ export class MyCanvasView extends ItemView {
     }
 
     getDisplayText() {
-        return 'Family Tree View';
+        return 'Grafily';
     }
 
     async onOpen() {

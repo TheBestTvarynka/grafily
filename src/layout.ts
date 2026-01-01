@@ -1,7 +1,7 @@
 import { Edge, Node } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Index, Marriage } from 'model';
+import { Index } from 'model';
 
 const NODE_WIDTH = 100;
 const NODE_HEIGHT = 40;
@@ -274,12 +274,10 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
     let x: number;
     let mod: number;
     if (preX === 0) {
-        // x = (firstPreNode.x + secondPreNode.x) / 2;
         x = ((firstPreNode.x + firstPreNode.shift) + (secondPreNode.x + secondPreNode.shift)) / 2;
         mod = 0;
     } else {
         x = preX;
-        // mod = x - (firstPreNode.x + secondPreNode.x) / 2;
         mod = x - ((firstPreNode.x + firstPreNode.shift) + (secondPreNode.x + secondPreNode.shift)) / 2;
     }
 
@@ -292,16 +290,12 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
 
     preNodes.set(perspectiveId.id, preNode);
 
-    console.log('-------------');
-    console.log({ siblings });
     for (const sibling of siblings) {
-        console.log(`try calc shift: ${sibling.id} - ${perspectiveId.id}`);
         if (perspectiveId === sibling) {
             break;
         }
 
         const shift = calculateShift(sibling, 0, perspectiveId, 0, preNodes, family);
-        console.log(`Applying shift ${shift} to node ${perspectiveId.id} (sibling ${sibling.id})`);
         preNode.shift += shift;
     }
 
@@ -309,7 +303,6 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
 }
 
 function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: Index, nodes: Node[], edges: Edge[], level: number, mod: number) {
-    // console.log(`Finalizing node ${node.id} at level ${level} with mod ${mod}`);
     const parents = getParentNodesIds(node, family);
 
     const preNode = preNodes.get(node.id);
@@ -318,13 +311,11 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
     }
 
     for (const parent of parents) {
-        // console.log(`Finalizing parent with mod ${mod + preNode.mod + preNode.shift} = ${mod} + ${preNode.mod} + ${preNode.shift}`);
         finalizeNodesLayout(parent, preNodes, family, nodes, edges, level - 1, mod + preNode.mod + preNode.shift);
     }
 
     const x = preNode.x + mod + preNode.shift;
     const y = level * (NODE_HEIGHT + NODES_GAP);
-    // console.log(`Node ${node.id} at level ${level} has position (${x} = ${preNode.x} + ${mod} + ${preNode.shift}, ${y})`);
 
     if (node.type === MARRIAGE_TYPE) {
         const marriage = family.marriageById.get(node.id);
