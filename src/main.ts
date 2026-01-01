@@ -1,6 +1,6 @@
 import { Plugin } from 'obsidian';
 
-import { DEFAULT_SETTINGS, GrafilySettings, GrafilySettingTab } from "./settings";
+import { DEFAULT_SETTINGS, GrafilySettings, GrafilySettingTab } from './settings';
 import { GrafilyView, VIEW_TYPE } from './ReactView';
 
 import '@xyflow/react/dist/style.css';
@@ -12,13 +12,10 @@ export default class Grafily extends Plugin {
         await this.loadSettings();
 
         this.addRibbonIcon('network', 'Grafily', (_: MouseEvent) => {
-            this.activateView().catch(err => console.error(err));
+            this.activateView().catch((err) => console.error(err));
         });
 
-        this.registerView(
-            VIEW_TYPE,
-            leaf => new GrafilyView(leaf)
-        );
+        this.registerView(VIEW_TYPE, (leaf) => new GrafilyView(leaf));
 
         this.addSettingTab(new GrafilySettingTab(this.app, this));
     }
@@ -27,14 +24,18 @@ export default class Grafily extends Plugin {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({
             type: VIEW_TYPE,
-            active: true
+            active: true,
         });
     }
 
     onunload() {}
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<GrafilySettings>);
+        this.settings = Object.assign(
+            {},
+            DEFAULT_SETTINGS,
+            (await this.loadData()) as Partial<GrafilySettings>,
+        );
     }
 
     async saveSettings() {

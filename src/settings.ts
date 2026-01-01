@@ -1,14 +1,14 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting } from 'obsidian';
 
-import Grafily from "./main";
+import Grafily from './main';
 
 export interface GrafilySettings {
     mySetting: string;
 }
 
 export const DEFAULT_SETTINGS: GrafilySettings = {
-    mySetting: 'default'
-}
+    mySetting: 'default',
+};
 
 export class GrafilySettingTab extends PluginSettingTab {
     plugin: Grafily;
@@ -25,13 +25,15 @@ export class GrafilySettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Settings #1')
-            .setDesc('It\'s a secret')
-            .addText(text => text
-                .setPlaceholder('Enter your secret')
-                .setValue(this.plugin.settings.mySetting)
-                .onChange(async (value) => {
-                    this.plugin.settings.mySetting = value;
-                    await this.plugin.saveSettings();
-                }));
+            .setDesc("It's a secret")
+            .addText((text) =>
+                text
+                    .setPlaceholder('Enter your secret')
+                    .setValue(this.plugin.settings.mySetting)
+                    .onChange(async (value) => {
+                        this.plugin.settings.mySetting = value;
+                        await this.plugin.saveSettings();
+                    }),
+            );
     }
 }

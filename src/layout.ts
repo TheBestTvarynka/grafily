@@ -12,7 +12,7 @@ const NODES_GAP = 40;
 // +------------+                             +------------+
 // |  parent1   |--------------o--------------|  parent2   |
 // +------------+                             +------------+
-// 
+//
 // | NODE_WIDTH | MARRIAGE_GAP | MARRIAGE_GAP | NODE_WIDTH |
 // |                    MARRIAGE_WIDTH                     |
 const MARRIAGE_WIDTH = (NODE_WIDTH + MARRIAGE_GAP) * 2;
@@ -26,7 +26,7 @@ type Id = {
     // If the node is a person, this is the person id.
     // If the node is a marriage, this is marriage id.
     id: string;
-}
+};
 
 // PreNode is used during the layout computation.
 // It represents a node in the preliminary layout tree.
@@ -116,7 +116,14 @@ function getLeftmostParent(id: Id, family: Index): Id | null {
     }
 }
 
-function calculateShift(siblingLeft: Id, leftShift: number, singlingRight: Id, rightShift: number, preNodes: Map<string, PreNode>, family: Index): number {
+function calculateShift(
+    siblingLeft: Id,
+    leftShift: number,
+    singlingRight: Id,
+    rightShift: number,
+    preNodes: Map<string, PreNode>,
+    family: Index,
+): number {
     const leftNode = preNodes.get(siblingLeft.id);
     if (!leftNode) {
         throw new Error(`Expected left sibling pre-node to exist for id ${siblingLeft.id}`);
@@ -145,7 +152,10 @@ function calculateShift(siblingLeft: Id, leftShift: number, singlingRight: Id, r
         return shift;
     }
 
-    return Math.max(shift, calculateShift(nextLeftSibling, leftShift, nextRightSibling, rightShift, preNodes, family));
+    return Math.max(
+        shift,
+        calculateShift(nextLeftSibling, leftShift, nextRightSibling, rightShift, preNodes, family),
+    );
 }
 
 function getParentNodesIds(id: Id, family: Index): Id[] {
@@ -183,7 +193,13 @@ function getParentNodesIds(id: Id, family: Index): Id[] {
     return parents;
 }
 
-function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, PreNode>, preX: number, siblings: Id[]): PreNode {
+function buildPreNodes(
+    perspectiveId: Id,
+    family: Index,
+    preNodes: Map<string, PreNode>,
+    preX: number,
+    siblings: Id[],
+): PreNode {
     const parents = getParentNodesIds(perspectiveId, family);
 
     if (parents.length === 0) {
@@ -227,7 +243,7 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
             x = preX;
             mod = x - parentNode.x / 2;
         }
-        
+
         const preNode: PreNode = {
             id: perspectiveId,
             x,
@@ -274,11 +290,12 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
     let x: number;
     let mod: number;
     if (preX === 0) {
-        x = ((firstPreNode.x + firstPreNode.shift) + (secondPreNode.x + secondPreNode.shift)) / 2;
+        x = (firstPreNode.x + firstPreNode.shift + (secondPreNode.x + secondPreNode.shift)) / 2;
         mod = 0;
     } else {
         x = preX;
-        mod = x - ((firstPreNode.x + firstPreNode.shift) + (secondPreNode.x + secondPreNode.shift)) / 2;
+        mod =
+            x - (firstPreNode.x + firstPreNode.shift + (secondPreNode.x + secondPreNode.shift)) / 2;
     }
 
     const preNode: PreNode = {
@@ -302,7 +319,15 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
     return preNode;
 }
 
-function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: Index, nodes: Node[], edges: Edge[], level: number, mod: number) {
+function finalizeNodesLayout(
+    node: Id,
+    preNodes: Map<string, PreNode>,
+    family: Index,
+    nodes: Node[],
+    edges: Edge[],
+    level: number,
+    mod: number,
+) {
     const parents = getParentNodesIds(node, family);
 
     const preNode = preNodes.get(node.id);
@@ -311,7 +336,15 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
     }
 
     for (const parent of parents) {
-        finalizeNodesLayout(parent, preNodes, family, nodes, edges, level - 1, mod + preNode.mod + preNode.shift);
+        finalizeNodesLayout(
+            parent,
+            preNodes,
+            family,
+            nodes,
+            edges,
+            level - 1,
+            mod + preNode.mod + preNode.shift,
+        );
     }
 
     const x = preNode.x + mod + preNode.shift;
@@ -337,7 +370,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
                 type: 'personNode',
                 style: {
                     color: '#222',
-                }
+                },
             });
         } else {
             nodes.push({
@@ -347,7 +380,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
                 type: 'personNode',
                 style: {
                     color: '#222',
-                }
+                },
             });
         }
 
@@ -355,7 +388,10 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
             id: marriage.id,
             data: { label: '' },
             type: 'marriageNode',
-            position: { x: x + NODE_WIDTH + MARRIAGE_GAP - MARRIAGE_NODE_SIZE / 2, y: y + NODE_HEIGHT / 2 - MARRIAGE_NODE_SIZE / 2 },
+            position: {
+                x: x + NODE_WIDTH + MARRIAGE_GAP - MARRIAGE_NODE_SIZE / 2,
+                y: y + NODE_HEIGHT / 2 - MARRIAGE_NODE_SIZE / 2,
+            },
             style: {
                 width: 10,
                 height: 10,
@@ -381,7 +417,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
                 type: 'personNode',
                 style: {
                     color: '#222',
-                }
+                },
             });
         } else {
             nodes.push({
@@ -391,7 +427,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
                 type: 'personNode',
                 style: {
                     color: '#222',
-                }
+                },
             });
         }
 
@@ -424,7 +460,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
         if (!person) {
             throw new Error(`Expected person to exist for id ${node.id}`);
         }
-        
+
         nodes.push({
             id: node.id,
             data: { label: person.name },
@@ -432,7 +468,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
             type: 'personNode',
             style: {
                 color: '#222',
-            }
+            },
         });
 
         for (const childId of family.personChildren.get(node.id) ?? []) {

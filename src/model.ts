@@ -1,19 +1,19 @@
 export type Person = {
-    id: string,
-    name: string,
+    id: string;
+    name: string;
 };
 
 export type Marriage = {
-    id: string,
-    parent1_id?: string,
-    parent2_id?: string,
-    children_ids: string[],
+    id: string;
+    parent1_id?: string;
+    parent2_id?: string;
+    children_ids: string[];
 };
 
 export type Family = {
-    persons: Person[],
-    marriages: Marriage[],
-}
+    persons: Person[];
+    marriages: Marriage[];
+};
 
 export function defaultFamily(): Family {
     const yaroslav = { id: 'yaroslav', name: 'Yaroslav' };
@@ -108,14 +108,46 @@ export function defaultFamily(): Family {
     };
 
     return {
-        persons: [yaroslav, halia, oleksii, nina, ivan, maria, yuhym, prosia, davyd, kulyna, ivan_h, olena, oleksii_t, hanna, yu_dada, yu_mama, da_data, da_mama, ku_data, ku_mama],
-        marriages: [yaroslav_halia, oleksii_nina, ivan_maria, yuhym_prosia, davyd_kulyna, ivan_hr_olena, oleksii_t_hanna, yu_dada_yu_mama, da_data_da_mama, ku_data_ku_mama],
+        persons: [
+            yaroslav,
+            halia,
+            oleksii,
+            nina,
+            ivan,
+            maria,
+            yuhym,
+            prosia,
+            davyd,
+            kulyna,
+            ivan_h,
+            olena,
+            oleksii_t,
+            hanna,
+            yu_dada,
+            yu_mama,
+            da_data,
+            da_mama,
+            ku_data,
+            ku_mama,
+        ],
+        marriages: [
+            yaroslav_halia,
+            oleksii_nina,
+            ivan_maria,
+            yuhym_prosia,
+            davyd_kulyna,
+            ivan_hr_olena,
+            oleksii_t_hanna,
+            yu_dada_yu_mama,
+            da_data_da_mama,
+            ku_data_ku_mama,
+        ],
     };
-};
+}
 
 export type Index = {
     personById: Map<string, Person>;
-    marriageById: Map<string, Marriage>,
+    marriageById: Map<string, Marriage>;
     // key - person id
     // value - marriages involving this person
     personMarriages: Map<string, Marriage[]>;
@@ -128,8 +160,8 @@ export type Index = {
 };
 
 export function buildIndex(family: Family): Index {
-    const personById = new Map(family.persons.map(p => [p.id, p]));
-    const marriageById = new Map(family.marriages.map(m => [m.id, m]));
+    const personById = new Map(family.persons.map((p) => [p.id, p]));
+    const marriageById = new Map(family.marriages.map((m) => [m.id, m]));
 
     const personMarriages = new Map<string, Marriage[]>();
     const personChildren = new Map<string, string[]>();
@@ -154,14 +186,17 @@ export function buildIndex(family: Family): Index {
                     continue;
                 }
 
-                const children = (personChildren.get(parentId) ?? []);
-                personChildren.set(
-                    parentId,
-                    [...children, childId]
-                );
+                const children = personChildren.get(parentId) ?? [];
+                personChildren.set(parentId, [...children, childId]);
             }
         }
     }
 
-    return { personById, marriageById, personMarriages, personChildren, personParents };
+    return {
+        personById,
+        marriageById,
+        personMarriages,
+        personChildren,
+        personParents,
+    };
 }
