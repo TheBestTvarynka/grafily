@@ -2,12 +2,14 @@ import { App, PluginSettingTab, Setting } from 'obsidian';
 
 import Grafily from './main';
 
+// Grafily plugin settings.
 export interface GrafilySettings {
-    mySetting: string;
+    // Path to the directory that contains people's pages.
+    pages: string;
 }
 
 export const DEFAULT_SETTINGS: GrafilySettings = {
-    mySetting: 'default',
+    pages: 'family',
 };
 
 export class GrafilySettingTab extends PluginSettingTab {
@@ -24,14 +26,14 @@ export class GrafilySettingTab extends PluginSettingTab {
         containerEl.empty();
 
         new Setting(containerEl)
-            .setName('Settings #1')
-            .setDesc("It's a secret")
+            .setName('Pages location')
+            .setDesc("Path to the directory that contains people's pages")
             .addText((text) =>
                 text
-                    .setPlaceholder('Enter your secret')
-                    .setValue(this.plugin.settings.mySetting)
+                    .setPlaceholder('Type directory path')
+                    .setValue(this.plugin.settings.pages)
                     .onChange(async (value) => {
-                        this.plugin.settings.mySetting = value;
+                        this.plugin.settings.pages = value;
                         await this.plugin.saveSettings();
                     }),
             );

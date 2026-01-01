@@ -1,7 +1,7 @@
 import { Plugin } from 'obsidian';
 
 import { DEFAULT_SETTINGS, GrafilySettings, GrafilySettingTab } from './settings';
-import { GrafilyView, VIEW_TYPE } from './ReactView';
+import { GrafilyView, VIEW_TYPE } from './view/GrafilyView';
 
 import '@xyflow/react/dist/style.css';
 

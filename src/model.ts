@@ -1,6 +1,11 @@
 export type Person = {
     id: string;
     name: string;
+    birth?: string;
+    death?: string;
+    parents?: string[];
+    children?: string[];
+    spouses?: string[];
 };
 
 export type Marriage = {
