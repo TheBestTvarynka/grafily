@@ -196,6 +196,15 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
 
         preNodes.set(perspectiveId.id, preNode);
 
+        for (const sibling of siblings) {
+            if (perspectiveId === sibling) {
+                break;
+            }
+
+            const shift = calculateShift(sibling, 0, perspectiveId, 0, preNodes, family);
+            preNode.shift += shift;
+        }
+
         return preNode;
     }
 
@@ -283,7 +292,10 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
 
     preNodes.set(perspectiveId.id, preNode);
 
+    console.log('-------------');
+    console.log({ siblings });
     for (const sibling of siblings) {
+        console.log(`try calc shift: ${sibling.id} - ${perspectiveId.id}`);
         if (perspectiveId === sibling) {
             break;
         }
