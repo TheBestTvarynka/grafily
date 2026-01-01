@@ -40,6 +40,14 @@ type PreNode = {
     shift: number;
 };
 
+function nodeWidth(id: Id): number {
+    if (id.type === PERSON_TYPE) {
+        return NODE_WIDTH;
+    } else {
+        return MARRIAGE_WIDTH;
+    }
+}
+
 function getParent(id: Id, family: Index, selectParent: (marriage: Marriage) => string): Id | null {
     let parentId: string;
 
@@ -103,7 +111,7 @@ function calculateShift(siblingLeft: Id, leftShift: number, singlingRight: Id, r
         throw new Error(`Expected right sibling pre-node to exist for id ${singlingRight.id}`);
     }
 
-    const leftX = leftNode.x + leftShift + leftNode.shift;
+    const leftX = leftNode.x + leftShift + leftNode.shift + nodeWidth(siblingLeft);
     const rightX = rightNode.x + rightShift + rightNode.shift;
 
     let shift = 0;
