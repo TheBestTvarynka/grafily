@@ -1,15 +1,6 @@
-export type PageMetaInfo = {
-    // File name without the `.md` extension.
-    id: string;
-    name: string;
-    birth?: string;
-    death?: string;
-    parents?: string[];
-    children?: string[];
-    spouses?: string[];
-};
+import { Person } from 'model';
 
-export function extractPageMeta(page: string, fileName: string): PageMetaInfo {
+export function extractPageMeta(page: string, fileName: string, filePath: string): Person {
     const lines = page.split('\n').map((line) => line.trim());
     const headerEnd = lines.indexOf('---');
 
@@ -31,6 +22,20 @@ export function extractPageMeta(page: string, fileName: string): PageMetaInfo {
         );
     }
 
+    const removeSquarePrentness = (link: string) => {
+        link = link.trim();
+
+        if (link.startsWith('[[')) {
+            link = link.substring(2);
+        }
+
+        if (link.endsWith(']]')) {
+            link = link.substring(0, link.length - 2);
+        }
+
+        return link;
+    };
+
     const birth = lines
         .find((line) => line.startsWith('**Birth**'))
         ?.split(':')[1]
@@ -43,17 +48,17 @@ export function extractPageMeta(page: string, fileName: string): PageMetaInfo {
         .find((line) => line.startsWith('**Parents**'))
         ?.split(':')[1]
         ?.split(',')
-        .map((parent) => parent.trim());
+        .map(removeSquarePrentness);
     const children = lines
         .find((line) => line.startsWith('**Children**'))
         ?.split(':')[1]
         ?.split(',')
-        .map((child) => child.trim());
+        .map(removeSquarePrentness);
     const spouses = lines
-        .find((line) => line.startsWith('**Spouse(s)**'))
+        .find((line) => line.startsWith('**Spouse**'))
         ?.split(':')[1]
         ?.split(',')
-        .map((spouse) => spouse.trim());
+        .map(removeSquarePrentness);
 
     return {
         id: fileName,
@@ -63,5 +68,6 @@ export function extractPageMeta(page: string, fileName: string): PageMetaInfo {
         parents,
         children,
         spouses,
+        filePath,
     };
 }

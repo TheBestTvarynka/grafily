@@ -6,6 +6,7 @@ export type Person = {
     parents?: string[];
     children?: string[];
     spouses?: string[];
+    filePath?: string;
 };
 
 export type Marriage = {
@@ -20,133 +21,121 @@ export type Family = {
     marriages: Marriage[];
 };
 
-export function defaultFamily(): Family {
-    const yaroslav = { id: 'yaroslav', name: 'Yaroslav' };
-    const halia = { id: 'halia', name: 'Halia' };
+export function familyFromPersons(persons: Person[]): Family {
+    const marriages: Marriage[] = [];
 
-    const oleksii = { id: 'oleksii', name: 'Oleksii' };
-    const nina = { id: 'nina', name: 'Nina' };
+    const findMarriages = (person_id: string) =>
+        marriages.filter(
+            (marriage) => marriage.parent1_id === person_id || marriage.parent2_id === person_id,
+        );
+    const getMarriage = (person_id: string, marriages: Marriage[]) =>
+        marriages.find(
+            (marriage) => marriage.parent1_id === person_id || marriage.parent2_id === person_id,
+        );
+    const getPersonIdByName = (name: string) => persons.find((person) => person.name === name);
 
-    const ivan = { id: 'ivan', name: 'Ivan' };
-    const maria = { id: 'maria', name: 'Maria' };
+    for (const person of persons) {
+        const personMarriages = findMarriages(person.id);
 
-    const yuhym = { id: 'yuhym', name: 'Yuhym' };
-    const prosia = { id: 'prosia', name: 'Prosia' };
+        if (person.spouses) {
+            if (person.spouses.length > 1) {
+                throw new Error(
+                    `many spouses are not supported yet: person (${person.id}) has ${person.spouses.length} spouses`,
+                );
+            }
 
-    const davyd = { id: 'davyd', name: 'Davyd' };
-    const kulyna = { id: 'kulyna', name: 'Kulyna' };
+            if (!person.spouses[0]) {
+                throw new Error(`expected ${person.id} to have at least one spouse`);
+            }
 
-    const ivan_h = { id: 'ivan_h', name: 'Ivan Hr' };
-    const olena = { id: 'olena', name: 'Olena' };
+            const spouse = getPersonIdByName(person.spouses[0]);
+            if (!spouse) {
+                throw new Error(`invalid spouse name detected: ${person.spouses[0]}`);
+            }
+            const marriage = getMarriage(spouse.id, personMarriages);
 
-    const oleksii_t = { id: 'oleksii_t', name: 'Oleksii T' };
-    const hanna = { id: 'hanna', name: 'Hanna' };
+            if (!marriage) {
+                marriages.push({
+                    id: `${person.id}_${spouse.id}`,
+                    parent1_id: person.id,
+                    parent2_id: spouse.id,
+                    children_ids: [],
+                });
+            }
+        }
 
-    const yu_dada = { id: 'yu_dada', name: 'Yu Dada' };
-    const yu_mama = { id: 'yu_mama', name: 'Yu Mama' };
+        if (person.parents) {
+            if (person.parents.length === 0 || person.parents.length > 2) {
+                throw new Error(
+                    `person ${person.id} has invalid number of parents: ${person.parents.length}`,
+                );
+            }
 
-    const da_data = { id: 'da_data', name: 'Da Data' };
-    const da_mama = { id: 'da_mama', name: 'Da Mama' };
+            if (!person.parents[0]) {
+                throw new Error('at least one parent must present in the array');
+            }
 
-    const ku_data = { id: 'ku_data', name: 'Ku Data' };
-    const ku_mama = { id: 'ku_mama', name: 'Ku Mama' };
+            let parentsMarriage = getMarriage(person.parents[0], marriages);
 
-    const yaroslav_halia: Marriage = {
-        id: 'yaroslav_halia',
-        parent1_id: yaroslav.id,
-        parent2_id: halia.id,
-        children_ids: [],
-    };
-    const oleksii_nina: Marriage = {
-        id: 'oleksii_nina',
-        parent1_id: oleksii.id,
-        parent2_id: nina.id,
-        children_ids: [yaroslav.id],
-    };
-    const ivan_maria: Marriage = {
-        id: 'ivan_maria',
-        parent1_id: ivan.id,
-        parent2_id: maria.id,
-        children_ids: [halia.id],
-    };
-    const yuhym_prosia: Marriage = {
-        id: 'yuhym_prosia',
-        parent1_id: yuhym.id,
-        parent2_id: prosia.id,
-        children_ids: [nina.id],
-    };
-    const davyd_kulyna: Marriage = {
-        id: 'davyd_kulyna',
-        parent1_id: davyd.id,
-        parent2_id: kulyna.id,
-        children_ids: [ivan.id],
-    };
-    const ivan_hr_olena: Marriage = {
-        id: 'ivan_hr_olena',
-        parent1_id: ivan_h.id,
-        parent2_id: olena.id,
-        children_ids: [oleksii.id],
-    };
-    const oleksii_t_hanna: Marriage = {
-        id: 'oleksii_t_hanna',
-        parent1_id: oleksii_t.id,
-        parent2_id: hanna.id,
-        children_ids: [maria.id],
-    };
-    const yu_dada_yu_mama: Marriage = {
-        id: 'yu_dada_yu_mama',
-        parent1_id: yu_dada.id,
-        parent2_id: yu_mama.id,
-        children_ids: [yuhym.id],
-    };
-    const da_data_da_mama: Marriage = {
-        id: 'da_data_da_mama',
-        parent1_id: da_data.id,
-        parent2_id: da_mama.id,
-        children_ids: [davyd.id],
-    };
-    const ku_data_ku_mama: Marriage = {
-        id: 'ku_data_ku_mama',
-        parent1_id: ku_data.id,
-        parent2_id: ku_mama.id,
-        children_ids: [kulyna.id],
-    };
+            if (!parentsMarriage) {
+                parentsMarriage = {
+                    id: `${person.parents[0]}_${person.parents[1] ?? 'Unknown'}`,
+                    parent1_id: person.parents[0],
+                    parent2_id: person.parents[1],
+                    children_ids: [person.id],
+                };
+                marriages.push(parentsMarriage);
+            }
+
+            if (person.parents[1]) {
+                if (parentsMarriage.parent1_id === person.parents[0]) {
+                    parentsMarriage.parent2_id = person.parents[1];
+                }
+
+                if (parentsMarriage.parent2_id === person.parents[0]) {
+                    parentsMarriage.parent1_id = person.parents[1];
+                }
+            }
+
+            // Avoid repetitions.
+            if (parentsMarriage.children_ids.indexOf(person.id) === -1) {
+                parentsMarriage.children_ids.push(person.id);
+            }
+        }
+
+        if (person.children && person.children.length > 0) {
+            const personMarriage = findMarriages(person.id)[0];
+
+            if (!personMarriage) {
+                marriages.push({
+                    id: `${person.id}_unknown`,
+                    parent1_id: person.id,
+                    children_ids: [],
+                });
+            }
+
+            const marriage = findMarriages(person.id)[0];
+            if (!marriage) {
+                throw new Error('person must have marriage at this point');
+            }
+
+            for (const child_name of person.children) {
+                const child = getPersonIdByName(child_name);
+                if (!child) {
+                    throw new Error(`invalid child name detected: ${child_name}`);
+                }
+
+                // Avoid repetitions.
+                if (marriage.children_ids.indexOf(child.id) === -1) {
+                    marriage.children_ids.push(child.id);
+                }
+            }
+        }
+    }
 
     return {
-        persons: [
-            yaroslav,
-            halia,
-            oleksii,
-            nina,
-            ivan,
-            maria,
-            yuhym,
-            prosia,
-            davyd,
-            kulyna,
-            ivan_h,
-            olena,
-            oleksii_t,
-            hanna,
-            yu_dada,
-            yu_mama,
-            da_data,
-            da_mama,
-            ku_data,
-            ku_mama,
-        ],
-        marriages: [
-            yaroslav_halia,
-            oleksii_nina,
-            ivan_maria,
-            yuhym_prosia,
-            davyd_kulyna,
-            ivan_hr_olena,
-            oleksii_t_hanna,
-            yu_dada_yu_mama,
-            da_data_da_mama,
-            ku_data_ku_mama,
-        ],
+        persons,
+        marriages,
     };
 }
 
