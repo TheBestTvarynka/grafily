@@ -47,8 +47,7 @@ function FamilyGraph() {
     const family = defaultFamily();
     const index = buildIndex(family);
 
-    const nodes: Node[] = buildNodes('yaroslav', index);
-    const edges: Edge[] = [];
+    const [nodes, edges] = buildNodes('yaroslav', index);
 
     return (
         <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes}>

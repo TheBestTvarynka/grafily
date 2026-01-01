@@ -1,4 +1,4 @@
-import { Node } from '@xyflow/react';
+import { Edge, Node } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Index, Marriage } from 'model';
@@ -277,7 +277,7 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
     return preNode;
 }
 
-function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: Index, nodes: Node[], level: number, mod: number) {
+function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: Index, nodes: Node[], edges: Edge[], level: number, mod: number) {
     // console.log(`Finalizing node ${node.id} at level ${level} with mod ${mod}`);
     const parents = getParentNodesIds(node, family);
 
@@ -288,7 +288,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
 
     for (const parent of parents) {
         // console.log(`Finalizing parent with mod ${mod + preNode.mod + preNode.shift} = ${mod} + ${preNode.mod} + ${preNode.shift}`);
-        finalizeNodesLayout(parent, preNodes, family, nodes, level - 1, mod + preNode.mod + preNode.shift);
+        finalizeNodesLayout(parent, preNodes, family, nodes, edges, level - 1, mod + preNode.mod + preNode.shift);
     }
 
     const x = preNode.x + mod + preNode.shift;
@@ -301,6 +301,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
             throw new Error(`Expected marriage to exist for id ${node.id}`);
         }
 
+        const parent1_node_id = marriage.parent1_id ?? uuidv4();
         if (marriage.parent1_id) {
             const person = family.personById.get(marriage.parent1_id);
             if (!person) {
@@ -308,7 +309,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
             }
 
             nodes.push({
-                id: marriage.parent1_id,
+                id: parent1_node_id,
                 data: { label: person.name },
                 position: { x, y },
                 type: 'personNode',
@@ -318,7 +319,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
             });
         } else {
             nodes.push({
-                id: uuidv4(),
+                id: parent1_node_id,
                 data: { label: 'Unknown' },
                 position: { x, y },
                 type: 'personNode',
@@ -344,6 +345,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
             },
         });
 
+        const parent2_node_id = marriage.parent2_id ?? uuidv4();
         if (marriage.parent2_id) {
             const person = family.personById.get(marriage.parent2_id);
             if (!person) {
@@ -351,7 +353,7 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
             }
 
             nodes.push({
-                id: marriage.parent2_id,
+                id: parent2_node_id,
                 data: { label: person.name },
                 position: { x: x + NODE_WIDTH + 2 * MARRIAGE_GAP, y },
                 type: 'personNode',
@@ -361,13 +363,38 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
             });
         } else {
             nodes.push({
-                id: uuidv4(),
+                id: parent2_node_id,
                 data: { label: 'Unknown' },
                 position: { x: x + NODE_WIDTH + 2 * MARRIAGE_GAP, y },
                 type: 'personNode',
                 style: {
                     color: '#222',
                 }
+            });
+        }
+
+        edges.push({
+            id: marriage.id + '-to-' + parent1_node_id,
+            target: parent1_node_id,
+            source: marriage.id,
+            sourceHandle: 'left',
+            targetHandle: 'right',
+        });
+        edges.push({
+            id: marriage.id + '-to-' + parent2_node_id,
+            target: parent2_node_id,
+            source: marriage.id,
+            sourceHandle: 'right',
+            targetHandle: 'left',
+        });
+
+        for (const childId of marriage.children_ids) {
+            edges.push({
+                id: marriage.id + '-to-' + childId,
+                source: marriage.id,
+                target: childId,
+                sourceHandle: 'bottom',
+                targetHandle: 'top',
             });
         }
     } else {
@@ -385,10 +412,20 @@ function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: I
                 color: '#222',
             }
         });
+
+        for (const childId of family.personChildren.get(node.id) ?? []) {
+            edges.push({
+                id: node.id + '-to-' + childId,
+                source: node.id,
+                target: childId,
+                sourceHandle: 'bottom',
+                targetHandle: 'top',
+            });
+        }
     }
 }
 
-export function buildNodes(perspectiveId: string, family: Index): Node[] {
+export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[]] {
     const preNodes = new Map<string, PreNode>();
 
     let id: Id;
@@ -406,8 +443,9 @@ export function buildNodes(perspectiveId: string, family: Index): Node[] {
     const rootPreNode = buildPreNodes(id, family, preNodes, 0, [id]);
 
     const nodes: Node[] = [];
+    const edges: Edge[] = [];
     // Second walk: calculate final X and Y values, and create nodes.
-    finalizeNodesLayout(rootPreNode.id, preNodes, family, nodes, 0, 0);
+    finalizeNodesLayout(rootPreNode.id, preNodes, family, nodes, edges, 0, 0);
 
-    return nodes;
+    return [nodes, edges];
 }
