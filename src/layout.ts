@@ -270,24 +270,22 @@ function buildPreNodes(perspectiveId: Id, family: Index, preNodes: Map<string, P
 }
 
 function finalizeNodesLayout(node: Id, preNodes: Map<string, PreNode>, family: Index, nodes: Node[], level: number, mod: number) {
+    // console.log(`Finalizing node ${node.id} at level ${level} with mod ${mod}`);
     const parents = getParentNodesIds(node, family);
-
-    for (const parent of parents) {
-        const preNode = preNodes.get(parent.id);
-        if (!preNode) {
-            throw new Error(`Expected pre-node to exist for id ${parent.id}`);
-        }
-
-        finalizeNodesLayout(parent, preNodes, family, nodes, level + 1, mod + preNode.mod + preNode.shift);
-    }
 
     const preNode = preNodes.get(node.id);
     if (!preNode) {
         throw new Error(`Expected pre-node to exist for id ${node.id}`);
     }
 
+    for (const parent of parents) {
+        // console.log(`Finalizing parent with mod ${mod + preNode.mod + preNode.shift} = ${mod} + ${preNode.mod} + ${preNode.shift}`);
+        finalizeNodesLayout(parent, preNodes, family, nodes, level - 1, mod + preNode.mod + preNode.shift);
+    }
+
     const x = preNode.x + mod + preNode.shift;
     const y = level * (NODE_HEIGHT + NODES_GAP);
+    // console.log(`Node ${node.id} at level ${level} has position (${x} = ${preNode.x} + ${mod} + ${preNode.shift}, ${y})`);
 
     if (node.type === MARRIAGE_TYPE) {
         const marriage = family.marriageById.get(node.id);

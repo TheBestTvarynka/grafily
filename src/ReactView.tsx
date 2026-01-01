@@ -3,6 +3,7 @@ import { ItemView, TFile, WorkspaceLeaf } from 'obsidian';
 import { Root, createRoot } from 'react-dom/client';
 import { buildIndex, defaultFamily } from 'model';
 import { ReactFlow, Node, Edge, Background, Controls, ReactFlowProvider, BackgroundVariant, Handle, Position } from '@xyflow/react';
+import { buildNodes } from 'layout';
 
 function PersonNode({ data }: any) {
     return (
@@ -41,117 +42,13 @@ const nodeTypes = {
 };
 
 function FamilyGraph() {
-    const [variant, setVariant] = useState(BackgroundVariant.Cross);
-
-    const nodes: Node[] = [
-        {
-            id: 'yaroslav',
-            data: { label: 'Yaroslav' },
-            position: { x: 200, y: 100 },
-            type: 'personNode',
-            style: {
-                color: '#222',
-            }
-        },
-        {
-            id: 'halia',
-            data: { label: 'Halia' },
-            position: { x: 380, y: 100 },
-            type: 'personNode',
-            style: {
-                color: '#222',
-            }
-        },
-        {
-            id: 'pavlo',
-            data: { label: 'Pavlo' },
-            position: { x: 100, y: 200 },
-            type: 'personNode',
-            style: {
-                color: '#222',
-            }
-        },
-        {
-            id: 'Mykhailo',
-            data: { label: 'Mykhailo' },
-            position: { x: 400, y: 200 },
-            type: 'personNode',
-            style: {
-                color: '#222',
-            }
-        },
-        {
-            id: 'nastia',
-            data: { label: 'Nastia' },
-            position: { x: 700, y: 200 },
-            type: 'personNode',
-            style: {
-                color: '#222',
-            }
-        },
-        {
-            id: 'katia',
-            data: { label: 'Katia' },
-            position: { x: -150, y: -100 },
-            type: 'personNode',
-            style: {
-                color: '#222',
-            }
-        },
-        {
-            id: 'marriage-yaroslav-halia',
-            data: { label: '' },
-            type: 'marriageNode',
-            position: { x: 335, y: 115 },
-            style: {
-                width: 10,
-                height: 10,
-                borderRadius: 4,
-                background: '#555',
-                color: '#fff',
-                fontSize: 8,
-                textAlign: 'center',
-            },
-        },
-    ];
-
-    const edges: Edge[] = [
-        {
-            id: 'yaroslav-marriage',
-            target: 'yaroslav',
-            source: 'marriage-yaroslav-halia',
-            sourceHandle: 'left',
-            targetHandle: 'right',
-        },
-        {
-            id: 'halia-marriage',
-            target: 'halia',
-            source: 'marriage-yaroslav-halia',
-            sourceHandle: 'right',
-            targetHandle: 'left',
-        },
-        {
-            id: 'child-pavlo',
-            source: 'marriage-yaroslav-halia',
-            sourceHandle: 'bottom',
-            target: 'pavlo',
-        },
-        {
-            id: 'child-mykhailo',
-            source: 'marriage-yaroslav-halia',
-            sourceHandle: 'bottom',
-            target: 'Mykhailo',
-        },
-        {
-            id: 'child-nastia',
-            source: 'marriage-yaroslav-halia',
-            sourceHandle: 'bottom',
-            target: 'nastia',
-        }
-    ];
+    const [variant, setVariant] = useState(BackgroundVariant.Dots);
 
     const family = defaultFamily();
     const index = buildIndex(family);
+
+    const nodes: Node[] = buildNodes('yaroslav', index);
+    const edges: Edge[] = [];
 
     return (
         <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes}>

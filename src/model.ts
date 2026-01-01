@@ -16,26 +16,55 @@ export type Family = {
 }
 
 export function defaultFamily(): Family {
-    const pavlo: Person = { id: '1', name: 'Pavlo' };
-    const katia: Person = { id: '2', name: 'Katia' };
+    const yaroslav = { id: 'yaroslav', name: 'Yaroslav' };
+    const halia = { id: 'halia', name: 'Halia' };
 
-    const serhii: Person = { id: '3', name: 'Serhii' };
-    const halina: Person = { id: '4', name: 'Halina' };
+    const oleksii = { id: 'oleksii', name: 'Oleksii' };
+    const nina = { id: 'nina', name: 'Nina' };
 
-    const yaroslav: Person = { id: '5', name: 'Yaroslav' };
-    const halia: Person = { id: '6', name: 'Halia' };
+    const ivan = { id: 'ivan', name: 'Ivan' };
+    const maria = { id: 'maria', name: 'Maria' };
 
-    const nastia: Person = { id: '7', name: 'Nastia' };
-    const mykhailo: Person = { id: '8', name: 'Mykhailo' };
-    const vita: Person = { id: '9', name: 'Vita' };
+    const yuhym = { id: 'yuhym', name: 'Yuhym' };
+    const prosia = { id: 'prosia', name: 'Prosia' };
 
-    const marriage_1: Marriage = { id: '1', parent1_id: pavlo.id, parent2_id: katia.id, children_ids: [] };
-    const marriage_2: Marriage = { id: '2', parent1_id: yaroslav.id, parent2_id: halia.id, children_ids: [pavlo.id, nastia.id, mykhailo.id] };
-    const marriage_3: Marriage = { id: '3', parent1_id: serhii.id, parent2_id: halina.id, children_ids: [vita.id, katia.id] };
+    const davyd = { id: 'davyd', name: 'Davyd' };
+    const kulyna = { id: 'kulyna', name: 'Kulyna' };
+
+    const yaroslav_halia: Marriage = {
+        id: 'yaroslav_halia',
+        parent1_id: yaroslav.id,
+        parent2_id: halia.id,
+        children_ids: [],
+    };
+    const oleksii_nina: Marriage = {
+        id: 'oleksii_nina',
+        parent1_id: oleksii.id,
+        parent2_id: nina.id,
+        children_ids: [yaroslav.id],
+    };
+    const ivan_maria: Marriage = {
+        id: 'ivan_maria',
+        parent1_id: ivan.id,
+        parent2_id: maria.id,
+        children_ids: [halia.id],
+    };
+    const yuhym_prosia: Marriage = {
+        id: 'yuhym_prosia',
+        parent1_id: yuhym.id,
+        parent2_id: prosia.id,
+        children_ids: [nina.id],
+    };
+    const davyd_kulyna: Marriage = {
+        id: 'davyd_kulyna',
+        parent1_id: davyd.id,
+        parent2_id: kulyna.id,
+        children_ids: [ivan.id],
+    };
 
     return {
-        persons: [pavlo, katia, serhii, halina, yaroslav, halia, nastia, mykhailo, vita],
-        marriages: [marriage_1, marriage_2, marriage_3],
+        persons: [yaroslav, halia, oleksii, nina, ivan, maria, yuhym, prosia, davyd, kulyna],
+        marriages: [yaroslav_halia, oleksii_nina, ivan_maria, yuhym_prosia, davyd_kulyna],
     };
 };
 
