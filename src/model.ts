@@ -1,3 +1,5 @@
+import { TFile } from 'obsidian';
+
 export type Person = {
     id: string;
     name: string;
@@ -6,7 +8,7 @@ export type Person = {
     parents?: string[];
     children?: string[];
     spouses?: string[];
-    filePath?: string;
+    file: TFile;
 };
 
 export type Marriage = {

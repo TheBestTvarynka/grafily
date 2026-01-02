@@ -365,7 +365,7 @@ function finalizeNodesLayout(
 
             nodes.push({
                 id: parent1_node_id,
-                data: { label: person.name },
+                data: { label: person.name, file: person.file },
                 position: { x, y },
                 type: 'personNode',
                 style: {
@@ -412,7 +412,7 @@ function finalizeNodesLayout(
 
             nodes.push({
                 id: parent2_node_id,
-                data: { label: person.name },
+                data: { label: person.name, file: person.file },
                 position: { x: x + NODE_WIDTH + 2 * MARRIAGE_GAP, y },
                 type: 'personNode',
                 style: {
@@ -463,7 +463,7 @@ function finalizeNodesLayout(
 
         nodes.push({
             id: node.id,
-            data: { label: person.name },
+            data: { label: person.name, file: person.file },
             position: { x, y },
             type: 'personNode',
             style: {

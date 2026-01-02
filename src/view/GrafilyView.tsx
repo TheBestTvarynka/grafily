@@ -45,7 +45,7 @@ function FamilyGraph() {
                         // Remove file `.md` extension.
                         const name = file.name.substring(0, file.name.length - 3);
 
-                        const person = extractPageMeta(content, name, file.path);
+                        const person = extractPageMeta(content, name, file);
                         persons.push(person);
                     } catch (err) {
                         console.error(err);
@@ -66,11 +66,6 @@ function FamilyGraph() {
             cancelled = true;
         };
     }, [app]);
-
-    // const family = defaultFamily();
-    // const index = buildIndex(family);
-
-    // const [nodes, edges] = buildNodes('yaroslav', index);
 
     return (
         <ReactFlow nodes={graph[0]} edges={graph[1]} nodeTypes={nodeTypes}>

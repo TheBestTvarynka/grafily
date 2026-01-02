@@ -1,6 +1,8 @@
+import { TFile } from 'obsidian';
+
 import { Person } from 'model';
 
-export function extractPageMeta(page: string, fileName: string, filePath: string): Person {
+export function extractPageMeta(page: string, fileName: string, file: TFile): Person {
     const lines = page.split('\n').map((line) => line.trim());
     const headerEnd = lines.indexOf('---');
 
@@ -68,6 +70,6 @@ export function extractPageMeta(page: string, fileName: string, filePath: string
         parents,
         children,
         spouses,
-        filePath,
+        file,
     };
 }
