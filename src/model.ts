@@ -1,12 +1,28 @@
 import { TFile } from 'obsidian';
 
-export type Person = {
-    id: string;
+export type Name = {
+    surname: string;
     name: string;
-    birth?: string;
-    death?: string;
+    parentalName?: string;
+};
+
+export type Date = {
+    day?: number;
+    month?: number;
+    year?: number;
+};
+
+export type Person = {
+    // Person MD file name without the extension.
+    id: string;
+    name: Name;
+    birth?: Date;
+    death?: Date;
+    // Parents IDs.
     parents?: string[];
+    // Children IDs.
     children?: string[];
+    // Spouses IDs.
     spouses?: string[];
     file: TFile;
 };
@@ -34,7 +50,6 @@ export function familyFromPersons(persons: Person[]): Family {
         marriages.find(
             (marriage) => marriage.parent1_id === person_id || marriage.parent2_id === person_id,
         );
-    const getPersonIdByName = (name: string) => persons.find((person) => person.name === name);
 
     for (const person of persons) {
         const personMarriages = findMarriages(person.id);
@@ -50,17 +65,14 @@ export function familyFromPersons(persons: Person[]): Family {
                 throw new Error(`expected ${person.id} to have at least one spouse`);
             }
 
-            const spouse = getPersonIdByName(person.spouses[0]);
-            if (!spouse) {
-                throw new Error(`invalid spouse name detected: ${person.spouses[0]}`);
-            }
-            const marriage = getMarriage(spouse.id, personMarriages);
+            const spouse_id = person.spouses[0];
+            const marriage = getMarriage(spouse_id, personMarriages);
 
             if (!marriage) {
                 marriages.push({
-                    id: `${person.id}_${spouse.id}`,
+                    id: `${person.id}_${spouse_id}`,
                     parent1_id: person.id,
-                    parent2_id: spouse.id,
+                    parent2_id: spouse_id,
                     children_ids: [],
                 });
             }
@@ -121,15 +133,10 @@ export function familyFromPersons(persons: Person[]): Family {
                 throw new Error('person must have marriage at this point');
             }
 
-            for (const child_name of person.children) {
-                const child = getPersonIdByName(child_name);
-                if (!child) {
-                    throw new Error(`invalid child name detected: ${child_name}`);
-                }
-
+            for (const child_id of person.children) {
                 // Avoid repetitions.
-                if (marriage.children_ids.indexOf(child.id) === -1) {
-                    marriage.children_ids.push(child.id);
+                if (marriage.children_ids.indexOf(child_id) === -1) {
+                    marriage.children_ids.push(child_id);
                 }
             }
         }

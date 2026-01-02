@@ -1,6 +1,6 @@
 import { TFile } from 'obsidian';
 
-import { Person } from 'model';
+import { Person, Date, Name } from 'model';
 
 export function extractPageMeta(page: string, fileName: string, file: TFile): Person {
     const lines = page.split('\n').map((line) => line.trim());
@@ -38,14 +38,18 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         return link;
     };
 
-    const birth = lines
-        .find((line) => line.startsWith('**Birth**'))
-        ?.split(':')[1]
-        ?.trim();
-    const death = lines
-        .find((line) => line.startsWith('**Death**'))
-        ?.split(':')[1]
-        ?.trim();
+    const birth = parseDate(
+        lines
+            .find((line) => line.startsWith('**Birth**'))
+            ?.split(':')[1]
+            ?.trim(),
+    );
+    const death = parseDate(
+        lines
+            .find((line) => line.startsWith('**Death**'))
+            ?.split(':')[1]
+            ?.trim(),
+    );
     const parents = lines
         .find((line) => line.startsWith('**Parents**'))
         ?.split(':')[1]
@@ -64,7 +68,7 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
 
     return {
         id: fileName,
-        name: name.substring(2),
+        name: parseName(name.substring(2)),
         birth,
         death,
         parents,
@@ -72,4 +76,46 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         spouses,
         file,
     };
+}
+
+function parseName(name: string): Name {
+    const parts = name.trim().split(' ');
+
+    if (!parts[0]) {
+        throw new Error(`invalid name('${name}'): missing person surname`);
+    }
+
+    if (!parts[1]) {
+        throw new Error(`invalid name('${name}'): missing person name`);
+    }
+
+    return {
+        surname: parts[0],
+        name: parts[1],
+        parentalName: parts[2],
+    };
+}
+
+function parseDate(date: string | undefined): Date | undefined {
+    if (!date) {
+        return undefined;
+    }
+
+    const parts = date.split('-');
+    let year: number | undefined;
+    if (parts[0]) {
+        year = +parts[0];
+    }
+
+    let month: number | undefined;
+    if (parts[1]) {
+        month = +parts[1];
+    }
+
+    let day: number | undefined;
+    if (parts[2]) {
+        day = +parts[2];
+    }
+
+    return { year, month, day };
 }

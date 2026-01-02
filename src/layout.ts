@@ -2,10 +2,11 @@ import { Edge, Node } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Index } from 'model';
+import { KNOWN_PERSON, UNKNOWN_PERSON } from 'view/node';
 
-const NODE_WIDTH = 100;
-const NODE_HEIGHT = 40;
-const MARRIAGE_NODE_SIZE = 10;
+export const NODE_WIDTH = 100;
+export const NODE_HEIGHT = 70;
+export const MARRIAGE_NODE_SIZE = 10;
 const MARRIAGE_GAP = 20;
 const NODES_GAP = 40;
 
@@ -365,7 +366,7 @@ function finalizeNodesLayout(
 
             nodes.push({
                 id: parent1_node_id,
-                data: { label: person.name, file: person.file },
+                data: { person, kind: KNOWN_PERSON },
                 position: { x, y },
                 type: 'personNode',
                 style: {
@@ -375,7 +376,7 @@ function finalizeNodesLayout(
         } else {
             nodes.push({
                 id: parent1_node_id,
-                data: { label: 'Unknown' },
+                data: { label: 'Unknown', kind: UNKNOWN_PERSON },
                 position: { x, y },
                 type: 'personNode',
                 style: {
@@ -412,7 +413,7 @@ function finalizeNodesLayout(
 
             nodes.push({
                 id: parent2_node_id,
-                data: { label: person.name, file: person.file },
+                data: { person, kind: KNOWN_PERSON },
                 position: { x: x + NODE_WIDTH + 2 * MARRIAGE_GAP, y },
                 type: 'personNode',
                 style: {
@@ -422,7 +423,7 @@ function finalizeNodesLayout(
         } else {
             nodes.push({
                 id: parent2_node_id,
-                data: { label: 'Unknown' },
+                data: { label: 'Unknown', kind: UNKNOWN_PERSON },
                 position: { x: x + NODE_WIDTH + 2 * MARRIAGE_GAP, y },
                 type: 'personNode',
                 style: {
@@ -463,7 +464,7 @@ function finalizeNodesLayout(
 
         nodes.push({
             id: node.id,
-            data: { label: person.name, file: person.file },
+            data: { person, kind: KNOWN_PERSON },
             position: { x, y },
             type: 'personNode',
             style: {
