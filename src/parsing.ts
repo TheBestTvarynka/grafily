@@ -50,6 +50,13 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
             ?.split(':')[1]
             ?.trim(),
     );
+    let image = lines
+        .find((line) => line.startsWith('**Image**'))
+        ?.split(':')[1]
+        ?.trim();
+    if (image) {
+        image = removeSquarePrentness(image);
+    }
     const parents = lines
         .find((line) => line.startsWith('**Parents**'))
         ?.split(':')[1]
@@ -75,6 +82,7 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         children,
         spouses,
         file,
+        image,
     };
 }
 

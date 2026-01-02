@@ -24,6 +24,8 @@ export type Person = {
     children?: string[];
     // Spouses IDs.
     spouses?: string[];
+    // Avatar image to render in the person node.
+    image?: string;
     file: TFile;
 };
 

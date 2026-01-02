@@ -46,6 +46,29 @@ export function PersonNode({ data }: any) {
             .catch((err) => console.error(err));
     };
 
+    const getImageSrc = (data: PersonNodeData): string => {
+        if (data.kind === KNOWN_PERSON) {
+            if (!app) {
+                return PROFILE_IMAGE_PLACEHOLDER;
+            }
+
+            if (!data.person.image) {
+                return PROFILE_IMAGE_PLACEHOLDER;
+            }
+
+            const file = app.vault.getFileByPath(data.person.image);
+
+            if (!file) {
+                console.warn(`file "${data.person.image}" not found in vault`);
+                return PROFILE_IMAGE_PLACEHOLDER;
+            }
+
+            return app.vault.getResourcePath(file);
+        } else {
+            return PROFILE_IMAGE_PLACEHOLDER;
+        }
+    };
+
     return (
         <div
             style={{
@@ -61,8 +84,11 @@ export function PersonNode({ data }: any) {
                 color: '#e3dfc1',
             }}
         >
-            <img src={PROFILE_IMAGE_PLACEHOLDER} style={{ height: '90%', borderRadius: '50%' }} />
-            <div onClick={onClick} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <img src={getImageSrc(data)} style={{ height: '90%', borderRadius: '50%' }} />
+            <div
+                onClick={onClick}
+                style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+            >
                 <span>{getSurname(data)}</span>
                 <span>{getName(data)}</span>
                 <div
