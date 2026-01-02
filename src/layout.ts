@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Index } from 'model';
 import { KNOWN_PERSON, UNKNOWN_PERSON } from 'view/node';
 
-export const NODE_WIDTH = 100;
+export const NODE_WIDTH = 140;
 export const NODE_HEIGHT = 70;
 export const MARRIAGE_NODE_SIZE = 10;
 const MARRIAGE_GAP = 20;

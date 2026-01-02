@@ -1,5 +1,6 @@
 import { Handle, Position } from '@xyflow/react';
 import { useApp } from 'hooks';
+import { PROFILE_IMAGE_PLACEHOLDER } from 'images';
 import { MARRIAGE_NODE_SIZE, NODE_HEIGHT, NODE_WIDTH } from 'layout';
 import { Person } from 'model';
 import { TFile } from 'obsidian';
@@ -48,18 +49,20 @@ export function PersonNode({ data }: any) {
     return (
         <div
             style={{
-                padding: '0.5em',
-                border: '1px solid #222',
+                padding: '0.2em',
+                border: '2px solid #e3dfc1',
                 borderRadius: '10px',
                 background: '#403735',
                 width: `${NODE_WIDTH}px`,
                 height: `${NODE_HEIGHT}px`,
                 display: 'flex',
-                justifyContent: 'flex-start',
-                color: '#e3dfc1ff',
+                justifyContent: 'space-around',
+                alignItems: 'center',
+                color: '#e3dfc1',
             }}
         >
-            <div onClick={onClick} style={{ display: 'flex', flexDirection: 'column' }}>
+            <img src={PROFILE_IMAGE_PLACEHOLDER} style={{ height: '90%', borderRadius: '50%' }} />
+            <div onClick={onClick} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <span>{getSurname(data)}</span>
                 <span>{getName(data)}</span>
                 <div
@@ -69,9 +72,15 @@ export function PersonNode({ data }: any) {
                         color: 'rgba(123, 117, 117, 1)',
                     }}
                 >
-                    <span>{getBirthYear(data)}</span>
-                    <span>-</span>
-                    <span>{getDeathYear(data)}</span>
+                    {renderDates(data) ? (
+                        <>
+                            <span>{getBirthYear(data)}</span>
+                            <span>-</span>
+                            <span>{getDeathYear(data)}</span>
+                        </>
+                    ) : (
+                        <></>
+                    )}
                 </div>
             </div>
             <Handle type="target" position={Position.Top} id="top" />
@@ -96,6 +105,15 @@ export function MarriageNode() {
             <Handle type="source" position={Position.Bottom} id="bottom" />
         </div>
     );
+}
+
+function renderDates(data: PersonNodeData): boolean {
+    if (data.kind === KNOWN_PERSON) {
+        const date = data.person.birth || data.person.death;
+        return !!date;
+    } else {
+        return false;
+    }
 }
 
 function getSurname(data: PersonNodeData): string {
