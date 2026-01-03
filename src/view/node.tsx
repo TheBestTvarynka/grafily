@@ -30,7 +30,7 @@ export function PersonNode({ data }: any) {
         }
 
         /* eslint-disable  @typescript-eslint/no-unsafe-assignment */
-        const file = data?.file;
+        const file = data?.person?.file;
         if (!file) {
             console.warn('node data.file does not present');
             return;
@@ -83,12 +83,10 @@ export function PersonNode({ data }: any) {
                 alignItems: 'center',
                 color: '#e3dfc1',
             }}
+            onClick={onClick}
         >
             <img src={getImageSrc(data)} style={{ height: '90%', borderRadius: '50%' }} />
-            <div
-                onClick={onClick}
-                style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
-            >
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <span>{getSurname(data)}</span>
                 <span>{getName(data)}</span>
                 <div
@@ -101,7 +99,7 @@ export function PersonNode({ data }: any) {
                     {renderDates(data) ? (
                         <>
                             <span>{getBirthYear(data)}</span>
-                            <span>-</span>
+                            <span>—</span>
                             <span>{getDeathYear(data)}</span>
                         </>
                     ) : (
