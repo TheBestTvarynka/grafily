@@ -40,6 +40,10 @@ type Perspective = {
 type SiblingsUnit = {
     // All siblings ids for this family unit.
     siblings: string[];
+    // The sibling id that must be placed at the leftmost position among siblings.
+    leftSibling?: string;
+    // The sibling id that must be placed at the rightmost position among siblings.
+    rightSibling?: string;
     // The x coordinate of the node. This is not the final x coordinate, but before applying modifiers.
     x: number;
     // The width of the node.
@@ -197,62 +201,64 @@ function preBuildSiblings(
         preNodes,
     );
 
-    const parentUnitsWidth = secondParentUnit.x + secondParentUnit.width - firstParentUnit.x;
+    const parentsUnitsWidth = secondParentUnit.x + secondParentUnit.width - firstParentUnit.x;
+    let siblingsWidth = getSingleSiblingsWidth(siblings);
 
     const marriedSiblingId = findMarriedSibling(siblings, family, perspective.id);
 
-    if (!marriedSiblingId) {
-        const siblingsWidth = getSingleSiblingsWidth(siblings);
+    let leftSibling, rightSibling;
+    if (perspective.side === RIGHT_SIDE) {
+        rightSibling = perspective.id;
+        if (marriedSiblingId) {
+            leftSibling = marriedSiblingId;
+        }
+    } else {
+        leftSibling = perspective.id;
+        if (marriedSiblingId) {
+            rightSibling = marriedSiblingId;
+        }
+    }
 
-        // TODO: place perspective to the side.
-        let x = preX;
-        if (perspective.side === RIGHT_SIDE) {
-            x -= siblingsWidth;
+    let x = preX;
+    if (perspective.side === RIGHT_SIDE) {
+        x -= siblingsWidth;
+    }
+
+    const middlePoint = x + siblingsWidth / 2;
+    const mod = middlePoint - (firstParentUnit.x + firstParentUnit.width);
+
+    if (siblingsWidth < parentsUnitsWidth) {
+        if (leftSibling) {
+            const delta = x - firstParentUnit.x;
+            x = firstParentUnit.x;
+            siblingsWidth += delta;
         }
 
-        const middlePoint = x + siblingsWidth / 2;
-        const mod = middlePoint - (firstParentUnit.x + firstParentUnit.width);
+        if (rightSibling) {
+            const delta = secondParentUnit.x + secondParentUnit.width - (x + siblingsWidth);
+            siblingsWidth += delta;
+        }
+    }
 
-        const unit: SiblingsUnit = {
-            siblings,
-            x,
-            width: siblingsWidth,
-            mod,
-            // TODO: properly calculate shift.
-            shift: 0,
-        };
+    const unit: SiblingsUnit = {
+        siblings,
+        leftSibling,
+        rightSibling,
+        x,
+        width: siblingsWidth,
+        mod,
+        // TODO: properly calculate shift.
+        shift: 0,
+    };
 
-        preNodes.push(unit);
+    preNodes.push(unit);
 
-        return unit;
-    } else {
+    if (marriedSiblingId) {
         // We have the parallel family tree: marriageById spouse's family.
         const siblingSpouseId = getPersonSpouseId(marriedSiblingId, family);
         if (!siblingSpouseId) {
             throw new Error(`expected sibling(id=${marriedSiblingId}) to have a spouse`);
         }
-
-        const siblingsWidth = getSingleSiblingsWidth(siblings);
-
-        // TODO: place perspective to the side.
-        let x = preX;
-        if (perspective.side === RIGHT_SIDE) {
-            x -= siblingsWidth;
-        }
-
-        const middlePoint = x + siblingsWidth / 2;
-        const mod = middlePoint - (firstParentUnit.x + firstParentUnit.width);
-
-        const unit: SiblingsUnit = {
-            siblings,
-            x,
-            width: siblingsWidth,
-            mod,
-            // TODO: properly calculate shift.
-            shift: 0,
-        };
-
-        preNodes.push(unit);
 
         let siblingPreX = x;
         if (perspective.side == LEFT_SIDE) {
@@ -266,9 +272,9 @@ function preBuildSiblings(
             family,
             preNodes,
         );
-
-        return unit;
     }
+
+    return unit;
 }
 
 export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[]] {
