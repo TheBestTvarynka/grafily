@@ -20,14 +20,6 @@ const RIGHT_SIDE = 'right_side';
 
 type Side = 'left_side' | 'right_side';
 
-function oppositeSide(side: Side): Side {
-    if (side === LEFT_SIDE) {
-        return RIGHT_SIDE;
-    } else {
-        return LEFT_SIDE;
-    }
-}
-
 type Perspective = {
     // Sibling id.
     id: string;
@@ -138,12 +130,184 @@ function findMarriedSibling(siblings: string[], family: Index, except: string): 
     return null;
 }
 
+function getPersonSiblingUnit(personId: string, units: SiblingsUnit[]): SiblingsUnit | null {
+    for (const unit of units) {
+        if (unit.siblings.contains(personId)) {
+            return unit;
+        }
+    }
+    return null;
+}
+
+function getLeftmostParentUnit(
+    unit: SiblingsUnit,
+    units: SiblingsUnit[],
+    family: Index,
+): SiblingsUnit | null {
+    if (!unit.siblings[0]) {
+        throw new Error(`siblings array must contain at least one person`);
+    }
+
+    const parentsMarriageId = family.personParents.get(unit.siblings[0]);
+
+    if (!parentsMarriageId) {
+        return null;
+    }
+
+    const parentsMarriage = family.marriageById.get(parentsMarriageId);
+    if (!parentsMarriage) {
+        throw new Error(`expected marriage(id=${parentsMarriageId} to exist)`);
+    }
+
+    let parentUnit: SiblingsUnit | null = null;
+    if (parentsMarriage.parent1_id) {
+        const unit = getPersonSiblingUnit(parentsMarriage.parent1_id, units);
+        if (!unit) {
+            throw new Error(
+                `expected sibling unit to exist for person(id=${parentsMarriage.parent1_id})`,
+            );
+        }
+
+        parentUnit = unit;
+    }
+
+    if (parentsMarriage.parent2_id) {
+        const unit = getPersonSiblingUnit(parentsMarriage.parent2_id, units);
+        if (!unit) {
+            throw new Error(
+                `expected sibling unit to exist for person(id=${parentsMarriage.parent2_id})`,
+            );
+        }
+
+        parentUnit = unit;
+    }
+
+    if (!parentUnit) {
+        throw new Error(
+            `invalid marriage(id=${parentsMarriageId}) detected: both parents are not defined`,
+        );
+    }
+
+    while (true) {
+        if (parentUnit.leftSibling) {
+            const spouseId = getPersonSpouseId(parentUnit.leftSibling, family);
+            if (!spouseId) {
+                // This is the last parallel family tree.
+                return parentUnit;
+            }
+
+            const spouseUnit = getPersonSiblingUnit(spouseId, units);
+            if (!spouseUnit) {
+                throw new Error(
+                    `spouse(id=${spouseId}) unit expected to exist (marriage(id=${parentsMarriageId}))`,
+                );
+            }
+
+            parentUnit = spouseUnit;
+        }
+    }
+}
+
+function getRightmostParentUnit(
+    unit: SiblingsUnit,
+    units: SiblingsUnit[],
+    family: Index,
+): SiblingsUnit | null {
+    if (!unit.siblings[0]) {
+        throw new Error(`siblings array must contain at least one person`);
+    }
+
+    const parentsMarriageId = family.personParents.get(unit.siblings[0]);
+
+    if (!parentsMarriageId) {
+        return null;
+    }
+
+    const parentsMarriage = family.marriageById.get(parentsMarriageId);
+    if (!parentsMarriage) {
+        throw new Error(`expected marriage(id=${parentsMarriageId} to exist)`);
+    }
+
+    let parentUnit: SiblingsUnit | null = null;
+    if (parentsMarriage.parent2_id) {
+        const unit = getPersonSiblingUnit(parentsMarriage.parent2_id, units);
+        if (!unit) {
+            throw new Error(
+                `expected sibling unit to exist for person(id=${parentsMarriage.parent2_id})`,
+            );
+        }
+
+        parentUnit = unit;
+    }
+
+    if (parentsMarriage.parent1_id) {
+        const unit = getPersonSiblingUnit(parentsMarriage.parent1_id, units);
+        if (!unit) {
+            throw new Error(
+                `expected sibling unit to exist for person(id=${parentsMarriage.parent1_id})`,
+            );
+        }
+
+        parentUnit = unit;
+    }
+
+    if (!parentUnit) {
+        throw new Error(
+            `invalid marriage(id=${parentsMarriageId}) detected: both parents are not defined`,
+        );
+    }
+
+    while (true) {
+        if (parentUnit.rightSibling) {
+            const spouseId = getPersonSpouseId(parentUnit.rightSibling, family);
+            if (!spouseId) {
+                // This is the last parallel family tree.
+                return parentUnit;
+            }
+
+            const spouseUnit = getPersonSiblingUnit(spouseId, units);
+            if (!spouseUnit) {
+                throw new Error(
+                    `spouse(id=${spouseId}) unit expected to exist (marriage(id=${parentsMarriageId}))`,
+                );
+            }
+
+            parentUnit = spouseUnit;
+        }
+    }
+}
+
+function calculateShift(
+    leftUnit: SiblingsUnit,
+    rightUnit: SiblingsUnit,
+    units: SiblingsUnit[],
+    family: Index,
+): number {
+    const leftUnitEndPoint = leftUnit.x + leftUnit.width + leftUnit.shift;
+    const rightUnitEnd = rightUnit.x + rightUnit.shift;
+
+    let shift = 0;
+    if (rightUnitEnd - leftUnitEndPoint < NODES_GAP) {
+        shift = NODES_GAP - (rightUnitEnd - leftUnitEndPoint);
+    }
+
+    const nextLeftUnit = getRightmostParentUnit(leftUnit, units, family);
+    const nextRightUnit = getLeftmostParentUnit(rightUnit, units, family);
+
+    if (!nextLeftUnit || !nextRightUnit) {
+        return shift;
+    }
+
+    return Math.max(shift, calculateShift(nextLeftUnit, nextRightUnit, units, family));
+}
+
 function preBuildSiblings(
     preX: number,
     siblings: string[],
     perspective: Perspective,
     family: Index,
     preNodes: SiblingsUnit[],
+    neighborUnit: SiblingsUnit | null,
 ): SiblingsUnit {
     if (!siblings[0]) {
         throw new Error('expected at least one sibling');
@@ -186,6 +350,7 @@ function preBuildSiblings(
         { id: parentsMarriage.parent1_id, side: RIGHT_SIDE },
         family,
         preNodes,
+        null,
     );
 
     if (!parentsMarriage.parent2_id) {
@@ -199,6 +364,7 @@ function preBuildSiblings(
         { id: parentsMarriage.parent1_id, side: LEFT_SIDE },
         family,
         preNodes,
+        firstParentUnit,
     );
 
     const parentsUnitsWidth = secondParentUnit.x + secondParentUnit.width - firstParentUnit.x;
@@ -227,18 +393,18 @@ function preBuildSiblings(
     const middlePoint = x + siblingsWidth / 2;
     const mod = middlePoint - (firstParentUnit.x + firstParentUnit.width);
 
-    if (siblingsWidth < parentsUnitsWidth) {
-        if (leftSibling) {
-            const delta = x - firstParentUnit.x;
-            x = firstParentUnit.x;
-            siblingsWidth += delta;
-        }
+    // if (siblingsWidth < parentsUnitsWidth) {
+    //     if (leftSibling) {
+    //         const delta = x - firstParentUnit.x;
+    //         x = firstParentUnit.x;
+    //         siblingsWidth += delta;
+    //     }
 
-        if (rightSibling) {
-            const delta = secondParentUnit.x + secondParentUnit.width - (x + siblingsWidth);
-            siblingsWidth += delta;
-        }
-    }
+    //     if (rightSibling) {
+    //         const delta = secondParentUnit.x + secondParentUnit.width - (x + siblingsWidth);
+    //         siblingsWidth += delta;
+    //     }
+    // }
 
     const unit: SiblingsUnit = {
         siblings,
@@ -247,11 +413,20 @@ function preBuildSiblings(
         x,
         width: siblingsWidth,
         mod,
-        // TODO: properly calculate shift.
         shift: 0,
     };
 
     preNodes.push(unit);
+
+    if (neighborUnit) {
+        if (perspective.side == RIGHT_SIDE) {
+            const shift = calculateShift(unit, neighborUnit, preNodes, family);
+            unit.shift = shift * -1 /* shift subgraph left */;
+        } else {
+            const shift = calculateShift(neighborUnit, unit, preNodes, family);
+            unit.shift = shift /* shift subgraph right */;
+        }
+    }
 
     if (marriedSiblingId) {
         // We have the parallel family tree: marriageById spouse's family.
@@ -271,6 +446,7 @@ function preBuildSiblings(
             { id: siblingSpouseId, side: perspective.side },
             family,
             preNodes,
+            unit,
         );
     }
 
@@ -285,7 +461,7 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
         id: perspectiveId,
         side: RIGHT_SIDE,
     };
-    const rootSiblingsUnit = preBuildSiblings(0, siblings, perspective, family, preNodes);
+    const rootSiblingsUnit = preBuildSiblings(0, siblings, perspective, family, preNodes, null);
 
     return [[], []];
 }
