@@ -1,5 +1,6 @@
 import { Edge, Node } from '@xyflow/react';
 import { Family, Index, Marriage } from 'model';
+import { KNOWN_PERSON } from 'view/node';
 
 export const NODE_WIDTH = 140;
 export const NODE_HEIGHT = 70;
@@ -517,8 +518,67 @@ function finalizeNodesLayout(
         );
     }
 
-    // render current unit nodes.
-    //
+    let x = unit.x + mod + unit.shift;
+    const y = level * (NODE_HEIGHT + NODES_GAP);
+
+    if (unit.rightSibling) {
+        const person = family.personById.get(unit.rightSibling);
+        if (!person) {
+            throw new Error(`expected person(id=${unit.rightSibling}) to exist`);
+        }
+
+        nodes.push({
+            id: person.id,
+            data: { person, kind: KNOWN_PERSON },
+            position: { x: x + unit.width - NODE_WIDTH, y },
+            type: 'personNode',
+            style: {
+                color: '#222',
+            },
+        });
+    }
+
+    if (unit.leftSibling) {
+        const person = family.personById.get(unit.leftSibling);
+        if (!person) {
+            throw new Error(`expected person(id=${unit.leftSibling}) to exist`);
+        }
+
+        nodes.push({
+            id: person.id,
+            data: { person, kind: KNOWN_PERSON },
+            position: { x, y },
+            type: 'personNode',
+            style: {
+                color: '#222',
+            },
+        });
+
+        x += NODE_WIDTH + NODES_GAP;
+    }
+
+    for (const sibling of unit.siblings) {
+        if (sibling == unit.leftSibling || sibling == unit.rightSibling) {
+            continue;
+        }
+
+        const person = family.personById.get(sibling);
+        if (!person) {
+            throw new Error(`expected person(id=${unit.leftSibling}) to exist`);
+        }
+
+        nodes.push({
+            id: person.id,
+            data: { person, kind: KNOWN_PERSON },
+            position: { x, y },
+            type: 'personNode',
+            style: {
+                color: '#222',
+            },
+        });
+
+        x += NODE_WIDTH + NODES_GAP;
+    }
 
     if (unit.rightSibling) {
         const spouseId = getPersonSpouseId(unit.rightSibling, family);
