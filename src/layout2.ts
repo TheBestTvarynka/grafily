@@ -453,15 +453,99 @@ function preBuildSiblings(
     return unit;
 }
 
+function finalizeNodesLayout(
+    unit: SiblingsUnit,
+    units: SiblingsUnit[],
+    family: Index,
+    nodes: Node[],
+    edges: Edge[],
+    level: number,
+    mod: number,
+) {
+    if (!unit.siblings[0]) {
+        throw new Error(`siblings array must contain at least one person`);
+    }
+
+    if (unit.leftSibling) {
+        const spouseId = getPersonSpouseId(unit.leftSibling, family);
+        if (spouseId) {
+            const spouseUnit = getPersonSiblingUnit(spouseId, units);
+            if (!spouseUnit) {
+                throw new Error(`expected unit to exist for person(id=${spouseId})`);
+            }
+
+            finalizeNodesLayout(spouseUnit, units, family, nodes, edges, level, mod);
+        }
+    }
+
+    const parentsMarriageId = family.personParents.get(unit.siblings[0]);
+
+    if (parentsMarriageId) {
+        const parentsMarriage = family.marriageById.get(parentsMarriageId);
+        if (!parentsMarriage) {
+            throw new Error(`expected marriage(id=${parentsMarriageId} to exist)`);
+        }
+
+        let parentId: string | null = null;
+        if (parentsMarriage.parent1_id) {
+            parentId = parentsMarriage.parent1_id;
+        }
+
+        if (parentsMarriage.parent2_id) {
+            parentId = parentsMarriage.parent2_id;
+        }
+
+        if (!parentId) {
+            throw new Error(
+                `invalid marriage(id=${parentsMarriage.id}) detected: both parents are undefined`,
+            );
+        }
+
+        const parentUnit = getPersonSiblingUnit(parentId, units);
+        if (!parentUnit) {
+            throw new Error(`parent(id=${parentId}) unit foes not exist`);
+        }
+
+        finalizeNodesLayout(
+            parentUnit,
+            units,
+            family,
+            nodes,
+            edges,
+            level - 1,
+            mod + unit.mod + unit.shift,
+        );
+    }
+
+    // render current unit nodes.
+    //
+
+    if (unit.rightSibling) {
+        const spouseId = getPersonSpouseId(unit.rightSibling, family);
+        if (spouseId) {
+            const spouseUnit = getPersonSiblingUnit(spouseId, units);
+            if (!spouseUnit) {
+                throw new Error(`expected unit to exist for person(id=${spouseId})`);
+            }
+
+            finalizeNodesLayout(spouseUnit, units, family, nodes, edges, level, mod);
+        }
+    }
+}
+
 export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[]] {
-    const preNodes: SiblingsUnit[] = [];
+    const units: SiblingsUnit[] = [];
 
     const siblings = getPersonSiblings(perspectiveId, family);
     const perspective: Perspective = {
         id: perspectiveId,
         side: RIGHT_SIDE,
     };
-    const rootSiblingsUnit = preBuildSiblings(0, siblings, perspective, family, preNodes, null);
+    const rootSiblingsUnit = preBuildSiblings(0, siblings, perspective, family, units, null);
 
-    return [[], []];
+    const nodes: Node[] = [];
+    const edges: Edge[] = [];
+    finalizeNodesLayout(rootSiblingsUnit, units, family, nodes, edges, 0, 0);
+
+    return [nodes, edges];
 }
