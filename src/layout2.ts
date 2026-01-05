@@ -34,9 +34,9 @@ type SiblingsUnit = {
     // All siblings ids for this family unit.
     siblings: string[];
     // The sibling id that must be placed at the leftmost position among siblings.
-    leftSibling?: string;
+    leftSibling: string | null;
     // The sibling id that must be placed at the rightmost position among siblings.
-    rightSibling?: string;
+    rightSibling: string | null;
     // The x coordinate of the node. This is not the final x coordinate, but before applying modifiers.
     x: number;
     // The width of the node.
@@ -185,8 +185,6 @@ function getLeftmostParentUnit(
     while (true) {
         i += 1;
 
-        console.log({ parentUnit });
-
         if (parentUnit.leftSibling) {
             const spouseId = getPersonSpouseId(parentUnit.leftSibling, family);
             if (!spouseId) {
@@ -264,8 +262,6 @@ function getRightmostParentUnit(
     let i = 0;
     while (true) {
         i += 1;
-
-        console.log({ parentUnit });
 
         if (parentUnit.rightSibling) {
             const spouseId = getPersonSpouseId(parentUnit.rightSibling, family);
@@ -348,7 +344,7 @@ function preBuildSiblings(
     preNodes: SiblingsUnit[],
     neighborUnit: SiblingsUnit | null,
 ): SiblingsUnit {
-    console.log({ perspective });
+    console.log({ perspective, neighborUnit });
     if (!siblings[0]) {
         throw new Error('expected at least one sibling');
     }
@@ -361,9 +357,28 @@ function preBuildSiblings(
             throw new Error(`expected marriage to exist. Child id: ${siblings[0]}`);
         }
 
+        const marriedSiblingId = findMarriedSibling(siblings, family, perspective.id);
+        console.log({ id: perspective.id, marriedSiblingId, siblings });
+
+        let leftSibling = null,
+            rightSibling = null;
+        if (perspective.side === RIGHT_SIDE) {
+            rightSibling = perspective.id;
+            if (marriedSiblingId) {
+                leftSibling = marriedSiblingId;
+            }
+        } else {
+            leftSibling = perspective.id;
+            if (marriedSiblingId) {
+                rightSibling = marriedSiblingId;
+            }
+        }
+
         const unit: SiblingsUnit = {
             siblings,
             x: preX,
+            leftSibling,
+            rightSibling,
             width: getSingleSiblingsWidth(siblings),
             mod: 0,
             shift: 0,
@@ -383,7 +398,6 @@ function preBuildSiblings(
     if (!parentsMarriage.parent1_id) {
         throw new Error(`expected the first parent in marriage (id=${parentsMarriageId}) to exist`);
     }
-
     const firstParentUnit = preBuildSiblings(
         0,
         getPersonSiblings(parentsMarriage.parent1_id, family),
@@ -413,7 +427,8 @@ function preBuildSiblings(
     const marriedSiblingId = findMarriedSibling(siblings, family, perspective.id);
     console.log({ id: perspective.id, marriedSiblingId, siblings });
 
-    let leftSibling, rightSibling;
+    let leftSibling = null,
+        rightSibling = null;
     if (perspective.side === RIGHT_SIDE) {
         rightSibling = perspective.id;
         if (marriedSiblingId) {
@@ -504,12 +519,12 @@ function finalizeNodesLayout(
     mod: number,
     renderedSide: Side | null,
 ) {
-    console.log({ unit, units });
+    console.log({ unit, units, renderedSide });
     if (!unit.siblings[0]) {
         throw new Error(`siblings array must contain at least one person`);
     }
 
-    if (unit.leftSibling && (renderedSide || renderedSide === RIGHT_SIDE)) {
+    if (unit.leftSibling && (!renderedSide || renderedSide === RIGHT_SIDE)) {
         const spouseId = getPersonSpouseId(unit.leftSibling, family);
         // console.log({ sibling: unit.leftSibling, spouse: spouseId });
         if (spouseId) {
@@ -643,9 +658,13 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
 
     const rootSiblingsUnit = preBuild(perspectiveId, family, units);
 
+    console.log(units);
+
     const nodes: Node[] = [];
     const edges: Edge[] = [];
     finalizeNodesLayout(rootSiblingsUnit, units, family, nodes, edges, 0, 0, null);
+
+    console.log(nodes);
 
     return [nodes, edges];
 }
