@@ -290,20 +290,25 @@ function getRightmostParentUnit(
 
 function calculateShift(
     leftUnit: SiblingsUnit,
+    leftShift: number,
     rightUnit: SiblingsUnit,
+    rightShift: number,
     units: SiblingsUnit[],
     family: Index,
 ): number {
     console.log({ leftUnit, rightUnit });
 
-    const leftUnitEndPoint = leftUnit.x + leftUnit.width + leftUnit.shift;
-    const rightUnitEnd = rightUnit.x + rightUnit.shift;
+    const leftUnitEndPoint = leftUnit.x + leftUnit.width + leftUnit.shift + leftShift;
+    const rightUnitEnd = rightUnit.x + rightUnit.shift + rightShift;
 
     let shift = 0;
     if (rightUnitEnd - leftUnitEndPoint < NODES_GAP) {
         shift = NODES_GAP - (rightUnitEnd - leftUnitEndPoint);
     }
     console.log({ shift });
+
+    leftShift += leftUnit.mod + leftUnit.shift;
+    rightShift += rightUnit.mod + rightUnit.shift;
 
     const nextLeftUnit = getRightmostParentUnit(leftUnit, units, family);
     const nextRightUnit = getLeftmostParentUnit(rightUnit, units, family);
@@ -312,7 +317,10 @@ function calculateShift(
         return shift;
     }
 
-    return Math.max(shift, calculateShift(nextLeftUnit, nextRightUnit, units, family));
+    return Math.max(
+        shift,
+        calculateShift(nextLeftUnit, leftShift, nextRightUnit, rightShift, units, family),
+    );
 }
 
 function preBuild(perspectiveId: string, family: Index, units: SiblingsUnit[]): SiblingsUnit {
@@ -383,7 +391,7 @@ function preBuildSiblings(
             x -= width;
         }
 
-        console.log({ preX, width, x, perspective });
+        // console.log({ preX, width, x, perspective });
 
         const unit: SiblingsUnit = {
             siblings,
@@ -432,7 +440,7 @@ function preBuildSiblings(
         firstParentUnit,
     );
 
-    console.log({ firstParentUnit, secondParentUnit });
+    // console.log({ firstParentUnit, secondParentUnit });
 
     const parentsUnitsWidth = secondParentUnit.x + secondParentUnit.width - firstParentUnit.x;
     let siblingsWidth = getSingleSiblingsWidth(siblings);
@@ -489,11 +497,11 @@ function preBuildSiblings(
 
     if (neighborUnit) {
         if (perspective.side == RIGHT_SIDE) {
-            const shift = calculateShift(unit, neighborUnit, preNodes, family);
+            const shift = calculateShift(unit, 0, neighborUnit, 0, preNodes, family);
             console.log({ shift: shift * -1, id: perspective.id });
             unit.shift = shift * -1 /* shift subgraph left */;
         } else {
-            const shift = calculateShift(neighborUnit, unit, preNodes, family);
+            const shift = calculateShift(neighborUnit, 0, unit, 0, preNodes, family);
             console.log({ shift });
             unit.shift = shift /* shift subgraph right */;
         }
