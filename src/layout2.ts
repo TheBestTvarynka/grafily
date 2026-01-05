@@ -460,7 +460,7 @@ function preBuildSiblings(
     }
 
     const middlePoint = x + siblingsWidth / 2;
-    const mod = middlePoint - (firstParentUnit.x + firstParentUnit.width);
+    const mod = middlePoint - (firstParentUnit.x + firstParentUnit.width + NODES_GAP / 2);
 
     // if (siblingsWidth < parentsUnitsWidth) {
     //     if (leftSibling) {
