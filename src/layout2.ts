@@ -103,14 +103,6 @@ function getPersonSpouseId(personId: string, family: Index): string | null {
     return null;
 }
 
-function isPersonMarried(personId: string, family: Index): boolean {
-    if (getPersonSpouseId(personId, family)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 function findMarriedSibling(siblings: string[], family: Index, except: string): string | null {
     for (const sibling of siblings) {
         if (sibling === except) {
@@ -189,7 +181,12 @@ function getLeftmostParentUnit(
         );
     }
 
+    let i = 0;
     while (true) {
+        i += 1;
+
+        console.log({ parentUnit });
+
         if (parentUnit.leftSibling) {
             const spouseId = getPersonSpouseId(parentUnit.leftSibling, family);
             if (!spouseId) {
@@ -205,6 +202,12 @@ function getLeftmostParentUnit(
             }
 
             parentUnit = spouseUnit;
+        } else {
+            return parentUnit;
+        }
+
+        if (i === 10) {
+            throw new Error(`something wrong here i=${i}`);
         }
     }
 }
@@ -258,7 +261,12 @@ function getRightmostParentUnit(
         );
     }
 
+    let i = 0;
     while (true) {
+        i += 1;
+
+        console.log({ parentUnit });
+
         if (parentUnit.rightSibling) {
             const spouseId = getPersonSpouseId(parentUnit.rightSibling, family);
             if (!spouseId) {
@@ -274,6 +282,12 @@ function getRightmostParentUnit(
             }
 
             parentUnit = spouseUnit;
+        } else {
+            return parentUnit;
+        }
+
+        if (i === 10) {
+            throw new Error(`something wrong here i=${i}`);
         }
     }
 }
@@ -302,6 +316,30 @@ function calculateShift(
     return Math.max(shift, calculateShift(nextLeftUnit, nextRightUnit, units, family));
 }
 
+function preBuild(perspectiveId: string, family: Index, units: SiblingsUnit[]): SiblingsUnit {
+    const siblings = getPersonSiblings(perspectiveId, family);
+    const perspective: Perspective = {
+        id: perspectiveId,
+        side: RIGHT_SIDE,
+    };
+    const rootSiblingsUnit = preBuildSiblings(0, siblings, perspective, family, units, null);
+
+    const spouseId = getPersonSpouseId(perspectiveId, family);
+    if (spouseId) {
+        // Perspective is married.
+        const secondParentUnit = preBuildSiblings(
+            rootSiblingsUnit.width,
+            getPersonSiblings(spouseId, family),
+            { id: spouseId, side: LEFT_SIDE },
+            family,
+            units,
+            rootSiblingsUnit,
+        );
+    }
+
+    return rootSiblingsUnit;
+}
+
 function preBuildSiblings(
     preX: number,
     siblings: string[],
@@ -310,6 +348,7 @@ function preBuildSiblings(
     preNodes: SiblingsUnit[],
     neighborUnit: SiblingsUnit | null,
 ): SiblingsUnit {
+    console.log({ perspective });
     if (!siblings[0]) {
         throw new Error('expected at least one sibling');
     }
@@ -362,7 +401,7 @@ function preBuildSiblings(
     const secondParentUnit = preBuildSiblings(
         firstParentUnit.width,
         getPersonSiblings(parentsMarriage.parent2_id, family),
-        { id: parentsMarriage.parent1_id, side: LEFT_SIDE },
+        { id: parentsMarriage.parent2_id, side: LEFT_SIDE },
         family,
         preNodes,
         firstParentUnit,
@@ -372,6 +411,7 @@ function preBuildSiblings(
     let siblingsWidth = getSingleSiblingsWidth(siblings);
 
     const marriedSiblingId = findMarriedSibling(siblings, family, perspective.id);
+    console.log({ id: perspective.id, marriedSiblingId, siblings });
 
     let leftSibling, rightSibling;
     if (perspective.side === RIGHT_SIDE) {
@@ -462,20 +502,24 @@ function finalizeNodesLayout(
     edges: Edge[],
     level: number,
     mod: number,
+    renderedSide: Side | null,
 ) {
+    console.log({ unit, units });
     if (!unit.siblings[0]) {
         throw new Error(`siblings array must contain at least one person`);
     }
 
-    if (unit.leftSibling) {
+    if (unit.leftSibling && (renderedSide || renderedSide === RIGHT_SIDE)) {
         const spouseId = getPersonSpouseId(unit.leftSibling, family);
+        // console.log({ sibling: unit.leftSibling, spouse: spouseId });
         if (spouseId) {
             const spouseUnit = getPersonSiblingUnit(spouseId, units);
+            // console.log({ spouseUnit, units });
             if (!spouseUnit) {
                 throw new Error(`expected unit to exist for person(id=${spouseId})`);
             }
 
-            finalizeNodesLayout(spouseUnit, units, family, nodes, edges, level, mod);
+            finalizeNodesLayout(spouseUnit, units, family, nodes, edges, level, mod, RIGHT_SIDE);
         }
     }
 
@@ -515,6 +559,7 @@ function finalizeNodesLayout(
             edges,
             level - 1,
             mod + unit.mod + unit.shift,
+            null,
         );
     }
 
@@ -580,7 +625,7 @@ function finalizeNodesLayout(
         x += NODE_WIDTH + NODES_GAP;
     }
 
-    if (unit.rightSibling) {
+    if (unit.rightSibling && (!renderedSide || renderedSide === LEFT_SIDE)) {
         const spouseId = getPersonSpouseId(unit.rightSibling, family);
         if (spouseId) {
             const spouseUnit = getPersonSiblingUnit(spouseId, units);
@@ -588,7 +633,7 @@ function finalizeNodesLayout(
                 throw new Error(`expected unit to exist for person(id=${spouseId})`);
             }
 
-            finalizeNodesLayout(spouseUnit, units, family, nodes, edges, level, mod);
+            finalizeNodesLayout(spouseUnit, units, family, nodes, edges, level, mod, LEFT_SIDE);
         }
     }
 }
@@ -596,16 +641,11 @@ function finalizeNodesLayout(
 export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[]] {
     const units: SiblingsUnit[] = [];
 
-    const siblings = getPersonSiblings(perspectiveId, family);
-    const perspective: Perspective = {
-        id: perspectiveId,
-        side: RIGHT_SIDE,
-    };
-    const rootSiblingsUnit = preBuildSiblings(0, siblings, perspective, family, units, null);
+    const rootSiblingsUnit = preBuild(perspectiveId, family, units);
 
     const nodes: Node[] = [];
     const edges: Edge[] = [];
-    finalizeNodesLayout(rootSiblingsUnit, units, family, nodes, edges, 0, 0);
+    finalizeNodesLayout(rootSiblingsUnit, units, family, nodes, edges, 0, 0, null);
 
     return [nodes, edges];
 }

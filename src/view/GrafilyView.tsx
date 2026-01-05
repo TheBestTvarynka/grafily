@@ -11,7 +11,7 @@ import {
     Edge,
 } from '@xyflow/react';
 
-import { buildNodes } from 'layout';
+import { buildNodes } from 'layout2';
 import { buildIndex, familyFromPersons } from 'model';
 import { PersonNode, MarriageNode } from './node';
 import { useApp } from 'hooks';
