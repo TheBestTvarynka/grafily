@@ -549,10 +549,8 @@ function finalizeNodesLayout(
 
     if (unit.leftSibling && (!renderedSide || renderedSide === RIGHT_SIDE)) {
         const spouseId = getPersonSpouseId(unit.leftSibling, family);
-        // console.log({ sibling: unit.leftSibling, spouse: spouseId });
         if (spouseId) {
             const spouseUnit = getPersonSiblingUnit(spouseId, units);
-            // console.log({ spouseUnit, units });
             if (!spouseUnit) {
                 throw new Error(`expected unit to exist for person(id=${spouseId})`);
             }
@@ -610,15 +608,71 @@ function finalizeNodesLayout(
             throw new Error(`expected person(id=${unit.rightSibling}) to exist`);
         }
 
+        const nodeX = x + unit.width - NODE_WIDTH;
         nodes.push({
             id: person.id,
             data: { person, kind: KNOWN_PERSON },
-            position: { x: x + unit.width - NODE_WIDTH, y },
+            position: { x: nodeX, y },
             type: 'personNode',
             style: {
                 color: '#222',
             },
         });
+
+        if (renderedSide === RIGHT_SIDE) {
+            const marriage = family.personMarriages.get(unit.rightSibling);
+            if (!marriage || !marriage[0]) {
+                throw new Error(`expected marriage to exist for person(id=${unit.rightSibling})`);
+            }
+
+            nodes.push({
+                id: marriage[0].id,
+                data: { label: '' },
+                type: 'marriageNode',
+                position: {
+                    x: nodeX + NODE_WIDTH + MARRIAGE_GAP - MARRIAGE_NODE_SIZE / 2,
+                    y: y + NODE_HEIGHT / 2 - MARRIAGE_NODE_SIZE / 2,
+                },
+                style: {
+                    width: 10,
+                    height: 10,
+                    borderRadius: 4,
+                    background: '#555',
+                    color: '#fff',
+                    fontSize: 8,
+                    textAlign: 'center',
+                },
+            });
+            edges.push({
+                id: marriage[0].id + '-to-' + unit.rightSibling,
+                target: unit.rightSibling,
+                source: marriage[0].id,
+                sourceHandle: 'left',
+                targetHandle: 'right',
+            });
+
+            const spouseId = getPersonSpouseId(unit.rightSibling, family);
+            if (!spouseId) {
+                throw new Error(`expected spouse to exist for person(id=${unit.rightSibling})`);
+            }
+            edges.push({
+                id: marriage[0].id + '-to-' + spouseId,
+                target: spouseId,
+                source: marriage[0].id,
+                sourceHandle: 'right',
+                targetHandle: 'left',
+            });
+
+            for (const childId of marriage[0].children_ids) {
+                edges.push({
+                    id: marriage[0].id + '-to-' + childId,
+                    source: marriage[0].id,
+                    target: childId,
+                    sourceHandle: 'bottom',
+                    targetHandle: 'top',
+                });
+            }
+        }
     }
 
     if (unit.leftSibling) {
@@ -636,6 +690,61 @@ function finalizeNodesLayout(
                 color: '#222',
             },
         });
+
+        if (renderedSide === LEFT_SIDE) {
+            const marriage = family.personMarriages.get(unit.leftSibling);
+            if (!marriage || !marriage[0]) {
+                throw new Error(`expected marriage to exist for person(id=${unit.leftSibling})`);
+            }
+
+            nodes.push({
+                id: marriage[0].id,
+                data: { label: '' },
+                type: 'marriageNode',
+                position: {
+                    x: x - MARRIAGE_GAP - MARRIAGE_NODE_SIZE / 2,
+                    y: y + NODE_HEIGHT / 2 - MARRIAGE_NODE_SIZE / 2,
+                },
+                style: {
+                    width: 10,
+                    height: 10,
+                    borderRadius: 4,
+                    background: '#555',
+                    color: '#fff',
+                    fontSize: 8,
+                    textAlign: 'center',
+                },
+            });
+            edges.push({
+                id: marriage[0].id + '-to-' + unit.leftSibling,
+                target: unit.leftSibling,
+                source: marriage[0].id,
+                sourceHandle: 'right',
+                targetHandle: 'left',
+            });
+
+            const spouseId = getPersonSpouseId(unit.leftSibling, family);
+            if (!spouseId) {
+                throw new Error(`expected spouse to exist for person(id=${unit.leftSibling})`);
+            }
+            edges.push({
+                id: marriage[0].id + '-to-' + spouseId,
+                target: spouseId,
+                source: marriage[0].id,
+                sourceHandle: 'left',
+                targetHandle: 'right',
+            });
+
+            for (const childId of marriage[0].children_ids) {
+                edges.push({
+                    id: marriage[0].id + '-to-' + childId,
+                    source: marriage[0].id,
+                    target: childId,
+                    sourceHandle: 'bottom',
+                    targetHandle: 'top',
+                });
+            }
+        }
 
         x += NODE_WIDTH + NODES_GAP;
     }

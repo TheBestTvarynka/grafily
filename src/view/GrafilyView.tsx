@@ -69,7 +69,7 @@ function FamilyGraph() {
 
     return (
         <ReactFlow nodes={graph[0]} edges={graph[1]} nodeTypes={nodeTypes}>
-            <Background color="skyblue" variant={BackgroundVariant.Dots} />
+            <Background color="grey" variant={BackgroundVariant.Dots} gap={10} />
             <Controls />
         </ReactFlow>
     );
