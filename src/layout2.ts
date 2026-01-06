@@ -296,8 +296,6 @@ function calculateShift(
     units: SiblingsUnit[],
     family: Index,
 ): number {
-    console.log({ leftUnit, rightUnit });
-
     const leftUnitEndPoint = leftUnit.x + leftUnit.width + leftUnit.shift + leftShift;
     const rightUnitEnd = rightUnit.x + rightUnit.shift + rightShift;
 
@@ -305,7 +303,6 @@ function calculateShift(
     if (rightUnitEnd - leftUnitEndPoint < NODES_GAP) {
         shift = NODES_GAP - (rightUnitEnd - leftUnitEndPoint);
     }
-    console.log({ shift });
 
     leftShift += leftUnit.mod + leftUnit.shift;
     rightShift += rightUnit.mod + rightUnit.shift;
@@ -355,7 +352,6 @@ function preBuildSiblings(
     preNodes: SiblingsUnit[],
     neighborUnit: SiblingsUnit | null,
 ): SiblingsUnit {
-    // console.log({ perspective, neighborUnit });
     if (!siblings[0]) {
         throw new Error('expected at least one sibling');
     }
@@ -370,7 +366,6 @@ function preBuildSiblings(
         }
 
         const marriedSiblingId = findMarriedSibling(siblings, family, perspective.id);
-        // console.log({ id: perspective.id, marriedSiblingId, siblings });
 
         let leftSibling = null,
             rightSibling = null;
@@ -390,8 +385,6 @@ function preBuildSiblings(
         if (perspective.side === RIGHT_SIDE) {
             x -= width;
         }
-
-        // console.log({ preX, width, x, perspective });
 
         const unit: SiblingsUnit = {
             siblings,
@@ -440,13 +433,10 @@ function preBuildSiblings(
         firstParentUnit,
     );
 
-    // console.log({ firstParentUnit, secondParentUnit });
-
     const parentsUnitsWidth = secondParentUnit.x + secondParentUnit.width - firstParentUnit.x;
     let siblingsWidth = getSingleSiblingsWidth(siblings);
 
     const marriedSiblingId = findMarriedSibling(siblings, family, perspective.id);
-    // console.log({ id: perspective.id, marriedSiblingId, siblings });
 
     let leftSibling = null,
         rightSibling = null;
@@ -470,18 +460,18 @@ function preBuildSiblings(
     const middlePoint = x + siblingsWidth / 2;
     const mod = middlePoint - (firstParentUnit.x + firstParentUnit.width + NODES_GAP / 2);
 
-    // if (siblingsWidth < parentsUnitsWidth) {
-    //     if (leftSibling) {
-    //         const delta = x - firstParentUnit.x;
-    //         x = firstParentUnit.x;
-    //         siblingsWidth += delta;
-    //     }
+    if (siblingsWidth < parentsUnitsWidth) {
+        // if (leftSibling) {
+        //     const delta = x - firstParentUnit.x;
+        //     x = firstParentUnit.x;
+        //     siblingsWidth += delta;
+        // }
 
-    //     if (rightSibling) {
-    //         const delta = secondParentUnit.x + secondParentUnit.width - (x + siblingsWidth);
-    //         siblingsWidth += delta;
-    //     }
-    // }
+        // if (rightSibling) {
+        //     const delta = secondParentUnit.x + secondParentUnit.width - (x + siblingsWidth);
+        //     siblingsWidth += delta;
+        // }
+    }
 
     const unit: SiblingsUnit = {
         siblings,
@@ -498,11 +488,9 @@ function preBuildSiblings(
     if (neighborUnit) {
         if (perspective.side == RIGHT_SIDE) {
             const shift = calculateShift(unit, 0, neighborUnit, 0, preNodes, family);
-            console.log({ shift: shift * -1, id: perspective.id });
             unit.shift = shift * -1 /* shift subgraph left */;
         } else {
             const shift = calculateShift(neighborUnit, 0, unit, 0, preNodes, family);
-            console.log({ shift });
             unit.shift = shift /* shift subgraph right */;
         }
     }
@@ -516,7 +504,9 @@ function preBuildSiblings(
 
         let siblingPreX = x;
         if (perspective.side == LEFT_SIDE) {
-            siblingPreX += unit.width;
+            siblingPreX += unit.width + NODES_GAP;
+        } else {
+            siblingPreX -= NODES_GAP;
         }
 
         preBuildSiblings(
@@ -542,7 +532,6 @@ function finalizeNodesLayout(
     mod: number,
     renderedSide: Side | null,
 ) {
-    // console.log({ unit, units, renderedSide });
     if (!unit.siblings[0]) {
         throw new Error(`siblings array must contain at least one person`);
     }
@@ -790,13 +779,9 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
 
     const rootSiblingsUnit = preBuild(perspectiveId, family, units);
 
-    // console.log(units);
-
     const nodes: Node[] = [];
     const edges: Edge[] = [];
     finalizeNodesLayout(rootSiblingsUnit, units, family, nodes, edges, 0, 0, null);
-
-    // console.log(nodes);
 
     return [nodes, edges];
 }
