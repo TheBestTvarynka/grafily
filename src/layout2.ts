@@ -332,7 +332,7 @@ function preBuild(perspectiveId: string, family: Index, units: SiblingsUnit[]): 
     if (spouseId) {
         // Perspective is married.
         const secondParentUnit = preBuildSiblings(
-            rootSiblingsUnit.width,
+            NODES_GAP,
             getPersonSiblings(spouseId, family),
             { id: spouseId, side: LEFT_SIDE },
             family,
