@@ -11,7 +11,7 @@ import {
     Edge,
 } from '@xyflow/react';
 
-import { buildNodes } from 'layout';
+import { buildNodes } from 'layout2';
 import { buildIndex, familyFromPersons } from 'model';
 import { PersonNode, MarriageNode } from './node';
 import { useApp } from 'hooks';
@@ -69,7 +69,7 @@ function FamilyGraph() {
 
     return (
         <ReactFlow nodes={graph[0]} edges={graph[1]} nodeTypes={nodeTypes}>
-            <Background color="skyblue" variant={BackgroundVariant.Dots} />
+            <Background color="grey" variant={BackgroundVariant.Dots} gap={10} />
             <Controls />
         </ReactFlow>
     );
