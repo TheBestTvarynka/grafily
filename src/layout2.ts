@@ -38,6 +38,7 @@ type SiblingsUnit = {
     shift: number;
 };
 
+// Returns a person's siblings, including themselves.
 function getPersonSiblings(personId: string, family: Index): string[] {
     const parentsMarriageId = family.personParents.get(personId);
     if (!parentsMarriageId) {
@@ -53,10 +54,12 @@ function getPersonSiblings(personId: string, family: Index): string[] {
     return marriage.children_ids;
 }
 
+// Returns siblings width.
 function getSingleSiblingsWidth(sibling: string[]): number {
     return sibling.length * NODE_WIDTH + (sibling.length - 1) * NODES_GAP;
 }
 
+// Returns person's spouse id.
 function getPersonSpouseId(personId: string, family: Index): string | null {
     const marriages = family.personMarriages.get(personId);
 
@@ -71,6 +74,8 @@ function getPersonSpouseId(personId: string, family: Index): string | null {
         }
 
         const marriage = marriages[0];
+
+        // The passed `personId` can be either the first or the second parent. We need to check both cases.
 
         if (marriage.parent1_id && marriage.parent1_id === personId) {
             if (marriage.parent2_id) {
@@ -94,6 +99,8 @@ function getPersonSpouseId(personId: string, family: Index): string | null {
     return null;
 }
 
+// This function returns a married sibling id.
+// The algorithm uses this function to determine whether we have a parallel family side to render.
 function findMarriedSibling(siblings: string[], family: Index, except: string): string | null {
     for (const sibling of siblings) {
         if (sibling === except) {
@@ -172,10 +179,7 @@ function getLeftmostParentUnit(
         );
     }
 
-    let i = 0;
     while (true) {
-        i += 1;
-
         if (parentUnit.leftSibling) {
             const spouseId = getPersonSpouseId(parentUnit.leftSibling, family);
             if (!spouseId) {
@@ -193,10 +197,6 @@ function getLeftmostParentUnit(
             parentUnit = spouseUnit;
         } else {
             return parentUnit;
-        }
-
-        if (i === 10) {
-            throw new Error(`something wrong here i=${i}`);
         }
     }
 }
@@ -250,10 +250,7 @@ function getRightmostParentUnit(
         );
     }
 
-    let i = 0;
     while (true) {
-        i += 1;
-
         if (parentUnit.rightSibling) {
             const spouseId = getPersonSpouseId(parentUnit.rightSibling, family);
             if (!spouseId) {
@@ -271,10 +268,6 @@ function getRightmostParentUnit(
             parentUnit = spouseUnit;
         } else {
             return parentUnit;
-        }
-
-        if (i === 10) {
-            throw new Error(`something wrong here i=${i}`);
         }
     }
 }
@@ -335,6 +328,7 @@ function preBuild(perspectiveId: string, family: Index, units: SiblingsUnit[]): 
     return rootSiblingsUnit;
 }
 
+// First walk. Determines perX, mod, and shift parameters for each siblings unit.
 function preBuildSiblings(
     preX: number,
     siblings: string[],
