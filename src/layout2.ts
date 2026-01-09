@@ -1,20 +1,11 @@
 import { Edge, Node } from '@xyflow/react';
-import { Family, Index, Marriage } from 'model';
+import { Index } from 'model';
 import { KNOWN_PERSON } from 'view/node';
 
 export const NODE_WIDTH = 140;
 export const NODE_HEIGHT = 70;
 export const MARRIAGE_NODE_SIZE = 10;
-const MARRIAGE_GAP = 20;
 const NODES_GAP = 40;
-
-// +------------+                             +------------+
-// |  parent1   |--------------o--------------|  parent2   |
-// +------------+                             +------------+
-//
-// | NODE_WIDTH | MARRIAGE_GAP | MARRIAGE_GAP | NODE_WIDTH |
-// |                    MARRIAGE_WIDTH                     |
-const MARRIAGE_WIDTH = (NODE_WIDTH + MARRIAGE_GAP) * 2;
 
 const LEFT_SIDE = 'left_side';
 const RIGHT_SIDE = 'right_side';
@@ -331,7 +322,7 @@ function preBuild(perspectiveId: string, family: Index, units: SiblingsUnit[]): 
     const spouseId = getPersonSpouseId(perspectiveId, family);
     if (spouseId) {
         // Perspective is married.
-        const secondParentUnit = preBuildSiblings(
+        preBuildSiblings(
             NODES_GAP,
             getPersonSiblings(spouseId, family),
             { id: spouseId, side: LEFT_SIDE },
@@ -433,8 +424,6 @@ function preBuildSiblings(
         firstParentUnit,
     );
 
-    const parentsUnitsWidth =
-        secondParentUnit.x + secondParentUnit.shift + secondParentUnit.width - firstParentUnit.x;
     let siblingsWidth = getSingleSiblingsWidth(siblings);
 
     const marriedSiblingId = findMarriedSibling(siblings, family, perspective.id);
