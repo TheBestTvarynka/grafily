@@ -61,9 +61,27 @@ Grafily expects some predefined information at the start of each page. Here is a
 **Image**: [[<profile picture file>]]
 
 ---
+
+Person's page.
+```
+
+Example:
+
+```md
+# Myroniuk Pavlo
+
+**Spouse**: [[Kateryna]]
+**Parents**: [[Yaroslav]], [[Halyna]]
+**Birth**: 2001-07-10
+**Image**: [[images/TheBestTvarynka.png]]
+
+---
+
+Hi there 👋
 ```
 
 You can out any information you want after the `---`. The `# <surname> <name>` data is required. All other key-value pairs are optional.
+You can add any other key-value pairs to the metadata you want.
 
 Moreover, you do not need to specify the spouse link for both - only one link is enough.
 For example, if you specified in the metadata that Bob's spouse is Emma, then it is not required to specify Bob in Emma's metadata.
