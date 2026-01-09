@@ -433,7 +433,8 @@ function preBuildSiblings(
         firstParentUnit,
     );
 
-    const parentsUnitsWidth = secondParentUnit.x + secondParentUnit.width - firstParentUnit.x;
+    const parentsUnitsWidth =
+        secondParentUnit.x + secondParentUnit.shift + secondParentUnit.width - firstParentUnit.x;
     let siblingsWidth = getSingleSiblingsWidth(siblings);
 
     const marriedSiblingId = findMarriedSibling(siblings, family, perspective.id);
@@ -458,20 +459,9 @@ function preBuildSiblings(
     }
 
     const middlePoint = x + siblingsWidth / 2;
-    const mod = middlePoint - (firstParentUnit.x + firstParentUnit.width + NODES_GAP / 2);
-
-    if (siblingsWidth < parentsUnitsWidth) {
-        // if (leftSibling) {
-        //     const delta = x - firstParentUnit.x;
-        //     x = firstParentUnit.x;
-        //     siblingsWidth += delta;
-        // }
-
-        // if (rightSibling) {
-        //     const delta = secondParentUnit.x + secondParentUnit.width - (x + siblingsWidth);
-        //     siblingsWidth += delta;
-        // }
-    }
+    const mod =
+        middlePoint -
+        (firstParentUnit.x + firstParentUnit.width + (secondParentUnit.shift + NODES_GAP) / 2);
 
     const unit: SiblingsUnit = {
         siblings,
@@ -614,12 +604,25 @@ function finalizeNodesLayout(
                 throw new Error(`expected marriage to exist for person(id=${unit.rightSibling})`);
             }
 
+            const spouseId = getPersonSpouseId(unit.rightSibling, family);
+            if (!spouseId) {
+                throw new Error(`expected spouse to exist for person(id=${unit.rightSibling})`);
+            }
+
+            const spouseUnit = getPersonSiblingUnit(spouseId, units);
+            if (!spouseUnit) {
+                throw new Error(`expected person unit to exist for person(id=${spouseId})`);
+            }
+
+            const spouseUnitX = spouseUnit.x + spouseUnit.shift + mod;
+            const middleX = (nodeX + NODE_WIDTH + spouseUnitX) / 2;
+
             nodes.push({
                 id: marriage[0].id,
                 data: { label: '' },
                 type: 'marriageNode',
                 position: {
-                    x: nodeX + NODE_WIDTH + MARRIAGE_GAP - MARRIAGE_NODE_SIZE / 2,
+                    x: middleX - MARRIAGE_NODE_SIZE / 2,
                     y: y + NODE_HEIGHT / 2 - MARRIAGE_NODE_SIZE / 2,
                 },
                 style: {
@@ -640,10 +643,6 @@ function finalizeNodesLayout(
                 targetHandle: 'right',
             });
 
-            const spouseId = getPersonSpouseId(unit.rightSibling, family);
-            if (!spouseId) {
-                throw new Error(`expected spouse to exist for person(id=${unit.rightSibling})`);
-            }
             edges.push({
                 id: marriage[0].id + '-to-' + spouseId,
                 target: spouseId,
@@ -686,12 +685,25 @@ function finalizeNodesLayout(
                 throw new Error(`expected marriage to exist for person(id=${unit.leftSibling})`);
             }
 
+            const spouseId = getPersonSpouseId(unit.leftSibling, family);
+            if (!spouseId) {
+                throw new Error(`expected spouse to exist for person(id=${unit.leftSibling})`);
+            }
+
+            const spouseUnit = getPersonSiblingUnit(spouseId, units);
+            if (!spouseUnit) {
+                throw new Error(`expected person unit to exist for person(id=${spouseId})`);
+            }
+
+            const spouseUnitX = spouseUnit.x + spouseUnit.shift + mod + spouseUnit.width;
+            const middleX = (x + spouseUnitX) / 2;
+
             nodes.push({
                 id: marriage[0].id,
                 data: { label: '' },
                 type: 'marriageNode',
                 position: {
-                    x: x - MARRIAGE_GAP - MARRIAGE_NODE_SIZE / 2,
+                    x: middleX - MARRIAGE_NODE_SIZE / 2,
                     y: y + NODE_HEIGHT / 2 - MARRIAGE_NODE_SIZE / 2,
                 },
                 style: {
@@ -712,10 +724,6 @@ function finalizeNodesLayout(
                 targetHandle: 'left',
             });
 
-            const spouseId = getPersonSpouseId(unit.leftSibling, family);
-            if (!spouseId) {
-                throw new Error(`expected spouse to exist for person(id=${unit.leftSibling})`);
-            }
             edges.push({
                 id: marriage[0].id + '-to-' + spouseId,
                 target: spouseId,
