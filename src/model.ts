@@ -27,6 +27,9 @@ export type Person = {
     // Avatar image to render in the person node.
     image?: string;
     file: TFile;
+
+    // Rendering options.
+    hideParents: boolean;
 };
 
 export type Marriage = {

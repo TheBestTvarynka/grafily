@@ -40,6 +40,15 @@ type SiblingsUnit = {
 
 // Returns a person's siblings, including themselves.
 function getPersonSiblings(personId: string, family: Index): string[] {
+    const person = family.personById.get(personId);
+    if (!person) {
+        throw new Error(`expected person(${personId}) to exist`);
+    }
+
+    if (person.hideParents) {
+        return [personId];
+    }
+
     const parentsMarriageId = family.personParents.get(personId);
     if (!parentsMarriageId) {
         // Person does not have parents and do not have any siblings.
@@ -139,6 +148,10 @@ function getLeftmostParentUnit(
         throw new Error(`siblings array must contain at least one person`);
     }
 
+    if (isParentsHidden(unit.siblings, family)) {
+        return null;
+    }
+
     const parentsMarriageId = family.personParents.get(unit.siblings[0]);
 
     if (!parentsMarriageId) {
@@ -208,6 +221,10 @@ function getRightmostParentUnit(
 ): SiblingsUnit | null {
     if (!unit.siblings[0]) {
         throw new Error(`siblings array must contain at least one person`);
+    }
+
+    if (isParentsHidden(unit.siblings, family)) {
+        return null;
     }
 
     const parentsMarriageId = family.personParents.get(unit.siblings[0]);
@@ -328,6 +345,17 @@ function preBuild(perspectiveId: string, family: Index, units: SiblingsUnit[]): 
     return rootSiblingsUnit;
 }
 
+function isParentsHidden(siblings: string[], family: Index): boolean {
+    for (const sibling of siblings) {
+        const person = family.personById.get(sibling);
+        if (person && person.hideParents) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // First walk. Determines perX, mod, and shift parameters for each siblings unit.
 function preBuildSiblings(
     preX: number,
@@ -343,27 +371,21 @@ function preBuildSiblings(
 
     const parentsMarriageId = family.personParents.get(siblings[0]);
 
-    if (!parentsMarriageId) {
-        const width = getSingleSiblingsWidth(siblings);
-        // Person does not have parents.
+    if (!parentsMarriageId || isParentsHidden(siblings, family)) {
         if (siblings.length > 1) {
-            throw new Error(`expected marriage to exist. Child id: ${siblings[0]}`);
+            throw new Error(
+                `expected exactly one child(id=${siblings[0]}): parents does not exist or they are hidden`,
+            );
         }
 
-        const marriedSiblingId = findMarriedSibling(siblings, family, perspective.id);
+        const width = getSingleSiblingsWidth(siblings);
 
         let leftSibling = null,
             rightSibling = null;
         if (perspective.side === RIGHT_SIDE) {
             rightSibling = perspective.id;
-            if (marriedSiblingId) {
-                leftSibling = marriedSiblingId;
-            }
         } else {
             leftSibling = perspective.id;
-            if (marriedSiblingId) {
-                rightSibling = marriedSiblingId;
-            }
         }
 
         let x = preX;
@@ -523,7 +545,7 @@ function finalizeNodesLayout(
 
     const parentsMarriageId = family.personParents.get(unit.siblings[0]);
 
-    if (parentsMarriageId) {
+    if (parentsMarriageId && !isParentsHidden(unit.siblings, family)) {
         const parentsMarriage = family.marriageById.get(parentsMarriageId);
         if (!parentsMarriage) {
             throw new Error(`expected marriage(id=${parentsMarriageId} to exist)`);

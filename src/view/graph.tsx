@@ -28,11 +28,22 @@ function FamilyGraph() {
     const index = useIndex();
 
     useEffect(() => {
+        if (!index || index.index.personById.size === 0) {
+            return;
+        }
+
+        console.log('rerender graph');
+
+        const graph = buildNodes('Yaroslav', index.index);
+        setGraph(graph);
+    }, [index]);
+
+    useEffect(() => {
         if (graph[0].length === 0) {
             return;
         }
 
-        fitView({ padding: 0, duration: 2000 }).catch((err) => console.error(err));
+        fitView({ padding: 0, duration: 1000 }).catch((err) => console.error(err));
     }, [graph, fitView]);
 
     const app = useApp();
@@ -44,7 +55,7 @@ function FamilyGraph() {
                 return;
             }
 
-            console.log('rerender');
+            console.log('initial render');
 
             const { vault } = app;
             const files = vault.getFiles();

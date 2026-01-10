@@ -76,7 +76,7 @@ export function PersonNode({ data }: any) {
         }
 
         const person: Person = data.person;
-        person.name = { name: 'Tvarynka', surname: 'TheBest' };
+        person.hideParents = !person.hideParents;
 
         index.setPerson({ ...person });
     };

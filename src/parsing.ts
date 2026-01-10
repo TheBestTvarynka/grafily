@@ -83,6 +83,7 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         spouses,
         file,
         image,
+        hideParents: false,
     };
 }
 
