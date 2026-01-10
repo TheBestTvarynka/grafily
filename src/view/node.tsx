@@ -1,8 +1,8 @@
 import { Handle, Position } from '@xyflow/react';
-import { useApp } from 'hooks';
+import { useApp, useIndex } from 'hooks';
 import { PROFILE_IMAGE_PLACEHOLDER } from 'images';
-import { MARRIAGE_NODE_SIZE, NODE_HEIGHT, NODE_WIDTH } from 'layout';
-import { Person } from 'model';
+import { MARRIAGE_NODE_SIZE, NODE_HEIGHT, NODE_WIDTH } from '../layout';
+import { Person, Name } from 'model';
 import { TFile } from 'obsidian';
 
 export const KNOWN_PERSON = 'known';
@@ -23,6 +23,7 @@ type PersonNodeData = KnownPerson | UnknownPerson;
 /* eslint-disable  @typescript-eslint/no-unsafe-argument */
 export function PersonNode({ data }: any) {
     const app = useApp();
+    const index = useIndex();
 
     const onClick = () => {
         if (!app) {
@@ -69,6 +70,17 @@ export function PersonNode({ data }: any) {
         }
     };
 
+    const collapseParents = () => {
+        if (!index) {
+            return;
+        }
+
+        const person: Person = data.person;
+        person.name = { name: 'Tvarynka', surname: 'TheBest' };
+
+        index.setPerson({ ...person });
+    };
+
     return (
         <div
             style={{
@@ -82,9 +94,16 @@ export function PersonNode({ data }: any) {
                 justifyContent: 'space-around',
                 alignItems: 'center',
                 color: '#e3dfc1',
+                position: 'relative',
             }}
-            onClick={onClick}
+            // onClick={onClick}
         >
+            <button
+                onClick={collapseParents}
+                style={{ position: 'absolute', top: 0, left: '50%', zIndex: 99, padding: 0 }}
+            >
+                🔼
+            </button>
             <img src={getImageSrc(data)} style={{ height: '90%', borderRadius: '50%' }} />
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <span>{getSurname(data)}</span>
@@ -108,7 +127,6 @@ export function PersonNode({ data }: any) {
                 </div>
             </div>
             <Handle type="target" position={Position.Top} id="top" />
-            <Handle type="target" position={Position.Bottom} id="bottom" />
             <Handle type="target" position={Position.Left} id="left" />
             <Handle type="target" position={Position.Right} id="right" />
         </div>
