@@ -9,10 +9,11 @@ import {
     BackgroundVariant,
     Node,
     Edge,
+    useReactFlow,
 } from '@xyflow/react';
 
 import { buildNodes } from 'layout';
-import { buildIndex, familyFromPersons } from 'model';
+import { buildIndex, emptyIndex, familyFromPersons, Index } from 'model';
 import { PersonNode, MarriageNode } from './node';
 import { useApp } from 'hooks';
 import { extractPageMeta } from 'parsing';
@@ -23,7 +24,17 @@ const nodeTypes = {
 };
 
 function FamilyGraph() {
+    const { fitView } = useReactFlow();
     const [graph, setGraph] = useState<[Node[], Edge[]]>([[], []]);
+    const [index, setIndex] = useState<Index>(emptyIndex());
+
+    useEffect(() => {
+        if (graph[0].length === 0) {
+            return;
+        }
+
+        fitView({ padding: 0, duration: 2000 }).catch(err => console.error(err));
+    }, [graph, fitView]);
 
     const app = useApp();
     useEffect(() => {
@@ -55,6 +66,7 @@ function FamilyGraph() {
 
             const family = familyFromPersons(persons);
             const index = buildIndex(family);
+            setIndex(index);
             const graph = buildNodes('Yaroslav', index);
 
             if (!cancelled) {

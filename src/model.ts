@@ -165,6 +165,16 @@ export type Index = {
     personParents: Map<string, string>;
 };
 
+export function emptyIndex(): Index {
+    return {
+        personById: new Map(),
+        marriageById: new Map(),
+        personMarriages: new Map(),
+        personChildren: new Map(),
+        personParents: new Map(),
+    };
+}
+
 export function buildIndex(family: Family): Index {
     const personById = new Map(family.persons.map((p) => [p.id, p]));
     const marriageById = new Map(family.marriages.map((m) => [m.id, m]));
