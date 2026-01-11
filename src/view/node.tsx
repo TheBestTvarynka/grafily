@@ -1,9 +1,10 @@
 import { Handle, Position } from '@xyflow/react';
 import { useApp, useIndex } from 'hooks';
-import { PROFILE_IMAGE_PLACEHOLDER } from 'images';
+import { MINUS_ICON, PLUS_ICON, PROFILE_IMAGE_PLACEHOLDER } from 'images';
 import { MARRIAGE_NODE_SIZE, NODE_HEIGHT, NODE_WIDTH } from '../layout';
 import { Person, Name } from 'model';
 import { TFile } from 'obsidian';
+import { useEffect, useState } from 'react';
 
 export const KNOWN_PERSON = 'known';
 export const UNKNOWN_PERSON = 'UNknown';
@@ -24,6 +25,21 @@ type PersonNodeData = KnownPerson | UnknownPerson;
 export function PersonNode({ data }: any) {
     const app = useApp();
     const index = useIndex();
+
+    const [hasParents, setHasParents] = useState<boolean>(true);
+
+    useEffect(() => {
+        if (!index) {
+            return;
+        }
+
+        const parentsMarriage = index.index.personParents.get(data.person.id);
+        if (parentsMarriage) {
+            setHasParents(true);
+        } else {
+            setHasParents(false);
+        }
+    }, [index]);
 
     const onClick = () => {
         if (!app) {
@@ -81,6 +97,14 @@ export function PersonNode({ data }: any) {
         index.setPerson({ ...person });
     };
 
+    const getHideParentsIcon = (): string => {
+        if (data.person.hideParents) {
+            return PLUS_ICON;
+        } else {
+            return MINUS_ICON;
+        }
+    };
+
     return (
         <div
             style={{
@@ -95,17 +119,48 @@ export function PersonNode({ data }: any) {
                 alignItems: 'center',
                 color: '#e3dfc1',
                 position: 'relative',
+                cursor: 'default',
             }}
-            // onClick={onClick}
         >
-            <button
-                onClick={collapseParents}
-                style={{ position: 'absolute', top: 0, left: '50%', zIndex: 99, padding: 0 }}
-            >
-                🔼
-            </button>
+            {hasParents ? (
+                <button
+                    onClick={collapseParents}
+                    style={{
+                        outline: 'revert',
+                        position: 'absolute',
+                        top: '-7px',
+                        left: 'calc(50% - 7px)',
+                        padding: 0,
+                        cursor: 'pointer',
+                        zIndex: 99,
+                        backgroundColor: 'transparent',
+                        height: '14px',
+                        width: '14px',
+                    }}
+                >
+                    <img
+                        src={getHideParentsIcon()}
+                        style={{
+                            height: '100%',
+                            width: '100%',
+                            backgroundColor: 'rgb(64, 55, 53)',
+                            borderRadius: '3px',
+                        }}
+                    />
+                </button>
+            ) : (
+                <></>
+            )}
             <img src={getImageSrc(data)} style={{ height: '90%', borderRadius: '50%' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                }}
+                onClick={onClick}
+            >
                 <span>{getSurname(data)}</span>
                 <span>{getName(data)}</span>
                 <div
