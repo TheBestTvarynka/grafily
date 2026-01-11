@@ -2,7 +2,7 @@ import { Handle, Position } from '@xyflow/react';
 import { useApp, useIndex } from 'hooks';
 import { MINUS_ICON, PLUS_ICON, PROFILE_IMAGE_PLACEHOLDER } from 'images';
 import { MARRIAGE_NODE_SIZE, NODE_HEIGHT, NODE_WIDTH } from '../layout';
-import { Person } from 'model';
+import { LEFT_SIDE, Person, RIGHT_SIDE } from 'model';
 import { TFile } from 'obsidian';
 import { useEffect, useState } from 'react';
 
@@ -15,6 +15,7 @@ export function PersonNode({ data }: any) {
     const index = useIndex();
 
     const [parentsFoldable, setParentsFoldable] = useState<boolean>(false);
+    const [hasParents, setHasParents] = useState<boolean>(true);
 
     useEffect(() => {
         if (!index) {
@@ -26,6 +27,12 @@ export function PersonNode({ data }: any) {
             setParentsFoldable(true);
         } else {
             setParentsFoldable(false);
+        }
+
+        if (parentsMarriage) {
+            setHasParents(true);
+        } else {
+            setHasParents(false);
         }
     }, [index]);
 
@@ -165,14 +172,48 @@ export function PersonNode({ data }: any) {
                     )}
                 </div>
             </div>
-            <Handle type="target" position={Position.Top} id="top" />
-            <Handle type="target" position={Position.Left} id="left" />
-            <Handle type="target" position={Position.Right} id="right" />
+            {hasParents ? <Handle type="target" position={Position.Top} id="top" /> : <></>}
+            {data.person.marriageNodeSide === LEFT_SIDE ? (
+                <Handle type="target" position={Position.Left} id="left" />
+            ) : (
+                <></>
+            )}
+            {data.person.marriageNodeSide === RIGHT_SIDE ? (
+                <Handle type="target" position={Position.Right} id="right" />
+            ) : (
+                <></>
+            )}
         </div>
     );
 }
 
-export function MarriageNode() {
+// Fuck TS.
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+/* eslint-disable  @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable  @typescript-eslint/no-unsafe-argument */
+export function MarriageNode({ data }: any) {
+    const index = useIndex();
+
+    const [hasChildren, setHasChildren] = useState<boolean>(true);
+
+    useEffect(() => {
+        if (!index) {
+            return;
+        }
+
+        const marriage = index.index.marriageById.get(data?.id);
+        if (!marriage) {
+            console.warn(`Expected marriage(id=${data?.id}) to exist in index.`);
+            return;
+        }
+
+        if (marriage.children_ids.length > 0) {
+            setHasChildren(true);
+        } else {
+            setHasChildren(false);
+        }
+    }, [index]);
+
     return (
         <div
             style={{
@@ -183,7 +224,7 @@ export function MarriageNode() {
         >
             <Handle type="source" position={Position.Left} id="left" />
             <Handle type="source" position={Position.Right} id="right" />
-            <Handle type="source" position={Position.Bottom} id="bottom" />
+            {hasChildren ? <Handle type="source" position={Position.Bottom} id="bottom" /> : <></>}
         </div>
     );
 }

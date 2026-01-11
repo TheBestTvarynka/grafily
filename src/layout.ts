@@ -639,7 +639,7 @@ function finalizeNodesLayout(
 
             nodes.push({
                 id: marriage[0].id,
-                data: { label: '' },
+                data: { id: marriage[0].id },
                 type: 'marriageNode',
                 position: {
                     x: middleX - MARRIAGE_NODE_SIZE / 2,
@@ -662,6 +662,7 @@ function finalizeNodesLayout(
                 sourceHandle: 'left',
                 targetHandle: 'right',
             });
+            person.marriageNodeSide = RIGHT_SIDE;
 
             edges.push({
                 id: marriage[0].id + '-to-' + spouseId,
@@ -670,6 +671,12 @@ function finalizeNodesLayout(
                 sourceHandle: 'right',
                 targetHandle: 'left',
             });
+
+            const spouse = family.personById.get(spouseId);
+            if (!spouse) {
+                throw new Error(`expected person(id=${spouseId}) to exist`);
+            }
+            spouse.marriageNodeSide = LEFT_SIDE;
 
             for (const childId of marriage[0].children_ids) {
                 edges.push({
@@ -724,7 +731,7 @@ function finalizeNodesLayout(
 
             nodes.push({
                 id: marriage[0].id,
-                data: { label: '' },
+                data: { id: marriage[0].id },
                 type: 'marriageNode',
                 position: {
                     x: middleX - MARRIAGE_NODE_SIZE / 2,
@@ -747,6 +754,7 @@ function finalizeNodesLayout(
                 sourceHandle: 'right',
                 targetHandle: 'left',
             });
+            person.marriageNodeSide = LEFT_SIDE;
 
             edges.push({
                 id: marriage[0].id + '-to-' + spouseId,
@@ -755,6 +763,12 @@ function finalizeNodesLayout(
                 sourceHandle: 'left',
                 targetHandle: 'right',
             });
+
+            const spouse = family.personById.get(spouseId);
+            if (!spouse) {
+                throw new Error(`expected person(id=${spouseId}) to exist`);
+            }
+            spouse.marriageNodeSide = RIGHT_SIDE;
 
             for (const childId of marriage[0].children_ids) {
                 edges.push({

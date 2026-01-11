@@ -12,6 +12,11 @@ export type Date = {
     year?: number;
 };
 
+export const LEFT_SIDE = 'left_side';
+export const RIGHT_SIDE = 'right_side';
+export const NONE_SIDE = 'none';
+export type MarriageNodeSide = 'none' | 'left_side' | 'right_side';
+
 export type Person = {
     // Person MD file name without the extension.
     id: string;
@@ -31,6 +36,7 @@ export type Person = {
     // Rendering options.
     hideParents: boolean;
     parentsFoldable: boolean;
+    marriageNodeSide: MarriageNodeSide;
 };
 
 export type Marriage = {
