@@ -1,6 +1,5 @@
 import { Edge, Node } from '@xyflow/react';
 import { Index } from 'model';
-import { KNOWN_PERSON } from 'view/node';
 
 export const NODE_WIDTH = 140;
 export const NODE_HEIGHT = 70;
@@ -595,7 +594,7 @@ function finalizeNodesLayout(
         const nodeX = x + unit.width - NODE_WIDTH;
         nodes.push({
             id: person.id,
-            data: { person, kind: KNOWN_PERSON },
+            data: { person },
             position: { x: nodeX, y },
             type: 'personNode',
             style: {
@@ -676,7 +675,7 @@ function finalizeNodesLayout(
 
         nodes.push({
             id: person.id,
-            data: { person, kind: KNOWN_PERSON },
+            data: { person },
             position: { x, y },
             type: 'personNode',
             style: {
@@ -763,7 +762,7 @@ function finalizeNodesLayout(
 
         nodes.push({
             id: person.id,
-            data: { person, kind: KNOWN_PERSON },
+            data: { person },
             position: { x, y },
             type: 'personNode',
             style: {

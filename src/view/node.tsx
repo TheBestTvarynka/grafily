@@ -6,18 +6,6 @@ import { Person, Name } from 'model';
 import { TFile } from 'obsidian';
 import { useEffect, useState } from 'react';
 
-export const KNOWN_PERSON = 'known';
-export const UNKNOWN_PERSON = 'UNknown';
-type KnownPerson = {
-    kind: 'known';
-    person: Person;
-};
-type UnknownPerson = {
-    kind: 'unknown';
-    label: string;
-};
-type PersonNodeData = KnownPerson | UnknownPerson;
-
 // Fuck TS.
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 /* eslint-disable  @typescript-eslint/no-unsafe-member-access */
@@ -63,27 +51,23 @@ export function PersonNode({ data }: any) {
             .catch((err) => console.error(err));
     };
 
-    const getImageSrc = (data: PersonNodeData): string => {
-        if (data.kind === KNOWN_PERSON) {
-            if (!app) {
-                return PROFILE_IMAGE_PLACEHOLDER;
-            }
-
-            if (!data.person.image) {
-                return PROFILE_IMAGE_PLACEHOLDER;
-            }
-
-            const file = app.vault.getFileByPath(data.person.image);
-
-            if (!file) {
-                console.warn(`file "${data.person.image}" not found in vault`);
-                return PROFILE_IMAGE_PLACEHOLDER;
-            }
-
-            return app.vault.getResourcePath(file);
-        } else {
+    const getImageSrc = (): string => {
+        if (!app) {
             return PROFILE_IMAGE_PLACEHOLDER;
         }
+
+        if (!data.person.image) {
+            return PROFILE_IMAGE_PLACEHOLDER;
+        }
+
+        const file = app.vault.getFileByPath(data.person.image);
+
+        if (!file) {
+            console.warn(`file "${data.person.image}" not found in vault`);
+            return PROFILE_IMAGE_PLACEHOLDER;
+        }
+
+        return app.vault.getResourcePath(file);
     };
 
     const collapseParents = () => {
@@ -151,7 +135,7 @@ export function PersonNode({ data }: any) {
             ) : (
                 <></>
             )}
-            <img src={getImageSrc(data)} style={{ height: '90%', borderRadius: '50%' }} />
+            <img src={getImageSrc()} style={{ height: '90%', borderRadius: '50%' }} />
             <div
                 style={{
                     display: 'flex',
@@ -161,8 +145,8 @@ export function PersonNode({ data }: any) {
                 }}
                 onClick={onClick}
             >
-                <span>{getSurname(data)}</span>
-                <span>{getName(data)}</span>
+                <span>{getSurname(data.person)}</span>
+                <span>{getName(data.person)}</span>
                 <div
                     style={{
                         display: 'inline-flex',
@@ -170,11 +154,11 @@ export function PersonNode({ data }: any) {
                         color: 'rgba(123, 117, 117, 1)',
                     }}
                 >
-                    {renderDates(data) ? (
+                    {renderDates(data.person) ? (
                         <>
-                            <span>{getBirthYear(data)}</span>
+                            <span>{getBirthYear(data.person)}</span>
                             <span>—</span>
-                            <span>{getDeathYear(data)}</span>
+                            <span>{getDeathYear(data.person)}</span>
                         </>
                     ) : (
                         <></>
@@ -204,55 +188,36 @@ export function MarriageNode() {
     );
 }
 
-function renderDates(data: PersonNodeData): boolean {
-    if (data.kind === KNOWN_PERSON) {
-        const date = data.person.birth || data.person.death;
-        return !!date;
-    } else {
-        return false;
-    }
+function renderDates(person: Person): boolean {
+    const date = person.birth || person.death;
+
+    return !!date;
 }
 
-function getSurname(data: PersonNodeData): string {
-    if (data.kind === KNOWN_PERSON) {
-        return data.person.name.surname;
-    } else {
-        return data.label;
-    }
+function getSurname(person: Person): string {
+    return person.name.surname;
 }
 
-function getName(data: PersonNodeData): string {
-    if (data.kind === KNOWN_PERSON) {
-        return data.person.name.name;
-    } else {
-        return data.label;
-    }
+function getName(person: Person): string {
+    return person.name.name;
 }
 
-function getBirthYear(data: PersonNodeData): string {
-    if (data.kind === KNOWN_PERSON) {
-        const year = data.person.birth?.year;
+function getBirthYear(person: Person): string {
+    const year = person.birth?.year;
 
-        if (!year) {
-            return '????';
-        }
-
-        return `${year}`;
-    } else {
+    if (!year) {
         return '????';
     }
+
+    return `${year}`;
 }
 
-function getDeathYear(data: PersonNodeData): string {
-    if (data.kind === KNOWN_PERSON) {
-        const year = data.person.death?.year;
+function getDeathYear(person: Person): string {
+    const year = person.death?.year;
 
-        if (!year) {
-            return '????';
-        }
-
-        return `${year}`;
-    } else {
+    if (!year) {
         return '????';
     }
+
+    return `${year}`;
 }
