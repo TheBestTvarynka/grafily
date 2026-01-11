@@ -1,4 +1,4 @@
-import { StrictMode, createContext, useContext, useEffect, useState } from 'react';
+import { StrictMode, createContext } from 'react';
 import { ItemView, WorkspaceLeaf, App } from 'obsidian';
 import { Root, createRoot } from 'react-dom/client';
 

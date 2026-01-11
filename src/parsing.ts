@@ -84,6 +84,7 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         file,
         image,
         hideParents: false,
+        parentsFoldable: false,
     };
 }
 

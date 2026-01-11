@@ -30,6 +30,7 @@ export type Person = {
 
     // Rendering options.
     hideParents: boolean;
+    parentsFoldable: boolean;
 };
 
 export type Marriage = {

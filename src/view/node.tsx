@@ -2,7 +2,7 @@ import { Handle, Position } from '@xyflow/react';
 import { useApp, useIndex } from 'hooks';
 import { MINUS_ICON, PLUS_ICON, PROFILE_IMAGE_PLACEHOLDER } from 'images';
 import { MARRIAGE_NODE_SIZE, NODE_HEIGHT, NODE_WIDTH } from '../layout';
-import { Person, Name } from 'model';
+import { Person } from 'model';
 import { TFile } from 'obsidian';
 import { useEffect, useState } from 'react';
 
@@ -14,7 +14,7 @@ export function PersonNode({ data }: any) {
     const app = useApp();
     const index = useIndex();
 
-    const [hasParents, setHasParents] = useState<boolean>(true);
+    const [parentsFoldable, setParentsFoldable] = useState<boolean>(false);
 
     useEffect(() => {
         if (!index) {
@@ -22,10 +22,10 @@ export function PersonNode({ data }: any) {
         }
 
         const parentsMarriage = index.index.personParents.get(data.person.id);
-        if (parentsMarriage) {
-            setHasParents(true);
+        if (parentsMarriage && data.person.parentsFoldable) {
+            setParentsFoldable(true);
         } else {
-            setHasParents(false);
+            setParentsFoldable(false);
         }
     }, [index]);
 
@@ -106,7 +106,7 @@ export function PersonNode({ data }: any) {
                 cursor: 'default',
             }}
         >
-            {hasParents ? (
+            {parentsFoldable ? (
                 <button
                     onClick={collapseParents}
                     style={{

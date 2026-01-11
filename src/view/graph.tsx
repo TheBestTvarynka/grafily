@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 
 import {
     ReactFlow,
@@ -32,8 +32,6 @@ function FamilyGraph() {
             return;
         }
 
-        console.log('rerender graph');
-
         const graph = buildNodes('Yaroslav', index.index);
         setGraph(graph);
     }, [index]);
@@ -54,8 +52,6 @@ function FamilyGraph() {
             if (!app || !index) {
                 return;
             }
-
-            console.log('initial render');
 
             const { vault } = app;
             const files = vault.getFiles();
@@ -110,7 +106,6 @@ export function FamilyFlow() {
     const [index, setIndex] = useState<Index>(emptyIndex);
 
     const setPerson = (person: Person) => {
-        console.log('set person');
         index.personById.set(person.id, person);
 
         setIndex({ ...index });
