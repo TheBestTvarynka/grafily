@@ -1,21 +1,10 @@
 import { Handle, Position } from '@xyflow/react';
-import { useApp } from 'hooks';
-import { PROFILE_IMAGE_PLACEHOLDER } from 'images';
-import { MARRIAGE_NODE_SIZE, NODE_HEIGHT, NODE_WIDTH } from 'layout';
-import { Person } from 'model';
+import { useApp, useIndex } from 'hooks';
+import { MINUS_ICON, PLUS_ICON, PROFILE_IMAGE_PLACEHOLDER } from 'images';
+import { MARRIAGE_NODE_SIZE, NODE_HEIGHT, NODE_WIDTH } from '../layout';
+import { LEFT_SIDE, Person, RIGHT_SIDE } from 'model';
 import { TFile } from 'obsidian';
-
-export const KNOWN_PERSON = 'known';
-export const UNKNOWN_PERSON = 'UNknown';
-type KnownPerson = {
-    kind: 'known';
-    person: Person;
-};
-type UnknownPerson = {
-    kind: 'unknown';
-    label: string;
-};
-type PersonNodeData = KnownPerson | UnknownPerson;
+import { useEffect, useState } from 'react';
 
 // Fuck TS.
 /* eslint-disable  @typescript-eslint/no-explicit-any */
@@ -23,6 +12,29 @@ type PersonNodeData = KnownPerson | UnknownPerson;
 /* eslint-disable  @typescript-eslint/no-unsafe-argument */
 export function PersonNode({ data }: any) {
     const app = useApp();
+    const index = useIndex();
+
+    const [parentsFoldable, setParentsFoldable] = useState<boolean>(false);
+    const [hasParents, setHasParents] = useState<boolean>(true);
+
+    useEffect(() => {
+        if (!index) {
+            return;
+        }
+
+        const parentsMarriage = index.index.personParents.get(data.person.id);
+        if (parentsMarriage && data.person.parentsFoldable) {
+            setParentsFoldable(true);
+        } else {
+            setParentsFoldable(false);
+        }
+
+        if (parentsMarriage) {
+            setHasParents(true);
+        } else {
+            setHasParents(false);
+        }
+    }, [index]);
 
     const onClick = () => {
         if (!app) {
@@ -46,26 +58,41 @@ export function PersonNode({ data }: any) {
             .catch((err) => console.error(err));
     };
 
-    const getImageSrc = (data: PersonNodeData): string => {
-        if (data.kind === KNOWN_PERSON) {
-            if (!app) {
-                return PROFILE_IMAGE_PLACEHOLDER;
-            }
-
-            if (!data.person.image) {
-                return PROFILE_IMAGE_PLACEHOLDER;
-            }
-
-            const file = app.vault.getFileByPath(data.person.image);
-
-            if (!file) {
-                console.warn(`file "${data.person.image}" not found in vault`);
-                return PROFILE_IMAGE_PLACEHOLDER;
-            }
-
-            return app.vault.getResourcePath(file);
-        } else {
+    const getImageSrc = (): string => {
+        if (!app) {
             return PROFILE_IMAGE_PLACEHOLDER;
+        }
+
+        if (!data.person.image) {
+            return PROFILE_IMAGE_PLACEHOLDER;
+        }
+
+        const file = app.vault.getFileByPath(data.person.image);
+
+        if (!file) {
+            console.warn(`file "${data.person.image}" not found in vault`);
+            return PROFILE_IMAGE_PLACEHOLDER;
+        }
+
+        return app.vault.getResourcePath(file);
+    };
+
+    const collapseParents = () => {
+        if (!index) {
+            return;
+        }
+
+        const person: Person = data.person;
+        person.hideParents = !person.hideParents;
+
+        index.setPerson({ ...person });
+    };
+
+    const getHideParentsIcon = (): string => {
+        if (data.person.hideParents) {
+            return PLUS_ICON;
+        } else {
+            return MINUS_ICON;
         }
     };
 
@@ -82,13 +109,51 @@ export function PersonNode({ data }: any) {
                 justifyContent: 'space-around',
                 alignItems: 'center',
                 color: '#e3dfc1',
+                position: 'relative',
+                cursor: 'default',
             }}
-            onClick={onClick}
         >
-            <img src={getImageSrc(data)} style={{ height: '90%', borderRadius: '50%' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <span>{getSurname(data)}</span>
-                <span>{getName(data)}</span>
+            {parentsFoldable ? (
+                <button
+                    onClick={collapseParents}
+                    style={{
+                        outline: 'revert',
+                        position: 'absolute',
+                        top: '-7px',
+                        left: 'calc(50% - 7px)',
+                        padding: 0,
+                        cursor: 'pointer',
+                        zIndex: 99,
+                        backgroundColor: 'transparent',
+                        height: '14px',
+                        width: '14px',
+                    }}
+                >
+                    <img
+                        src={getHideParentsIcon()}
+                        style={{
+                            height: '100%',
+                            width: '100%',
+                            backgroundColor: 'rgb(64, 55, 53)',
+                            borderRadius: '3px',
+                        }}
+                    />
+                </button>
+            ) : (
+                <></>
+            )}
+            <img src={getImageSrc()} style={{ height: '90%', borderRadius: '50%' }} />
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                }}
+                onClick={onClick}
+            >
+                <span>{getSurname(data.person)}</span>
+                <span>{getName(data.person)}</span>
                 <div
                     style={{
                         display: 'inline-flex',
@@ -96,26 +161,59 @@ export function PersonNode({ data }: any) {
                         color: 'rgba(123, 117, 117, 1)',
                     }}
                 >
-                    {renderDates(data) ? (
+                    {renderDates(data.person) ? (
                         <>
-                            <span>{getBirthYear(data)}</span>
+                            <span>{getBirthYear(data.person)}</span>
                             <span>—</span>
-                            <span>{getDeathYear(data)}</span>
+                            <span>{getDeathYear(data.person)}</span>
                         </>
                     ) : (
                         <></>
                     )}
                 </div>
             </div>
-            <Handle type="target" position={Position.Top} id="top" />
-            <Handle type="target" position={Position.Bottom} id="bottom" />
-            <Handle type="target" position={Position.Left} id="left" />
-            <Handle type="target" position={Position.Right} id="right" />
+            {hasParents ? <Handle type="target" position={Position.Top} id="top" /> : <></>}
+            {data.person.marriageNodeSide === LEFT_SIDE ? (
+                <Handle type="target" position={Position.Left} id="left" />
+            ) : (
+                <></>
+            )}
+            {data.person.marriageNodeSide === RIGHT_SIDE ? (
+                <Handle type="target" position={Position.Right} id="right" />
+            ) : (
+                <></>
+            )}
         </div>
     );
 }
 
-export function MarriageNode() {
+// Fuck TS.
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+/* eslint-disable  @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable  @typescript-eslint/no-unsafe-argument */
+export function MarriageNode({ data }: any) {
+    const index = useIndex();
+
+    const [hasChildren, setHasChildren] = useState<boolean>(true);
+
+    useEffect(() => {
+        if (!index) {
+            return;
+        }
+
+        const marriage = index.index.marriageById.get(data?.id);
+        if (!marriage) {
+            console.warn(`Expected marriage(id=${data?.id}) to exist in index.`);
+            return;
+        }
+
+        if (marriage.children_ids.length > 0) {
+            setHasChildren(true);
+        } else {
+            setHasChildren(false);
+        }
+    }, [index]);
+
     return (
         <div
             style={{
@@ -126,60 +224,41 @@ export function MarriageNode() {
         >
             <Handle type="source" position={Position.Left} id="left" />
             <Handle type="source" position={Position.Right} id="right" />
-            <Handle type="source" position={Position.Bottom} id="bottom" />
+            {hasChildren ? <Handle type="source" position={Position.Bottom} id="bottom" /> : <></>}
         </div>
     );
 }
 
-function renderDates(data: PersonNodeData): boolean {
-    if (data.kind === KNOWN_PERSON) {
-        const date = data.person.birth || data.person.death;
-        return !!date;
-    } else {
-        return false;
-    }
+function renderDates(person: Person): boolean {
+    const date = person.birth || person.death;
+
+    return !!date;
 }
 
-function getSurname(data: PersonNodeData): string {
-    if (data.kind === KNOWN_PERSON) {
-        return data.person.name.surname;
-    } else {
-        return data.label;
-    }
+function getSurname(person: Person): string {
+    return person.name.surname;
 }
 
-function getName(data: PersonNodeData): string {
-    if (data.kind === KNOWN_PERSON) {
-        return data.person.name.name;
-    } else {
-        return data.label;
-    }
+function getName(person: Person): string {
+    return person.name.name;
 }
 
-function getBirthYear(data: PersonNodeData): string {
-    if (data.kind === KNOWN_PERSON) {
-        const year = data.person.birth?.year;
+function getBirthYear(person: Person): string {
+    const year = person.birth?.year;
 
-        if (!year) {
-            return '????';
-        }
-
-        return `${year}`;
-    } else {
+    if (!year) {
         return '????';
     }
+
+    return `${year}`;
 }
 
-function getDeathYear(data: PersonNodeData): string {
-    if (data.kind === KNOWN_PERSON) {
-        const year = data.person.death?.year;
+function getDeathYear(person: Person): string {
+    const year = person.death?.year;
 
-        if (!year) {
-            return '????';
-        }
-
-        return `${year}`;
-    } else {
+    if (!year) {
         return '????';
     }
+
+    return `${year}`;
 }

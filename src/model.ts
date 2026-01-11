@@ -12,6 +12,11 @@ export type Date = {
     year?: number;
 };
 
+export const LEFT_SIDE = 'left_side';
+export const RIGHT_SIDE = 'right_side';
+export const NONE_SIDE = 'none';
+export type MarriageNodeSide = 'none' | 'left_side' | 'right_side';
+
 export type Person = {
     // Person MD file name without the extension.
     id: string;
@@ -27,6 +32,11 @@ export type Person = {
     // Avatar image to render in the person node.
     image?: string;
     file: TFile;
+
+    // Rendering options.
+    hideParents: boolean;
+    parentsFoldable: boolean;
+    marriageNodeSide: MarriageNodeSide;
 };
 
 export type Marriage = {
@@ -164,6 +174,16 @@ export type Index = {
     // value - parents marriage id
     personParents: Map<string, string>;
 };
+
+export function emptyIndex(): Index {
+    return {
+        personById: new Map(),
+        marriageById: new Map(),
+        personMarriages: new Map(),
+        personChildren: new Map(),
+        personParents: new Map(),
+    };
+}
 
 export function buildIndex(family: Family): Index {
     const personById = new Map(family.persons.map((p) => [p.id, p]));
