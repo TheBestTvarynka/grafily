@@ -83,8 +83,8 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         spouses,
         file,
         image,
-        isChildNodesHidden: false,
-        childNodesFoldable: false,
+        isParentNodesHidden: false,
+        parentNodesFoldable: false,
         marriageNodeSide: NONE_SIDE,
     };
 }

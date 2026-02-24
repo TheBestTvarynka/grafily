@@ -34,8 +34,8 @@ export type Person = {
     file: TFile;
 
     // Rendering options.
-    isChildNodesHidden: boolean;
-    childNodesFoldable: boolean;
+    isParentNodesHidden: boolean;
+    parentNodesFoldable: boolean;
     marriageNodeSide: MarriageNodeSide;
 };
 

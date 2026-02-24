@@ -14,7 +14,7 @@ export function PersonNode({ data }: any) {
     const app = useApp();
     const index = useIndex();
 
-    const [childNodesFoldable, setChildNodesFoldable] = useState<boolean>(false);
+    const [parentNodesFoldable, setParentNodesFoldable] = useState<boolean>(false);
     const [hasParents, setHasParents] = useState<boolean>(true);
 
     useEffect(() => {
@@ -23,10 +23,10 @@ export function PersonNode({ data }: any) {
         }
 
         const parentsMarriage = index.index.personParents.get(data.person.id);
-        if (parentsMarriage && data.person.childNodesFoldable) {
-            setChildNodesFoldable(true);
+        if (parentsMarriage && data.person.parentNodesFoldable) {
+            setParentNodesFoldable(true);
         } else {
-            setChildNodesFoldable(false);
+            setParentNodesFoldable(false);
         }
 
         if (parentsMarriage) {
@@ -83,13 +83,13 @@ export function PersonNode({ data }: any) {
         }
 
         const person: Person = data.person;
-        person.isChildNodesHidden = !person.isChildNodesHidden;
+        person.isParentNodesHidden = !person.isParentNodesHidden;
 
         index.setPerson({ ...person });
     };
 
     const getHideChildNodesIcon = (): string => {
-        if (data.person.isChildNodesHidden) {
+        if (data.person.isParentNodesHidden) {
             return PLUS_ICON;
         } else {
             return MINUS_ICON;
@@ -113,7 +113,7 @@ export function PersonNode({ data }: any) {
                 cursor: 'default',
             }}
         >
-            {childNodesFoldable ? (
+            {parentNodesFoldable ? (
                 <button
                     onClick={collapseParents}
                     style={{

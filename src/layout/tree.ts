@@ -83,7 +83,7 @@ function getRightmostChildren(id: Id, family: Index): Id | null {
             const parents = family.personParents.get(marriage.parent2Id);
             const parent2 = family.personById.get(marriage.parent2Id);
 
-            if (parents && !parent2?.isChildNodesHidden) {
+            if (parents && !parent2?.isParentNodesHidden) {
                 return { type: MARRIAGE_TYPE, id: parents };
             }
         }
@@ -92,7 +92,7 @@ function getRightmostChildren(id: Id, family: Index): Id | null {
             const parents = family.personParents.get(marriage.parent1Id);
             const parent1 = family.personById.get(marriage.parent1Id);
 
-            if (parents && !parent1?.isChildNodesHidden) {
+            if (parents && !parent1?.isParentNodesHidden) {
                 return { type: MARRIAGE_TYPE, id: parents };
             }
         }
@@ -127,7 +127,7 @@ function getLeftmostChildren(id: Id, family: Index): Id | null {
             const parentsMarriageId = family.personParents.get(marriage.parent1Id);
             const parent1 = family.personById.get(marriage.parent1Id);
 
-            if (parentsMarriageId && !parent1?.isChildNodesHidden) {
+            if (parentsMarriageId && !parent1?.isParentNodesHidden) {
                 return { type: MARRIAGE_TYPE, id: parentsMarriageId };
             }
         }
@@ -136,7 +136,7 @@ function getLeftmostChildren(id: Id, family: Index): Id | null {
             const parentsMarriageId = family.personParents.get(marriage.parent2Id);
             const parent2 = family.personById.get(marriage.parent2Id);
 
-            if (parentsMarriageId && !parent2?.isChildNodesHidden) {
+            if (parentsMarriageId && !parent2?.isParentNodesHidden) {
                 return { type: MARRIAGE_TYPE, id: parentsMarriageId };
             }
         }
@@ -235,7 +235,7 @@ function getChildNodesIds(currentNode: Id, family: Index): Id[] {
             let parent1MarriageId = family.personParents.get(marriage.parent1Id);
             let parent1 = family.personById.get(marriage.parent1Id);
 
-            if (parent1MarriageId && !parent1?.isChildNodesHidden) {
+            if (parent1MarriageId && !parent1?.isParentNodesHidden) {
                 parents.push({ type: MARRIAGE_TYPE, id: parent1MarriageId });
             }
         }
@@ -244,7 +244,7 @@ function getChildNodesIds(currentNode: Id, family: Index): Id[] {
             let parent2MarriageId = family.personParents.get(marriage.parent2Id);
             let parent2 = family.personById.get(marriage.parent2Id);
 
-            if (parent2MarriageId && !parent2?.isChildNodesHidden) {
+            if (parent2MarriageId && !parent2?.isParentNodesHidden) {
                 parents.push({ type: MARRIAGE_TYPE, id: parent2MarriageId });
             }
         }
@@ -465,7 +465,7 @@ function finalizeNodesLayout(
             }
 
             person.marriageNodeSide = RIGHT_SIDE;
-            person.childNodesFoldable = true;
+            person.parentNodesFoldable = true;
             nodes.push({
                 id: parent1NodeId,
                 data: { person },
@@ -493,7 +493,7 @@ function finalizeNodesLayout(
             }
 
             person.marriageNodeSide = LEFT_SIDE;
-            person.childNodesFoldable = true;
+            person.parentNodesFoldable = true;
             nodes.push({
                 id: parent2NodeId,
                 data: { person },
@@ -528,7 +528,7 @@ function finalizeNodesLayout(
             throw new Error(`Expected person to exist for id ${nodeId.id}`);
         }
 
-        person.childNodesFoldable = true;
+        person.parentNodesFoldable = true;
         nodes.push({
             id: nodeId.id,
             data: { person },
