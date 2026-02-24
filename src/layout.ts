@@ -44,7 +44,7 @@ function getPersonSiblings(personId: string, family: Index): string[] {
         throw new Error(`expected person(${personId}) to exist`);
     }
 
-    if (person.hideParents) {
+    if (person.isChildNodesHidden) {
         return [personId];
     }
 
@@ -59,7 +59,7 @@ function getPersonSiblings(personId: string, family: Index): string[] {
         throw new Error(`expected marriage to exist. Child id: ${personId}`);
     }
 
-    return marriage.children_ids;
+    return marriage.childrenIds;
 }
 
 // Returns siblings width.
@@ -85,17 +85,17 @@ function getPersonSpouseId(personId: string, family: Index): string | null {
 
         // The passed `personId` can be either the first or the second parent. We need to check both cases.
 
-        if (marriage.parent1_id && marriage.parent1_id === personId) {
-            if (marriage.parent2_id) {
-                return marriage.parent2_id;
+        if (marriage.parent1Id && marriage.parent1Id === personId) {
+            if (marriage.parent2Id) {
+                return marriage.parent2Id;
             } else {
                 return null;
             }
         }
 
-        if (marriage.parent2_id && marriage.parent2_id === personId) {
-            if (marriage.parent1_id) {
-                return marriage.parent1_id;
+        if (marriage.parent2Id && marriage.parent2Id === personId) {
+            if (marriage.parent1Id) {
+                return marriage.parent1Id;
             } else {
                 return null;
             }
@@ -163,22 +163,22 @@ function getLeftmostParentUnit(
     }
 
     let parentUnit: SiblingsUnit | null = null;
-    if (parentsMarriage.parent1_id) {
-        const unit = getPersonSiblingUnit(parentsMarriage.parent1_id, units);
+    if (parentsMarriage.parent1Id) {
+        const unit = getPersonSiblingUnit(parentsMarriage.parent1Id, units);
         if (!unit) {
             throw new Error(
-                `expected sibling unit to exist for person(id=${parentsMarriage.parent1_id})`,
+                `expected sibling unit to exist for person(id=${parentsMarriage.parent1Id})`,
             );
         }
 
         parentUnit = unit;
     }
 
-    if (parentsMarriage.parent2_id) {
-        const unit = getPersonSiblingUnit(parentsMarriage.parent2_id, units);
+    if (parentsMarriage.parent2Id) {
+        const unit = getPersonSiblingUnit(parentsMarriage.parent2Id, units);
         if (!unit) {
             throw new Error(
-                `expected sibling unit to exist for person(id=${parentsMarriage.parent2_id})`,
+                `expected sibling unit to exist for person(id=${parentsMarriage.parent2Id})`,
             );
         }
 
@@ -238,22 +238,22 @@ function getRightmostParentUnit(
     }
 
     let parentUnit: SiblingsUnit | null = null;
-    if (parentsMarriage.parent2_id) {
-        const unit = getPersonSiblingUnit(parentsMarriage.parent2_id, units);
+    if (parentsMarriage.parent2Id) {
+        const unit = getPersonSiblingUnit(parentsMarriage.parent2Id, units);
         if (!unit) {
             throw new Error(
-                `expected sibling unit to exist for person(id=${parentsMarriage.parent2_id})`,
+                `expected sibling unit to exist for person(id=${parentsMarriage.parent2Id})`,
             );
         }
 
         parentUnit = unit;
     }
 
-    if (parentsMarriage.parent1_id) {
-        const unit = getPersonSiblingUnit(parentsMarriage.parent1_id, units);
+    if (parentsMarriage.parent1Id) {
+        const unit = getPersonSiblingUnit(parentsMarriage.parent1Id, units);
         if (!unit) {
             throw new Error(
-                `expected sibling unit to exist for person(id=${parentsMarriage.parent1_id})`,
+                `expected sibling unit to exist for person(id=${parentsMarriage.parent1Id})`,
             );
         }
 
@@ -347,7 +347,7 @@ function preBuild(perspectiveId: string, family: Index, units: SiblingsUnit[]): 
 function isParentsHidden(siblings: string[], family: Index): boolean {
     for (const sibling of siblings) {
         const person = family.personById.get(sibling);
-        if (person && person.hideParents) {
+        if (person && person.isChildNodesHidden) {
             return true;
         }
     }
@@ -413,27 +413,27 @@ function preBuildSiblings(
         throw new Error(`expected marriage (id=${parentsMarriageId}) to exist`);
     }
 
-    if (!parentsMarriage.parent1_id) {
+    if (!parentsMarriage.parent1Id) {
         throw new Error(`expected the first parent in marriage (id=${parentsMarriageId}) to exist`);
     }
     const firstParentUnit = preBuildSiblings(
         0,
-        getPersonSiblings(parentsMarriage.parent1_id, family),
-        { id: parentsMarriage.parent1_id, side: RIGHT_SIDE },
+        getPersonSiblings(parentsMarriage.parent1Id, family),
+        { id: parentsMarriage.parent1Id, side: RIGHT_SIDE },
         family,
         preNodes,
         null,
     );
 
-    if (!parentsMarriage.parent2_id) {
+    if (!parentsMarriage.parent2Id) {
         throw new Error(
             `expected the second parent in marriage (id=${parentsMarriageId}) to exist`,
         );
     }
     const secondParentUnit = preBuildSiblings(
         NODES_GAP,
-        getPersonSiblings(parentsMarriage.parent2_id, family),
-        { id: parentsMarriage.parent2_id, side: LEFT_SIDE },
+        getPersonSiblings(parentsMarriage.parent2Id, family),
+        { id: parentsMarriage.parent2Id, side: LEFT_SIDE },
         family,
         preNodes,
         firstParentUnit,
@@ -562,12 +562,12 @@ function finalizeNodesLayout(
         }
 
         let parentId: string | null = null;
-        if (parentsMarriage.parent1_id) {
-            parentId = parentsMarriage.parent1_id;
+        if (parentsMarriage.parent1Id) {
+            parentId = parentsMarriage.parent1Id;
         }
 
-        if (parentsMarriage.parent2_id) {
-            parentId = parentsMarriage.parent2_id;
+        if (parentsMarriage.parent2Id) {
+            parentId = parentsMarriage.parent2Id;
         }
 
         if (!parentId) {
@@ -604,7 +604,7 @@ function finalizeNodesLayout(
         }
 
         if (unit.rightSibling === mainSibling) {
-            person.parentsFoldable = true;
+            person.childNodesFoldable = true;
         }
 
         const nodeX = x + unit.width - NODE_WIDTH;
@@ -678,7 +678,7 @@ function finalizeNodesLayout(
             }
             spouse.marriageNodeSide = LEFT_SIDE;
 
-            for (const childId of marriage[0].children_ids) {
+            for (const childId of marriage[0].childrenIds) {
                 edges.push({
                     id: marriage[0].id + '-to-' + childId,
                     source: marriage[0].id,
@@ -697,7 +697,7 @@ function finalizeNodesLayout(
         }
 
         if (unit.leftSibling === mainSibling) {
-            person.parentsFoldable = true;
+            person.childNodesFoldable = true;
         }
 
         nodes.push({
@@ -770,7 +770,7 @@ function finalizeNodesLayout(
             }
             spouse.marriageNodeSide = RIGHT_SIDE;
 
-            for (const childId of marriage[0].children_ids) {
+            for (const childId of marriage[0].childrenIds) {
                 edges.push({
                     id: marriage[0].id + '-to-' + childId,
                     source: marriage[0].id,
@@ -795,7 +795,7 @@ function finalizeNodesLayout(
         }
 
         if (sibling === mainSibling) {
-            person.parentsFoldable = true;
+            person.childNodesFoldable = true;
         }
 
         nodes.push({

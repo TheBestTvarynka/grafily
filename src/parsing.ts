@@ -7,7 +7,7 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
     const headerEnd = lines.indexOf('---');
 
     if (headerEnd === -1) {
-        throw new Error("invalid page: missing meta block separator ('---')");
+        throw new Error(`invalid page(${fileName}): missing meta block separator ('---')`);
     }
 
     const header = lines.slice(0, headerEnd);
@@ -83,8 +83,8 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         spouses,
         file,
         image,
-        hideParents: false,
-        parentsFoldable: false,
+        isChildNodesHidden: false,
+        childNodesFoldable: false,
         marriageNodeSide: NONE_SIDE,
     };
 }

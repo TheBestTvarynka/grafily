@@ -11,7 +11,8 @@ import {
     useReactFlow,
 } from '@xyflow/react';
 
-import { buildNodes } from '../layout';
+// import { buildNodes } from '../layout';
+import { buildNodes } from '../layout/tree';
 import { buildIndex, emptyIndex, familyFromPersons, Index, Person } from '../model';
 import { useApp, useIndex } from '../hooks';
 import { extractPageMeta } from '../parsing';
@@ -67,7 +68,7 @@ function FamilyGraph() {
                         const person = extractPageMeta(content, name, file);
                         persons.push(person);
                     } catch (err) {
-                        console.error(err);
+                        console.warn(err);
                     }
                 }
             }

@@ -14,7 +14,7 @@ export function PersonNode({ data }: any) {
     const app = useApp();
     const index = useIndex();
 
-    const [parentsFoldable, setParentsFoldable] = useState<boolean>(false);
+    const [childNodesFoldable, setChildNodesFoldable] = useState<boolean>(false);
     const [hasParents, setHasParents] = useState<boolean>(true);
 
     useEffect(() => {
@@ -23,10 +23,10 @@ export function PersonNode({ data }: any) {
         }
 
         const parentsMarriage = index.index.personParents.get(data.person.id);
-        if (parentsMarriage && data.person.parentsFoldable) {
-            setParentsFoldable(true);
+        if (parentsMarriage && data.person.childNodesFoldable) {
+            setChildNodesFoldable(true);
         } else {
-            setParentsFoldable(false);
+            setChildNodesFoldable(false);
         }
 
         if (parentsMarriage) {
@@ -83,13 +83,13 @@ export function PersonNode({ data }: any) {
         }
 
         const person: Person = data.person;
-        person.hideParents = !person.hideParents;
+        person.isChildNodesHidden = !person.isChildNodesHidden;
 
         index.setPerson({ ...person });
     };
 
-    const getHideParentsIcon = (): string => {
-        if (data.person.hideParents) {
+    const getHideChildNodesIcon = (): string => {
+        if (data.person.isChildNodesHidden) {
             return PLUS_ICON;
         } else {
             return MINUS_ICON;
@@ -113,7 +113,7 @@ export function PersonNode({ data }: any) {
                 cursor: 'default',
             }}
         >
-            {parentsFoldable ? (
+            {childNodesFoldable ? (
                 <button
                     onClick={collapseParents}
                     style={{
@@ -130,7 +130,7 @@ export function PersonNode({ data }: any) {
                     }}
                 >
                     <img
-                        src={getHideParentsIcon()}
+                        src={getHideChildNodesIcon()}
                         style={{
                             height: '100%',
                             width: '100%',
@@ -207,7 +207,7 @@ export function MarriageNode({ data }: any) {
             return;
         }
 
-        if (marriage.children_ids.length > 0) {
+        if (marriage.childrenIds.length > 0) {
             setHasChildren(true);
         } else {
             setHasChildren(false);

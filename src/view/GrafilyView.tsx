@@ -4,7 +4,7 @@ import { Root, createRoot } from 'react-dom/client';
 
 import { FamilyFlow } from './graph';
 
-export const VIEW_TYPE = 'my-canvas-view';
+export const VIEW_TYPE = 'grafily-view';
 
 const ReactView = () => {
     return (
