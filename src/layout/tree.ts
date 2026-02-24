@@ -70,17 +70,20 @@ class ReingoldTilford {
     getRightmostChildren: (id: Id, family: Index) => Id | null;
     getLeftmostChildren: (id: Id, family: Index) => Id | null;
     getChildNodesIds: (currentNode: Id, family: Index) => Id[];
+    getY: (level: number) => number;
     family: Index;
 
     constructor(
         getRightmostChildren: (id: Id, family: Index) => Id | null,
         getLeftmostChildren: (id: Id, family: Index) => Id | null,
         getChildNodesIds: (currentNode: Id, family: Index) => Id[],
+        getY: (level: number) => number,
         family: Index,
     ) {
         this.getRightmostChildren = getRightmostChildren;
         this.getLeftmostChildren = getLeftmostChildren;
         this.getChildNodesIds = getChildNodesIds;
+        this.getY = getY;
         this.family = family;
     }
 
@@ -301,13 +304,14 @@ class ReingoldTilford {
                 preNodes,
                 nodes,
                 edges,
-                level - 1,
+                level + 1,
                 mod + preNode.mod + preNode.shift,
             );
         }
 
         const x = preNode.x + mod + preNode.shift;
-        const y = level * (NODE_HEIGHT + NODES_GAP);
+        // const y = level * (NODE_HEIGHT + NODES_GAP);
+        const y = this.getY(level);
 
         if (nodeId.type === MARRIAGE_TYPE) {
             const marriage = this.family.marriageById.get(nodeId.id);
@@ -436,7 +440,7 @@ class ReingoldTilford {
  * @param {Index} family The family index containing all the people and their relationships.
  * @returns The rightmost child of the given node or null if there are no children.
  */
-function getRightmostChildren(id: Id, family: Index): Id | null {
+function getRightmostParent(id: Id, family: Index): Id | null {
     if (id.type === MARRIAGE_TYPE) {
         const marriage = family.marriageById.get(id.id);
         if (!marriage) {
@@ -480,7 +484,7 @@ function getRightmostChildren(id: Id, family: Index): Id | null {
  * @param {Index} family The family index containing all the people and their relationships.
  * @returns The leftmost child of the given node or null if there are no children.
  */
-function getLeftmostChildren(id: Id, family: Index): Id | null {
+function getLeftmostParent(id: Id, family: Index): Id | null {
     if (id.type === MARRIAGE_TYPE) {
         const marriage = family.marriageById.get(id.id);
         if (!marriage) {
@@ -558,8 +562,8 @@ function calculateShift(
     leftShift += leftNode.mod + leftNode.shift;
     rightShift += rightNode.mod + rightNode.shift;
 
-    const nextLeftSibling = getRightmostChildren(siblingLeft, family);
-    const nextRightSibling = getLeftmostChildren(singlingRight, family);
+    const nextLeftSibling = getRightmostParent(siblingLeft, family);
+    const nextRightSibling = getLeftmostParent(singlingRight, family);
 
     if (!nextLeftSibling || !nextRightSibling) {
         return shift;
@@ -578,7 +582,7 @@ function calculateShift(
  * @param {Index} family The family index containing all the people and their relationships.
  * @returns The list of child nodes ids.
  */
-function getChildNodesIds(currentNode: Id, family: Index): Id[] {
+function getParentNodesIds(currentNode: Id, family: Index): Id[] {
     let parents: Id[] = [];
     if (currentNode.type === PERSON_TYPE) {
         const marriageId = family.personParents.get(currentNode.id);
@@ -617,6 +621,10 @@ function getChildNodesIds(currentNode: Id, family: Index): Id[] {
     return parents;
 }
 
+function getY(level: number): number {
+    return -1 * level * (NODE_HEIGHT + NODES_GAP);
+}
+
 /**
  * Builds the nodes and edges for the family tree layout.
  *
@@ -641,9 +649,10 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
     }
 
     const reingoldTilford = new ReingoldTilford(
-        getRightmostChildren,
-        getLeftmostChildren,
-        getChildNodesIds,
+        getRightmostParent,
+        getLeftmostParent,
+        getParentNodesIds,
+        getY,
         family,
     );
 
