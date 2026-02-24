@@ -6,7 +6,7 @@
 
 import { Edge, Node } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
-import { Index, LEFT_SIDE, RIGHT_SIDE } from '../model';
+import { Index, LEFT_SIDE, Marriage, RIGHT_SIDE } from '../model';
 
 export const NODE_WIDTH = 140;
 export const NODE_HEIGHT = 70;
@@ -106,12 +106,16 @@ class ReingoldTilford {
     ): number {
         const leftNode = preNodes.get(siblingLeft.id);
         if (!leftNode) {
-            throw new Error(`Expected left sibling pre-node to exist for id ${siblingLeft.id}`);
+            throw new Error(
+                `Failed to calculate shift: expected left sibling pre-node to exist for id ${siblingLeft.id}`,
+            );
         }
 
         const rightNode = preNodes.get(singlingRight.id);
         if (!rightNode) {
-            throw new Error(`Expected right sibling pre-node to exist for id ${singlingRight.id}`);
+            throw new Error(
+                `Failed to calculate shift: expected right sibling pre-node to exist for id ${singlingRight.id}`,
+            );
         }
 
         const leftX = leftNode.x + leftShift + leftNode.shift + nodeWidth(siblingLeft);
@@ -153,9 +157,9 @@ class ReingoldTilford {
         preX: number,
         siblings: Id[],
     ): PreNode {
-        const parents = this.getChildNodesIds(perspectiveId, this.family);
+        const childIds = this.getChildNodesIds(perspectiveId, this.family);
 
-        if (parents.length === 0) {
+        if (childIds.length === 0) {
             const preNode: PreNode = {
                 id: perspectiveId,
                 x: preX,
@@ -177,79 +181,38 @@ class ReingoldTilford {
             return preNode;
         }
 
-        if (parents.length === 1) {
-            let parent = parents[0];
-            if (!parent) {
-                throw new Error('should not be possible');
-            }
+        let deltaX: number = 0;
+        const childPreNodes: PreNode[] = [];
+        for (const childId of childIds) {
+            childPreNodes.push(this.buildPreNodes(childId, preNodes, deltaX, childIds));
 
-            const parentNode = this.buildPreNodes(parent, preNodes, 0, [parent]);
-
-            // Now we need to do different actions depending on whether the current node is a left-most node or not.
-            // We do that with a simple trick: the current node is the left-most node if its `preX` is equal to 0.
-            let x: number;
-            let mod: number;
-            if (preX === 0) {
-                x = parentNode.x;
-                mod = 0;
+            if (childId.type === PERSON_TYPE) {
+                deltaX += NODE_WIDTH + NODES_GAP;
             } else {
-                x = preX;
-                mod = x - parentNode.x;
+                deltaX += MARRIAGE_WIDTH + NODES_GAP;
             }
-
-            const preNode: PreNode = {
-                id: perspectiveId,
-                x,
-                mod,
-                shift: 0,
-            };
-
-            preNodes.set(perspectiveId.id, preNode);
-
-            for (const sibling of siblings) {
-                if (perspectiveId === sibling) {
-                    break;
-                }
-
-                const shift = this.calculateShift(sibling, 0, perspectiveId, 0, preNodes);
-                preNode.shift += shift;
-            }
-
-            return preNode;
         }
 
-        // parents.length === 2
-        let firstParent = parents[0];
-        if (!firstParent) {
-            throw new Error('should not be possible: first parent must present');
+        const firstPreNode = childPreNodes[0];
+        if (!firstPreNode) {
+            throw new Error('should not be possible');
         }
-        let secondParent = parents[1];
-        if (!secondParent) {
-            throw new Error('should not be possible: second parent must present');
+        const lastPreNode = childPreNodes[childPreNodes.length - 1];
+        if (!lastPreNode) {
+            throw new Error('should not be possible');
         }
-
-        let firstPreNode = this.buildPreNodes(firstParent, preNodes, 0, parents);
-        let deltaX: number;
-        if (firstPreNode.id.type === PERSON_TYPE) {
-            deltaX = NODE_WIDTH + NODES_GAP;
-        } else {
-            deltaX = MARRIAGE_WIDTH + NODES_GAP;
-        }
-
-        let secondPreNode = this.buildPreNodes(secondParent, preNodes, deltaX, parents);
 
         // Now we need to do different actions depending on whether the current node is a left-most node or not.
         // We do that with a simple trick: the current node is the left-most node if its `preX` is equal to 0.
         let x: number;
         let mod: number;
         if (preX === 0) {
-            x = (firstPreNode.x + firstPreNode.shift + (secondPreNode.x + secondPreNode.shift)) / 2;
+            x = (firstPreNode.x + firstPreNode.shift + (lastPreNode.x + lastPreNode.shift)) / 2;
             mod = 0;
         } else {
             x = preX;
             mod =
-                x -
-                (firstPreNode.x + firstPreNode.shift + (secondPreNode.x + secondPreNode.shift)) / 2;
+                x - (firstPreNode.x + firstPreNode.shift + (lastPreNode.x + lastPreNode.shift)) / 2;
         }
 
         const preNode: PreNode = {
@@ -435,10 +398,10 @@ class ReingoldTilford {
 }
 
 /**
- * Returns the rightmost child of the given node.
- * @param {Id} id The Node id to get the rightmost child for.
+ * Returns the rightmost parent of the given node.
+ * @param {Id} id The Node id to get the rightmost parent for.
  * @param {Index} family The family index containing all the people and their relationships.
- * @returns The rightmost child of the given node or null if there are no children.
+ * @returns The rightmost parent of the given node or null if there are no parents.
  */
 function getRightmostParent(id: Id, family: Index): Id | null {
     if (id.type === MARRIAGE_TYPE) {
@@ -479,10 +442,10 @@ function getRightmostParent(id: Id, family: Index): Id | null {
 }
 
 /**
- * Returns the leftmost child of the given node.
- * @param {Id} id The Node id to get the leftmost child for.
+ * Returns the leftmost parent of the given node.
+ * @param {Id} id The Node id to get the leftmost parent for.
  * @param {Index} family The family index containing all the people and their relationships.
- * @returns The leftmost child of the given node or null if there are no children.
+ * @returns The leftmost parent of the given node or null if there are no parents.
  */
 function getLeftmostParent(id: Id, family: Index): Id | null {
     if (id.type === MARRIAGE_TYPE) {
@@ -523,64 +486,43 @@ function getLeftmostParent(id: Id, family: Index): Id | null {
 }
 
 /**
- * Calculates the shift needed to apply to the current node and its subtree to avoid overlaps with the sibling node to the left and its subtree.
- *
- * @param {Id} siblingLeft The sibling node to the left of the current node.
- * @param {number} leftShift The accumulated shift value for the left sibling.
- * @param {Id} singlingRight The sibling node to the right - the current node.
- * @param {number} rightShift The accumulated shift value for the right sibling.
- * @param {Map<string, PreNode>} preNodes The map of preliminary nodes.
+ * Returns the rightmost child of the given node.
+ * @param {Id} id The Node id to get the rightmost child for.
  * @param {Index} family The family index containing all the people and their relationships.
- * @returns The calculated shift value.
+ * @returns The rightmost child of the given node or null if there are no children.
  */
-function calculateShift(
-    siblingLeft: Id,
-    leftShift: number,
-    singlingRight: Id,
-    rightShift: number,
-    preNodes: Map<string, PreNode>,
-    family: Index,
-): number {
-    const leftNode = preNodes.get(siblingLeft.id);
-    if (!leftNode) {
-        throw new Error(`Expected left sibling pre-node to exist for id ${siblingLeft.id}`);
+function getRightmostChild(id: Id, family: Index): Id | null {
+    const children = getChildNodesIds(id, family);
+
+    if (children[children.length - 1]) {
+        return children[children.length - 1] as Id /* SAFE: checked above */;
+    } else {
+        return null;
     }
-
-    const rightNode = preNodes.get(singlingRight.id);
-    if (!rightNode) {
-        throw new Error(`Expected right sibling pre-node to exist for id ${singlingRight.id}`);
-    }
-
-    const leftX = leftNode.x + leftShift + leftNode.shift + nodeWidth(siblingLeft);
-    const rightX = rightNode.x + rightShift + rightNode.shift;
-
-    let shift = 0;
-    if (rightX - leftX < NODES_GAP) {
-        shift = NODES_GAP - (rightX - leftX);
-    }
-
-    leftShift += leftNode.mod + leftNode.shift;
-    rightShift += rightNode.mod + rightNode.shift;
-
-    const nextLeftSibling = getRightmostParent(siblingLeft, family);
-    const nextRightSibling = getLeftmostParent(singlingRight, family);
-
-    if (!nextLeftSibling || !nextRightSibling) {
-        return shift;
-    }
-
-    return Math.max(
-        shift,
-        calculateShift(nextLeftSibling, leftShift, nextRightSibling, rightShift, preNodes, family),
-    );
 }
 
 /**
- * Returns current node child nodes.
- *
- * @param {Id} currentNode The current node to get the child nodes for.
+ * Returns the leftmost child of the given node.
+ * @param {Id} id The Node id to get the leftmost child for.
  * @param {Index} family The family index containing all the people and their relationships.
- * @returns The list of child nodes ids.
+ * @returns The leftmost child of the given node or null if there are no children.
+ */
+function getLeftmostChild(id: Id, family: Index): Id | null {
+    const children = getChildNodesIds(id, family);
+
+    if (children[0]) {
+        return children[0];
+    } else {
+        return null;
+    }
+}
+
+/**
+ * Returns current node parent nodes.
+ *
+ * @param {Id} currentNode The current node to get the parent nodes for.
+ * @param {Index} family The family index containing all the people and their relationships.
+ * @returns The list of parent nodes ids.
  */
 function getParentNodesIds(currentNode: Id, family: Index): Id[] {
     let parents: Id[] = [];
@@ -621,8 +563,50 @@ function getParentNodesIds(currentNode: Id, family: Index): Id[] {
     return parents;
 }
 
-function getY(level: number): number {
+/**
+ * Returns current node child nodes.
+ *
+ * @param {Id} currentNode The current node to get the child nodes for.
+ * @param {Index} family The family index containing all the people and their relationships.
+ * @returns The list of child nodes ids.
+ */
+function getChildNodesIds(currentNode: Id, family: Index): Id[] {
+    let marriage: Marriage;
+
+    if (currentNode.type === PERSON_TYPE) {
+        const marriages = family.personMarriages.get(currentNode.id);
+
+        if (!marriages || !marriages[0]) {
+            return [];
+        }
+
+        marriage = marriages[0];
+    } else {
+        const nodeMarriage = family.marriageById.get(currentNode.id);
+
+        if (!nodeMarriage) {
+            throw new Error(`Expected marriage to exist for id ${currentNode.id}`);
+        }
+
+        marriage = nodeMarriage;
+    }
+
+    return marriage.childrenIds.map((id) => {
+        const marriages = family.personMarriages.get(id);
+        if (!marriages || !marriages[0]) {
+            return { type: PERSON_TYPE, id };
+        } else {
+            return { type: MARRIAGE_TYPE, id: marriages[0].id };
+        }
+    });
+}
+
+function getParentY(level: number): number {
     return -1 * level * (NODE_HEIGHT + NODES_GAP);
+}
+
+function getChildY(level: number): number {
+    return level * (NODE_HEIGHT + NODES_GAP);
 }
 
 /**
@@ -648,11 +632,18 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
         id = { type: PERSON_TYPE, id: perspectiveId };
     }
 
+    // const reingoldTilford = new ReingoldTilford(
+    //     getRightmostParent,
+    //     getLeftmostParent,
+    //     getParentNodesIds,
+    //     getParentY,
+    //     family,
+    // );
     const reingoldTilford = new ReingoldTilford(
-        getRightmostParent,
-        getLeftmostParent,
-        getParentNodesIds,
-        getY,
+        getRightmostChild,
+        getLeftmostChild,
+        getChildNodesIds,
+        getChildY,
         family,
     );
 
