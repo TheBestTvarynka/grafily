@@ -307,11 +307,11 @@ function buildPreNodes(
         let x: number;
         let mod: number;
         if (preX === 0) {
-            x = parentNode.x / 2;
+            x = parentNode.x;
             mod = 0;
         } else {
             x = preX;
-            mod = x - parentNode.x / 2;
+            mod = x - parentNode.x;
         }
 
         const preNode: PreNode = {
