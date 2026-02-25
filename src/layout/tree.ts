@@ -66,6 +66,9 @@ function nodeWidth(id: Id): number {
     }
 }
 
+/**
+ * The Reingold-Tilford algorithm implementation for tree layout. It calculates the position of each node in the tree to create a tidy layout.
+ */
 class ReingoldTilford {
     getRightmostChildren: (id: Id, family: Index) => Id | null;
     getLeftmostChildren: (id: Id, family: Index) => Id | null;
@@ -73,6 +76,15 @@ class ReingoldTilford {
     getY: (level: number) => number;
     family: Index;
 
+    /**
+     * Creates an instance of the ReingoldTilford algorithm with the provided functions to access the family relationships and calculating the y coordinate.
+     *
+     * @param {(id: Id, family: Index) => Id | null} getRightmostChildren return the rightmost child of the provided node. For parents tree, it will return the rightmost parent marriage. For children tree, it will return the rightmost child (child or child marriage).
+     * @param {(id: Id, family: Index) => Id | null} getLeftmostChildren return the leftmost child of the provided node. For parents tree, it will return the leftmost parent marriage. For children tree, it will return the leftmost child (child or child marriage).
+     * @param {(currentNode: Id, family: Index) => Id[]} getChildNodesIds returns the children nodes of the provided note. For parents tree, it will return parents marriages. For children tree, it will return children nodes (child or child marriage).
+     * @param {(level: number) => number} getY calculates the node Y coordinate based on the generation level.
+     * @param {Index} family
+     */
     constructor(
         getRightmostChildren: (id: Id, family: Index) => Id | null,
         getLeftmostChildren: (id: Id, family: Index) => Id | null,
@@ -273,7 +285,6 @@ class ReingoldTilford {
         }
 
         const x = preNode.x + mod + preNode.shift;
-        // const y = level * (NODE_HEIGHT + NODES_GAP);
         const y = this.getY(level);
 
         if (nodeId.type === MARRIAGE_TYPE) {
@@ -399,6 +410,7 @@ class ReingoldTilford {
 
 /**
  * Returns the rightmost parent of the given node.
+ *
  * @param {Id} id The Node id to get the rightmost parent for.
  * @param {Index} family The family index containing all the people and their relationships.
  * @returns The rightmost parent of the given node or null if there are no parents.
@@ -430,7 +442,6 @@ function getRightmostParent(id: Id, family: Index): Id | null {
 
         return null;
     } else {
-        // Currently, this case is not supported, but let's handle it.
         const parents = family.personParents.get(id.id);
 
         if (!parents) {
@@ -443,6 +454,7 @@ function getRightmostParent(id: Id, family: Index): Id | null {
 
 /**
  * Returns the leftmost parent of the given node.
+ *
  * @param {Id} id The Node id to get the leftmost parent for.
  * @param {Index} family The family index containing all the people and their relationships.
  * @returns The leftmost parent of the given node or null if there are no parents.
@@ -474,7 +486,6 @@ function getLeftmostParent(id: Id, family: Index): Id | null {
 
         return null;
     } else {
-        // Currently, this case is not supported, but let's handle it.
         const parents = family.personParents.get(id.id);
 
         if (!parents) {
@@ -487,6 +498,7 @@ function getLeftmostParent(id: Id, family: Index): Id | null {
 
 /**
  * Returns the rightmost child of the given node.
+ *
  * @param {Id} id The Node id to get the rightmost child for.
  * @param {Index} family The family index containing all the people and their relationships.
  * @returns The rightmost child of the given node or null if there are no children.
@@ -503,6 +515,7 @@ function getRightmostChild(id: Id, family: Index): Id | null {
 
 /**
  * Returns the leftmost child of the given node.
+ *
  * @param {Id} id The Node id to get the leftmost child for.
  * @param {Index} family The family index containing all the people and their relationships.
  * @returns The leftmost child of the given node or null if there are no children.
@@ -601,10 +614,22 @@ function getChildNodesIds(currentNode: Id, family: Index): Id[] {
     });
 }
 
+/**
+ * Returns the y coordinate for the parent node of the given generation level.
+ *
+ * @param {number} level Person (node) generation level.
+ * @returns The y coordinate for the given generation level.
+ */
 function getParentY(level: number): number {
     return -1 * level * (NODE_HEIGHT + NODES_GAP);
 }
 
+/**
+ * Returns the y coordinate for the child node of the given generation level.
+ *
+ * @param {number} level Person (node) generation level.
+ * @returns The y coordinate for the given generation level.
+ */
 function getChildY(level: number): number {
     return level * (NODE_HEIGHT + NODES_GAP);
 }
@@ -659,6 +684,7 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
     // First walk: calculate preliminary X, mod, and shift values.
     const childrenRootPreNode = childTreeBuilder.buildPreNodes(id, preNodes, 0, [id]);
 
+    // We need to build the children tree relatively to the parents tree.
     const rootsDelta = parentsRootPreNode.x - childrenRootPreNode.x;
 
     // Second walk: calculate final X and Y values, and create nodes.
