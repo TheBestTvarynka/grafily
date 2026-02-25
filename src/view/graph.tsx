@@ -100,6 +100,11 @@ export type IndexContextValue = {
     index: Index;
     setPerson: (person: Person) => void;
     resetIndex: (index: Index) => void;
+    setMarriageFlags: (
+        marriageId: string,
+        isChildNodesFoldable: boolean,
+        isChildNodesHidden: boolean,
+    ) => void;
 };
 export const IndexContext = createContext<IndexContextValue | null>(null);
 
@@ -116,6 +121,23 @@ export function FamilyFlow() {
         setIndex(index);
     };
 
+    const setMarriageFlags = (
+        marriageId: string,
+        isChildNodesFoldable: boolean,
+        isChildNodesHidden: boolean,
+    ) => {
+        const marriage = index.marriageById.get(marriageId);
+        if (!marriage) {
+            console.warn(`Expected marriage(id=${marriageId}) to exist.`);
+            return;
+        }
+
+        marriage.isChildNodesFoldable = isChildNodesFoldable;
+        marriage.isChildNodesHidden = isChildNodesHidden;
+
+        setIndex({ ...index });
+    };
+
     return (
         <div
             style={{
@@ -124,7 +146,7 @@ export function FamilyFlow() {
                 border: 'none',
             }}
         >
-            <IndexContext.Provider value={{ index, setPerson, resetIndex }}>
+            <IndexContext.Provider value={{ index, setPerson, resetIndex, setMarriageFlags }}>
                 <ReactFlowProvider>
                     <FamilyGraph />
                 </ReactFlowProvider>

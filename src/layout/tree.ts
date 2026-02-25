@@ -306,7 +306,12 @@ class ReingoldTilford {
             // Create a marriage node first.
             nodes.push({
                 id: marriage.id,
-                data: { id: marriage.id, isChildNodesFoldable: this.isChildNodesFoldable },
+                data: {
+                    id: marriage.id,
+                    isChildNodesFoldable:
+                        this.isChildNodesFoldable && marriage.childrenIds.length > 0,
+                    isChildNodesHidden: marriage.isChildNodesHidden,
+                },
                 type: MARRIAGE_NODE_TYPE,
                 position: {
                     x: x + NODE_WIDTH + MARRIAGE_GAP - MARRIAGE_NODE_SIZE / 2,
@@ -558,6 +563,10 @@ function getChildNodesIds(currentNode: Id, family: Index): Id[] {
         }
 
         marriage = nodeMarriage;
+    }
+
+    if (marriage.isChildNodesHidden) {
+        return [];
     }
 
     return marriage.childrenIds.map((id) => {

@@ -195,6 +195,7 @@ export function MarriageNode({ data }: any) {
     const index = useIndex();
 
     const [hasChildren, setHasChildren] = useState<boolean>(true);
+    const [isChildNodesFoldable, setIsChildNodesFoldable] = useState<boolean>(false);
 
     useEffect(() => {
         if (!index) {
@@ -212,7 +213,29 @@ export function MarriageNode({ data }: any) {
         } else {
             setHasChildren(false);
         }
+
+        if (data.isChildNodesFoldable) {
+            setIsChildNodesFoldable(true);
+        } else {
+            setIsChildNodesFoldable(false);
+        }
     }, [index]);
+
+    const getHideChildNodesIcon = (): string => {
+        if (data.isChildNodesHidden) {
+            return PLUS_ICON;
+        } else {
+            return MINUS_ICON;
+        }
+    };
+
+    const collapseChildren = () => {
+        if (!index) {
+            return;
+        }
+
+        index.setMarriageFlags(data.id, data.isChildNodesFoldable, !data.isChildNodesHidden);
+    };
 
     return (
         <div
@@ -220,8 +243,38 @@ export function MarriageNode({ data }: any) {
                 padding: '0.2em',
                 height: `${MARRIAGE_NODE_SIZE}px`,
                 width: `${MARRIAGE_NODE_SIZE}px`,
+                position: 'relative',
             }}
         >
+            {isChildNodesFoldable ? (
+                <button
+                    onClick={collapseChildren}
+                    style={{
+                        outline: 'revert',
+                        position: 'absolute',
+                        top: 'calc(-50% + 4px)',
+                        left: 'calc(-50% + 3px)',
+                        padding: 0,
+                        cursor: 'pointer',
+                        zIndex: 99,
+                        backgroundColor: 'transparent',
+                        height: '14px',
+                        width: '14px',
+                    }}
+                >
+                    <img
+                        src={getHideChildNodesIcon()}
+                        style={{
+                            height: '100%',
+                            width: '100%',
+                            backgroundColor: 'rgb(64, 55, 53)',
+                            borderRadius: '3px',
+                        }}
+                    />
+                </button>
+            ) : (
+                <></>
+            )}
             <Handle type="source" position={Position.Left} id="left" />
             <Handle type="source" position={Position.Right} id="right" />
             {hasChildren ? <Handle type="source" position={Position.Bottom} id="bottom" /> : <></>}
