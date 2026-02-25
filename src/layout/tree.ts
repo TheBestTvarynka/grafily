@@ -416,39 +416,12 @@ class ReingoldTilford {
  * @returns The rightmost parent of the given node or null if there are no parents.
  */
 function getRightmostParent(id: Id, family: Index): Id | null {
-    if (id.type === MARRIAGE_TYPE) {
-        const marriage = family.marriageById.get(id.id);
-        if (!marriage) {
-            throw new Error(`Expected marriage to exist for id ${id.id}`);
-        }
+    const parents = getParentNodesIds(id, family);
 
-        if (marriage.parent2Id) {
-            const parents = family.personParents.get(marriage.parent2Id);
-            const parent2 = family.personById.get(marriage.parent2Id);
-
-            if (parents && !parent2?.isParentNodesHidden) {
-                return { type: MARRIAGE_TYPE, id: parents };
-            }
-        }
-
-        if (marriage.parent1Id) {
-            const parents = family.personParents.get(marriage.parent1Id);
-            const parent1 = family.personById.get(marriage.parent1Id);
-
-            if (parents && !parent1?.isParentNodesHidden) {
-                return { type: MARRIAGE_TYPE, id: parents };
-            }
-        }
-
-        return null;
+    if (parents[parents.length - 1]) {
+        return parents[parents.length - 1] as Id /* SAFE: checked above */;
     } else {
-        const parents = family.personParents.get(id.id);
-
-        if (!parents) {
-            return null;
-        } else {
-            return { type: MARRIAGE_TYPE, id: parents };
-        }
+        return null;
     }
 }
 
@@ -460,39 +433,12 @@ function getRightmostParent(id: Id, family: Index): Id | null {
  * @returns The leftmost parent of the given node or null if there are no parents.
  */
 function getLeftmostParent(id: Id, family: Index): Id | null {
-    if (id.type === MARRIAGE_TYPE) {
-        const marriage = family.marriageById.get(id.id);
-        if (!marriage) {
-            throw new Error(`Expected marriage to exist for id ${id.id}`);
-        }
+    const parents = getParentNodesIds(id, family);
 
-        if (marriage.parent1Id) {
-            const parentsMarriageId = family.personParents.get(marriage.parent1Id);
-            const parent1 = family.personById.get(marriage.parent1Id);
-
-            if (parentsMarriageId && !parent1?.isParentNodesHidden) {
-                return { type: MARRIAGE_TYPE, id: parentsMarriageId };
-            }
-        }
-
-        if (marriage.parent2Id) {
-            const parentsMarriageId = family.personParents.get(marriage.parent2Id);
-            const parent2 = family.personById.get(marriage.parent2Id);
-
-            if (parentsMarriageId && !parent2?.isParentNodesHidden) {
-                return { type: MARRIAGE_TYPE, id: parentsMarriageId };
-            }
-        }
-
-        return null;
+    if (parents[0]) {
+        return parents[0];
     } else {
-        const parents = family.personParents.get(id.id);
-
-        if (!parents) {
-            return null;
-        } else {
-            return { type: MARRIAGE_TYPE, id: parents };
-        }
+        return null;
     }
 }
 
