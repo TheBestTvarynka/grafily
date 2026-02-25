@@ -35,7 +35,7 @@ export type Person = {
 
     // Rendering options.
     isParentNodesHidden: boolean;
-    parentNodesFoldable: boolean;
+    isParentNodesFoldable: boolean;
     marriageNodeSide: MarriageNodeSide;
 };
 
@@ -44,6 +44,10 @@ export type Marriage = {
     parent1Id?: string;
     parent2Id?: string;
     childrenIds: string[];
+
+    // Rendering options.
+    isChildNodesHidden: boolean;
+    childNodesFoldable: boolean;
 };
 
 export type Family = {
@@ -86,6 +90,8 @@ export function familyFromPersons(persons: Person[]): Family {
                     parent1Id: person.id,
                     parent2Id: spouse_id,
                     childrenIds: [],
+                    isChildNodesHidden: false,
+                    childNodesFoldable: false,
                 });
             }
         }
@@ -109,6 +115,8 @@ export function familyFromPersons(persons: Person[]): Family {
                     parent1Id: person.parents[0],
                     parent2Id: person.parents[1],
                     childrenIds: [person.id],
+                    isChildNodesHidden: false,
+                    childNodesFoldable: false,
                 };
                 marriages.push(parentsMarriage);
             }
@@ -137,6 +145,8 @@ export function familyFromPersons(persons: Person[]): Family {
                     id: `${person.id}_unknown`,
                     parent1Id: person.id,
                     childrenIds: [],
+                    isChildNodesHidden: false,
+                    childNodesFoldable: false,
                 });
             }
 

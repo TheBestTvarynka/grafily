@@ -26,6 +26,9 @@ const PERSON_TYPE = 'person';
 const MARRIAGE_TYPE = 'marriage';
 type PreNodeType = typeof PERSON_TYPE | typeof MARRIAGE_TYPE;
 
+const PERSON_NODE_TYPE = 'personNode';
+const MARRIAGE_NODE_TYPE = 'marriageNode';
+
 /**
  * Represents a preliminary tree node id.
  *
@@ -75,6 +78,9 @@ class ReingoldTilford {
     getChildNodesIds: (currentNode: Id, family: Index) => Id[];
     getY: (level: number) => number;
     family: Index;
+    // Rendering options.
+    isParentNodesFoldable: boolean;
+    isChildNodesFoldable: boolean;
 
     /**
      * Creates an instance of the ReingoldTilford algorithm with the provided functions to access the family relationships and calculating the y coordinate.
@@ -91,12 +97,16 @@ class ReingoldTilford {
         getChildNodesIds: (currentNode: Id, family: Index) => Id[],
         getY: (level: number) => number,
         family: Index,
+        isParentNodesFoldable: boolean,
+        isChildNodesFoldable: boolean,
     ) {
         this.getRightmostChildren = getRightmostChildren;
         this.getLeftmostChildren = getLeftmostChildren;
         this.getChildNodesIds = getChildNodesIds;
         this.getY = getY;
         this.family = family;
+        this.isParentNodesFoldable = isParentNodesFoldable;
+        this.isChildNodesFoldable = isChildNodesFoldable;
     }
 
     /**
@@ -296,8 +306,8 @@ class ReingoldTilford {
             // Create a marriage node first.
             nodes.push({
                 id: marriage.id,
-                data: { id: marriage.id },
-                type: 'marriageNode',
+                data: { id: marriage.id, isChildNodesFoldable: this.isChildNodesFoldable },
+                type: MARRIAGE_NODE_TYPE,
                 position: {
                     x: x + NODE_WIDTH + MARRIAGE_GAP - MARRIAGE_NODE_SIZE / 2,
                     y: y + NODE_HEIGHT / 2 - MARRIAGE_NODE_SIZE / 2,
@@ -321,12 +331,12 @@ class ReingoldTilford {
                 }
 
                 person.marriageNodeSide = RIGHT_SIDE;
-                person.parentNodesFoldable = true;
+                person.isParentNodesFoldable = this.isParentNodesFoldable;
                 nodes.push({
                     id: parent1NodeId,
                     data: { person },
                     position: { x, y },
-                    type: 'personNode',
+                    type: PERSON_NODE_TYPE,
                     style: {
                         color: '#222',
                     },
@@ -349,12 +359,12 @@ class ReingoldTilford {
                 }
 
                 person.marriageNodeSide = LEFT_SIDE;
-                person.parentNodesFoldable = true;
+                person.isParentNodesFoldable = this.isParentNodesFoldable;
                 nodes.push({
                     id: parent2NodeId,
                     data: { person },
                     position: { x: x + NODE_WIDTH + 2 * MARRIAGE_GAP, y },
-                    type: 'personNode',
+                    type: PERSON_NODE_TYPE,
                     style: {
                         color: '#222',
                     },
@@ -384,12 +394,12 @@ class ReingoldTilford {
                 throw new Error(`Expected person to exist for id ${nodeId.id}`);
             }
 
-            person.parentNodesFoldable = true;
+            person.isParentNodesFoldable = this.isParentNodesFoldable;
             nodes.push({
                 id: nodeId.id,
                 data: { person },
                 position: { x, y },
-                type: 'personNode',
+                type: PERSON_NODE_TYPE,
                 style: {
                     color: '#222',
                 },
@@ -592,13 +602,21 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
 
     let id: Id;
     const marriages = family.personMarriages.get(perspectiveId) ?? [];
+    const marriagePersons: string[] = [];
     if (marriages.length > 0) {
-        if (!marriages[0]) {
+        const marriage = marriages[0];
+        if (!marriage) {
             throw new Error(
                 `Invalid number of marriages for person(${perspectiveId}): ${marriages.length}. Only one marriage per person is supported.`,
             );
         }
-        id = { type: MARRIAGE_TYPE, id: marriages[0].id };
+        id = { type: MARRIAGE_TYPE, id: marriage.id };
+        if (marriage.parent1Id) {
+            marriagePersons.push(marriage.parent1Id);
+        }
+        if (marriage.parent2Id) {
+            marriagePersons.push(marriage.parent2Id);
+        }
     } else {
         id = { type: PERSON_TYPE, id: perspectiveId };
     }
@@ -612,6 +630,8 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
         getParentNodesIds,
         getParentY,
         family,
+        true,
+        false,
     );
 
     // First walk: calculate preliminary X, mod, and shift values.
@@ -625,6 +645,8 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
         getChildNodesIds,
         getChildY,
         family,
+        false,
+        true,
     );
 
     // First walk: calculate preliminary X, mod, and shift values.
@@ -643,7 +665,7 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
         rootsDelta,
     );
 
-    let rootId = parentsRootPreNode.id;
+    let rootIds = [parentsRootPreNode.id, ...marriagePersons];
     // We built two trees: one for parents and one for children. So, we have two nodes for the root person.
     // We use this flag to filter nodes and keep only one root node.
     let rootAdded = false;
@@ -652,8 +674,13 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
     const uniqueEdges = new Set<string>();
     return [
         nodes.filter((node) => {
-            if (rootId.id !== node.id) {
+            if (!rootIds.includes(node.id)) {
                 return true;
+            }
+
+            if (node.type === PERSON_NODE_TYPE) {
+                // @ts-ignore
+                node.data.person.isParentNodesFoldable = parentsTreeBuilder.isParentNodesFoldable;
             }
 
             if (!rootAdded) {

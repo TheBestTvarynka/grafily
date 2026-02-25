@@ -604,7 +604,7 @@ function finalizeNodesLayout(
         }
 
         if (unit.rightSibling === mainSibling) {
-            person.parentNodesFoldable = true;
+            person.isParentNodesFoldable = true;
         }
 
         const nodeX = x + unit.width - NODE_WIDTH;
@@ -697,7 +697,7 @@ function finalizeNodesLayout(
         }
 
         if (unit.leftSibling === mainSibling) {
-            person.parentNodesFoldable = true;
+            person.isParentNodesFoldable = true;
         }
 
         nodes.push({
@@ -795,7 +795,7 @@ function finalizeNodesLayout(
         }
 
         if (sibling === mainSibling) {
-            person.parentNodesFoldable = true;
+            person.isParentNodesFoldable = true;
         }
 
         nodes.push({
