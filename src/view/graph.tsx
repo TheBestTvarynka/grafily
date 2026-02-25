@@ -33,7 +33,7 @@ function FamilyGraph() {
             return;
         }
 
-        const graph = buildNodes('Yuhym', index.index);
+        const graph = buildNodes('Oleksii', index.index);
         setGraph(graph);
     }, [index]);
 
@@ -76,7 +76,7 @@ function FamilyGraph() {
             const family = familyFromPersons(persons);
             const familyIndex = buildIndex(family);
             index.resetIndex(familyIndex);
-            const graph = buildNodes('Yuhym', familyIndex);
+            const graph = buildNodes('Oleksii', familyIndex);
 
             if (!cancelled) {
                 setGraph(graph);

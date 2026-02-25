@@ -632,14 +632,23 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
         id = { type: PERSON_TYPE, id: perspectiveId };
     }
 
-    // const reingoldTilford = new ReingoldTilford(
-    //     getRightmostParent,
-    //     getLeftmostParent,
-    //     getParentNodesIds,
-    //     getParentY,
-    //     family,
-    // );
-    const reingoldTilford = new ReingoldTilford(
+    const nodes: Node[] = [];
+    const edges: Edge[] = [];
+
+    const parentsTreeBuilder = new ReingoldTilford(
+        getRightmostParent,
+        getLeftmostParent,
+        getParentNodesIds,
+        getParentY,
+        family,
+    );
+
+    // First walk: calculate preliminary X, mod, and shift values.
+    const parentsRootPreNode = parentsTreeBuilder.buildPreNodes(id, preNodes, 0, [id]);
+    // Second walk: calculate final X and Y values, and create nodes.
+    parentsTreeBuilder.finalizeNodesLayout(parentsRootPreNode.id, preNodes, nodes, edges, 0, 0);
+
+    const childTreeBuilder = new ReingoldTilford(
         getRightmostChild,
         getLeftmostChild,
         getChildNodesIds,
@@ -648,12 +657,38 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
     );
 
     // First walk: calculate preliminary X, mod, and shift values.
-    const rootPreNode = reingoldTilford.buildPreNodes(id, preNodes, 0, [id]);
+    const childrenRootPreNode = childTreeBuilder.buildPreNodes(id, preNodes, 0, [id]);
 
-    const nodes: Node[] = [];
-    const edges: Edge[] = [];
+    const rootsDelta = parentsRootPreNode.x - childrenRootPreNode.x;
+
     // Second walk: calculate final X and Y values, and create nodes.
-    reingoldTilford.finalizeNodesLayout(rootPreNode.id, preNodes, nodes, edges, 0, 0);
+    childTreeBuilder.finalizeNodesLayout(
+        childrenRootPreNode.id,
+        preNodes,
+        nodes,
+        edges,
+        0,
+        rootsDelta,
+    );
 
-    return [nodes, edges];
+    // parentsRootPreNode.shift += rootsDelta;
+
+    let rootId = parentsRootPreNode.id;
+    let rootAdded = false;
+    return [
+        nodes.filter((node) => {
+            if (rootId.id !== node.id) {
+                return true;
+            }
+
+            if (!rootAdded) {
+                rootAdded = true;
+                return true;
+            }
+
+            // We already added the root node, so we need to skip the second one.
+            return true;
+        }),
+        edges,
+    ];
 }
