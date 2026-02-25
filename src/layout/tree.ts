@@ -620,14 +620,14 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
     const preNodes = new Map<string, PreNode>();
 
     let id: Id;
-    const marriage = family.personMarriages.get(perspectiveId) ?? [];
-    if (marriage.length > 0) {
-        if (!marriage[0]) {
+    const marriages = family.personMarriages.get(perspectiveId) ?? [];
+    if (marriages.length > 0) {
+        if (!marriages[0]) {
             throw new Error(
-                `Invalid number of marriages for person(${perspectiveId}): ${marriage.length}. Only one marriage per person is supported.`,
+                `Invalid number of marriages for person(${perspectiveId}): ${marriages.length}. Only one marriage per person is supported.`,
             );
         }
-        id = { type: MARRIAGE_TYPE, id: marriage[0].id };
+        id = { type: MARRIAGE_TYPE, id: marriages[0].id };
     } else {
         id = { type: PERSON_TYPE, id: perspectiveId };
     }
@@ -671,10 +671,13 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
         rootsDelta,
     );
 
-    // parentsRootPreNode.shift += rootsDelta;
-
     let rootId = parentsRootPreNode.id;
+    // We built two trees: one for parents and one for children. So, we have two nodes for the root person.
+    // We use this flag to filter nodes and keep only one root node.
     let rootAdded = false;
+
+    // Yes, we can do smarter that that but I do not want to overcomplicate it.
+    const uniqueEdges = new Set<string>();
     return [
         nodes.filter((node) => {
             if (rootId.id !== node.id) {
@@ -689,6 +692,13 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
             // We already added the root node, so we need to skip the second one.
             return true;
         }),
-        edges,
+        edges.filter((edge) => {
+            if (!uniqueEdges.has(edge.id)) {
+                uniqueEdges.add(edge.id);
+                return true;
+            }
+
+            return false;
+        }),
     ];
 }
