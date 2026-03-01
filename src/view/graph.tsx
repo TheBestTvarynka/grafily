@@ -12,7 +12,8 @@ import {
 } from '@xyflow/react';
 
 // import { buildNodes } from '../layout';
-import { buildNodes } from '../layout/tree';
+// import { buildNodes } from '../layout/tree';
+import { buildNodes } from '../layout/fullGraph';
 import { buildIndex, emptyIndex, familyFromPersons, Index, Person } from '../model';
 import { useApp, useIndex } from '../hooks';
 import { extractPageMeta } from '../parsing';

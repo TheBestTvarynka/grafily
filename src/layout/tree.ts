@@ -12,7 +12,7 @@ export const NODE_WIDTH = 140;
 export const NODE_HEIGHT = 70;
 export const MARRIAGE_NODE_SIZE = 10;
 const MARRIAGE_GAP = 20;
-const NODES_GAP = 40;
+export const NODES_GAP = 40;
 
 // +------------+                             +------------+
 // |  parent1   |--------------o--------------|  parent2   |
