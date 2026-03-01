@@ -34,16 +34,20 @@ export type Person = {
     file: TFile;
 
     // Rendering options.
-    hideParents: boolean;
-    parentsFoldable: boolean;
+    isParentNodesHidden: boolean;
+    isParentNodesFoldable: boolean;
     marriageNodeSide: MarriageNodeSide;
 };
 
 export type Marriage = {
     id: string;
-    parent1_id?: string;
-    parent2_id?: string;
-    children_ids: string[];
+    parent1Id?: string;
+    parent2Id?: string;
+    childrenIds: string[];
+
+    // Rendering options.
+    isChildNodesHidden: boolean;
+    isChildNodesFoldable: boolean;
 };
 
 export type Family = {
@@ -56,11 +60,11 @@ export function familyFromPersons(persons: Person[]): Family {
 
     const findMarriages = (person_id: string) =>
         marriages.filter(
-            (marriage) => marriage.parent1_id === person_id || marriage.parent2_id === person_id,
+            (marriage) => marriage.parent1Id === person_id || marriage.parent2Id === person_id,
         );
     const getMarriage = (person_id: string, marriages: Marriage[]) =>
         marriages.find(
-            (marriage) => marriage.parent1_id === person_id || marriage.parent2_id === person_id,
+            (marriage) => marriage.parent1Id === person_id || marriage.parent2Id === person_id,
         );
 
     for (const person of persons) {
@@ -83,9 +87,11 @@ export function familyFromPersons(persons: Person[]): Family {
             if (!marriage) {
                 marriages.push({
                     id: `${person.id}_${spouse_id}`,
-                    parent1_id: person.id,
-                    parent2_id: spouse_id,
-                    children_ids: [],
+                    parent1Id: person.id,
+                    parent2Id: spouse_id,
+                    childrenIds: [],
+                    isChildNodesHidden: false,
+                    isChildNodesFoldable: false,
                 });
             }
         }
@@ -106,26 +112,28 @@ export function familyFromPersons(persons: Person[]): Family {
             if (!parentsMarriage) {
                 parentsMarriage = {
                     id: `${person.parents[0]}_${person.parents[1] ?? 'Unknown'}`,
-                    parent1_id: person.parents[0],
-                    parent2_id: person.parents[1],
-                    children_ids: [person.id],
+                    parent1Id: person.parents[0],
+                    parent2Id: person.parents[1],
+                    childrenIds: [person.id],
+                    isChildNodesHidden: false,
+                    isChildNodesFoldable: false,
                 };
                 marriages.push(parentsMarriage);
             }
 
             if (person.parents[1]) {
-                if (parentsMarriage.parent1_id === person.parents[0]) {
-                    parentsMarriage.parent2_id = person.parents[1];
+                if (parentsMarriage.parent1Id === person.parents[0]) {
+                    parentsMarriage.parent2Id = person.parents[1];
                 }
 
-                if (parentsMarriage.parent2_id === person.parents[0]) {
-                    parentsMarriage.parent1_id = person.parents[1];
+                if (parentsMarriage.parent2Id === person.parents[0]) {
+                    parentsMarriage.parent1Id = person.parents[1];
                 }
             }
 
             // Avoid repetitions.
-            if (parentsMarriage.children_ids.indexOf(person.id) === -1) {
-                parentsMarriage.children_ids.push(person.id);
+            if (parentsMarriage.childrenIds.indexOf(person.id) === -1) {
+                parentsMarriage.childrenIds.push(person.id);
             }
         }
 
@@ -135,8 +143,10 @@ export function familyFromPersons(persons: Person[]): Family {
             if (!personMarriage) {
                 marriages.push({
                     id: `${person.id}_unknown`,
-                    parent1_id: person.id,
-                    children_ids: [],
+                    parent1Id: person.id,
+                    childrenIds: [],
+                    isChildNodesHidden: false,
+                    isChildNodesFoldable: false,
                 });
             }
 
@@ -147,8 +157,8 @@ export function familyFromPersons(persons: Person[]): Family {
 
             for (const child_id of person.children) {
                 // Avoid repetitions.
-                if (marriage.children_ids.indexOf(child_id) === -1) {
-                    marriage.children_ids.push(child_id);
+                if (marriage.childrenIds.indexOf(child_id) === -1) {
+                    marriage.childrenIds.push(child_id);
                 }
             }
         }
@@ -194,7 +204,7 @@ export function buildIndex(family: Family): Index {
     const personParents = new Map<string, string>();
 
     for (const marriage of family.marriages) {
-        for (const parent_id of [marriage.parent1_id, marriage.parent2_id]) {
+        for (const parent_id of [marriage.parent1Id, marriage.parent2Id]) {
             if (!parent_id) {
                 continue;
             }
@@ -204,10 +214,10 @@ export function buildIndex(family: Family): Index {
             personMarriages.set(parent_id, [...parent_marriages, marriage]);
         }
 
-        for (const childId of marriage.children_ids) {
+        for (const childId of marriage.childrenIds) {
             personParents.set(childId, marriage.id);
 
-            for (const parentId of [marriage.parent1_id, marriage.parent2_id]) {
+            for (const parentId of [marriage.parent1Id, marriage.parent2Id]) {
                 if (!parentId) {
                     continue;
                 }
