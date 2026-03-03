@@ -1,19 +1,15 @@
 import { Edge, Node } from '@xyflow/react';
-import { NODE_HEIGHT, NODE_WIDTH } from 'layout';
-import { Index, LEFT_SIDE, Person } from 'model';
 import { Vault } from 'obsidian';
-import { NODES_GAP } from './tree';
 
-// ---------------------------------------------------------------------------
-// Data-input types
-// ---------------------------------------------------------------------------
+import { Id, MARRIAGE_TYPE, NODES_GAP, NODE_HEIGHT, NODE_WIDTH, PERSON_TYPE } from './consts';
+import { Index, LEFT_SIDE, Person } from '../model';
 
 /**
  * Describes one node for the input array.  `parentIds` lists all nodes that
  * are direct parents of this node (i.e. there is a directed edge
  * parent → this node).
  */
-export interface NodeInput {
+interface NodeInput {
     id: string;
     parentIds: string[];
 }
@@ -25,17 +21,13 @@ export interface NodeInput {
  * - `level`  – 0-based index of the layer (top = 0).
  * - `order`  – 0-based position of this node inside that layer (left = 0).
  */
-export interface NodeLayout {
+interface NodeLayout {
     id: string;
     level: number;
     order: number;
 }
 
-// ---------------------------------------------------------------------------
-// Internal graph structure
-// ---------------------------------------------------------------------------
-
-export interface GraphStructure {
+interface GraphStructure {
     /** parents[nodeId] = array of parent node ids */
     parents: Map<string, string[]>;
     /** children[nodeId] = array of child node ids */
@@ -48,10 +40,6 @@ export interface GraphStructure {
     layering: string[][];
 }
 
-// ---------------------------------------------------------------------------
-// Graph builder
-// ---------------------------------------------------------------------------
-
 /**
  * Builds the internal graph structure from a flat input list plus an explicit
  * layout description.
@@ -61,11 +49,10 @@ export interface GraphStructure {
  *                node goes in the layered layout.  Every node id present in
  *                `nodes` must appear here exactly once.
  */
-export function buildGraph(nodes: NodeInput[], layouts: NodeLayout[]): GraphStructure {
+function buildGraph(nodes: NodeInput[], layouts: NodeLayout[]): GraphStructure {
     const parents: Map<string, string[]> = new Map();
     const children: Map<string, string[]> = new Map();
 
-    // Initialise maps
     for (const n of nodes) {
         parents.set(n.id, []);
         children.set(n.id, []);
@@ -103,7 +90,6 @@ export function buildGraph(nodes: NodeInput[], layouts: NodeLayout[]): GraphStru
         }
     }
 
-    // Sort each layer by `order`
     const orderOf: Record<string, number> = {};
     for (const nodeLayout of layouts) {
         orderOf[nodeLayout.id] = nodeLayout.order;
@@ -124,10 +110,6 @@ export function buildGraph(nodes: NodeInput[], layouts: NodeLayout[]): GraphStru
 
     return { parents, children, layering };
 }
-
-// ---------------------------------------------------------------------------
-// Brandes-Köpf vertical alignment (single pass, no conflict detection)
-// ---------------------------------------------------------------------------
 
 /**
  * Aligns nodes into vertical "blocks" by trying to align each node with the
@@ -203,10 +185,6 @@ function verticalAlignment(
 
     return { root, align };
 }
-
-// ---------------------------------------------------------------------------
-// Brandes-Köpf horizontal compaction
-// ---------------------------------------------------------------------------
 
 /**
  * Assigns x coordinates by:
@@ -341,10 +319,6 @@ function horizontalCompaction(
     return result;
 }
 
-// ---------------------------------------------------------------------------
-// positionX  –  compute final x coordinates (BK, four alignments + balance)
-// ---------------------------------------------------------------------------
-
 /**
  * Runs all four Brandes-Köpf alignments (UL, UR, DL, DR), picks the one with
  * the smallest total width, aligns all four to it and returns the balanced
@@ -450,10 +424,6 @@ export function positionX(
     return result;
 }
 
-// ---------------------------------------------------------------------------
-// Y coordinate assignment
-// ---------------------------------------------------------------------------
-
 /**
  * Assigns y coordinates: each layer gets a y position based on its index,
  * the node heights in that layer and the vertical separation between layers.
@@ -480,10 +450,6 @@ export function positionY(
 
     return result;
 }
-
-// ---------------------------------------------------------------------------
-// Main entry-point
-// ---------------------------------------------------------------------------
 
 /**
  * High-level helper: given raw data + explicit layout, produce positioned
@@ -540,10 +506,6 @@ export function buildTbt(
 
     return [nodes, edges];
 }
-
-// ---------------------------------------------------------------------------
-// Example usage (can be deleted once you integrate into your plugin)
-// ---------------------------------------------------------------------------
 
 const data: NodeInput[] = [
     { id: '1', parentIds: [] },
@@ -632,22 +594,6 @@ export function buildNodes(_perspectiveId: string, _family: Index): [Node[], Edg
     return buildTbt(data, layouts);
 }
 
-/*
-
-//  Layer 0:  1   2
-//  Layer 1:  3   4
-//  Layer 2:      5
-const layouts: NodeLayout[] = [
-    { id: "1", level: 0, order: 0 },
-    { id: "2", level: 0, order: 1 },
-    { id: "3", level: 1, order: 0 },
-    { id: "4", level: 1, order: 1 },
-    { id: "5", level: 2, order: 0 },
-];
-
-const [nodes, edges] = buildNodes(data, layouts, 80, 40, 50, 80);
-*/
-
 function idToPerson(id: string): Person {
     return {
         id,
@@ -672,4 +618,53 @@ function idToPerson(id: string): Person {
             vault: null as unknown as Vault,
         },
     };
+}
+
+interface GraphNode {
+    id: Id;
+}
+
+class GraphBuilder {
+    private persons = new Map<Id, Person[]>();
+    private parents = new Map<Id, Id[]>();
+    private children = new Map<Id, Id[]>();
+    private family: Index;
+
+    constructor(family: Index) {
+        this.family = family;
+
+        this.persons = new Map<Id, Person[]>();
+        this.parents = new Map<Id, Id[]>();
+        this.children = new Map<Id, Id[]>();
+    }
+
+    build(perspectiveId: string) {
+        const marriages = this.family.personMarriages.get(perspectiveId) ?? [];
+        const marriage = marriages[0];
+
+        // Initialization. We form a starting node.
+        let id: Id;
+        if (marriage) {
+            id = {
+                type: MARRIAGE_TYPE,
+                id: marriage.id,
+            };
+            const marriagePersons = [];
+            if (marriage.parent1Id) {
+                marriagePersons.push(this.family.personById.get(marriage.parent1Id)!);
+            }
+            if (marriage.parent2Id) {
+                marriagePersons.push(this.family.personById.get(marriage.parent2Id)!);
+            }
+            this.persons.set(id, marriagePersons);
+        } else {
+            id = {
+                type: PERSON_TYPE,
+                id: perspectiveId,
+            };
+            this.persons.set(id, [this.family.personById.get(perspectiveId)!]);
+        }
+
+        //
+    }
 }

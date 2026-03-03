@@ -7,38 +7,20 @@
 import { Edge, Node } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 import { Index, LEFT_SIDE, Marriage, RIGHT_SIDE } from '../model';
-
-export const NODE_WIDTH = 140;
-export const NODE_HEIGHT = 70;
-export const MARRIAGE_NODE_SIZE = 10;
-const MARRIAGE_GAP = 20;
-export const NODES_GAP = 40;
-
-// +------------+                             +------------+
-// |  parent1   |--------------o--------------|  parent2   |
-// +------------+                             +------------+
-//
-// | NODE_WIDTH | MARRIAGE_GAP | MARRIAGE_GAP | NODE_WIDTH |
-// |                    MARRIAGE_WIDTH                     |
-const MARRIAGE_WIDTH = (NODE_WIDTH + MARRIAGE_GAP) * 2;
-
-const PERSON_TYPE = 'person';
-const MARRIAGE_TYPE = 'marriage';
-type PreNodeType = typeof PERSON_TYPE | typeof MARRIAGE_TYPE;
-
-const PERSON_NODE_TYPE = 'personNode';
-const MARRIAGE_NODE_TYPE = 'marriageNode';
-
-/**
- * Represents a preliminary tree node id.
- *
- * @property {PreNodeType} type - The type of the node (person or marriage).
- * @property {string} id - If `type` is a person type, this is the person id. If `type` is a marriage type, this is marriage id.
- */
-type Id = {
-    type: PreNodeType;
-    id: string;
-};
+import {
+    MARRIAGE_WIDTH,
+    NODE_WIDTH,
+    PERSON_TYPE,
+    Id,
+    nodeWidth,
+    NODES_GAP,
+    MARRIAGE_TYPE,
+    NODE_HEIGHT,
+    MARRIAGE_NODE_SIZE,
+    MARRIAGE_GAP,
+    MARRIAGE_NODE_TYPE,
+    PERSON_NODE_TYPE,
+} from './consts';
 
 /**
  * Represents a preliminary tree node used during the layout computation.
@@ -54,20 +36,6 @@ type PreNode = {
     mod: number;
     shift: number;
 };
-
-/**
- * Returns the width of the node based on its type.
- *
- * @param {Id} id The Node id to get the width for.
- * @returns The width of the node.
- */
-function nodeWidth(id: Id): number {
-    if (id.type === PERSON_TYPE) {
-        return NODE_WIDTH;
-    } else {
-        return MARRIAGE_WIDTH;
-    }
-}
 
 /**
  * The Reingold-Tilford algorithm implementation for tree layout. It calculates the position of each node in the tree to create a tidy layout.
