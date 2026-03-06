@@ -2,7 +2,7 @@ import { Edge, Node } from '@xyflow/react';
 import { Vault } from 'obsidian';
 
 import { Id, MARRIAGE_TYPE, NODES_GAP, NODE_HEIGHT, NODE_WIDTH, PERSON_TYPE } from './consts';
-import { Index, LEFT_SIDE, Person } from '../model';
+import { Index, LEFT_SIDE, RIGHT_SIDE, Person, Marriage } from '../model';
 
 /**
  * Describes one node for the input array.  `parentIds` lists all nodes that
@@ -14,20 +14,7 @@ interface NodeInput {
     parentIds: string[];
 }
 
-/**
- * Describes where a node lives in the layered layout.
- *
- * - `id`     – unique identifier of the node.
- * - `level`  – 0-based index of the layer (top = 0).
- * - `order`  – 0-based position of this node inside that layer (left = 0).
- */
-interface NodeLayout {
-    id: string;
-    level: number;
-    order: number;
-}
-
-interface GraphStructure {
+interface FamilyGraph {
     /** parents[nodeId] = array of parent node ids */
     parents: Map<string, string[]>;
     /** children[nodeId] = array of child node ids */
@@ -38,77 +25,6 @@ interface GraphStructure {
      * sorted by their `order` value.
      */
     layering: string[][];
-}
-
-/**
- * Builds the internal graph structure from a flat input list plus an explicit
- * layout description.
- *
- * @param nodes   Flat array of {id, parentIds} tuples.
- * @param layouts Array of {id, level, order} tuples that decide where each
- *                node goes in the layered layout.  Every node id present in
- *                `nodes` must appear here exactly once.
- */
-function buildGraph(nodes: NodeInput[], layouts: NodeLayout[]): GraphStructure {
-    const parents: Map<string, string[]> = new Map();
-    const children: Map<string, string[]> = new Map();
-
-    for (const n of nodes) {
-        parents.set(n.id, []);
-        children.set(n.id, []);
-    }
-
-    // Fill parents / children from parentIds
-    for (const n of nodes) {
-        for (const parentId of n.parentIds) {
-            const parentsOfNode = parents.get(n.id);
-            if (parentsOfNode) {
-                parentsOfNode.push(parentId);
-            } else {
-                throw new Error(`Node ${n.id} does not have initialized parents array`);
-            }
-
-            const c = children.get(parentId);
-            if (c) {
-                c.push(n.id);
-            } else {
-                throw new Error(`Parent ${parentId} does not have initialized children array`);
-            }
-        }
-    }
-
-    // Build layering from explicit layout
-    const maxLevel = layouts.reduce((m, l) => Math.max(m, l.level), 0);
-    const layering: string[][] = Array.from({ length: maxLevel + 1 }, () => []);
-
-    for (const nodeLayout of layouts) {
-        const level = layering[nodeLayout.level];
-        if (level) {
-            level.push(nodeLayout.id);
-        } else {
-            throw new Error(`Level ${nodeLayout.level} does not have initialized layer array`);
-        }
-    }
-
-    const orderOf: Record<string, number> = {};
-    for (const nodeLayout of layouts) {
-        orderOf[nodeLayout.id] = nodeLayout.order;
-    }
-
-    for (const layer of layering) {
-        layer.sort((a, b) => {
-            let orderA = orderOf[a];
-            let orderB = orderOf[b];
-
-            if (orderA === undefined || orderB === undefined) {
-                throw new Error(`Node ${orderA} or ${orderB} is initialized`);
-            }
-
-            return orderA - orderB;
-        });
-    }
-
-    return { parents, children, layering };
 }
 
 /**
@@ -329,7 +245,7 @@ function horizontalCompaction(
  * @param nodeSep   Minimum horizontal gap between node borders.
  */
 export function positionX(
-    graph: GraphStructure,
+    graph: FamilyGraph,
     nodeWidth: (v: string) => number,
     nodeSep: number,
 ): Record<string, number> {
@@ -433,7 +349,7 @@ export function positionX(
  * @param rankSep    Minimum vertical gap between layer borders.
  */
 export function positionY(
-    graph: GraphStructure,
+    graph: FamilyGraph,
     nodeHeight: (v: string) => number,
     rankSep: number,
 ): Record<string, number> {
@@ -507,91 +423,11 @@ export function buildTbt(
     return [nodes, edges];
 }
 
-const data: NodeInput[] = [
-    { id: '1', parentIds: [] },
-    { id: '2', parentIds: [] },
-    { id: '3', parentIds: ['1'] },
-    { id: '4', parentIds: ['2'] },
-    { id: '5', parentIds: ['3', '4'] },
-    { id: '6', parentIds: ['5'] },
-    { id: '7', parentIds: ['6'] },
-    { id: '8', parentIds: ['6'] },
-    { id: '9', parentIds: ['5'] },
-    { id: '10', parentIds: ['12'] },
-    { id: '11', parentIds: ['12'] },
-    { id: '12', parentIds: ['16'] },
-    { id: '13', parentIds: ['14'] },
-    { id: '14', parentIds: ['16'] },
-    { id: '15', parentIds: ['16'] },
-    { id: '16', parentIds: ['5'] },
-    { id: '17', parentIds: ['5'] },
-    { id: '18', parentIds: ['5', '30'] },
-    { id: '19', parentIds: ['17'] },
-    { id: '20', parentIds: ['17'] },
-    { id: '21', parentIds: ['17'] },
-    { id: '22', parentIds: ['33', '18'] },
-    { id: '23', parentIds: ['18'] },
-    { id: '24', parentIds: ['18'] },
-    { id: '25', parentIds: ['30'] },
-    { id: '26', parentIds: ['29'] },
-    { id: '27', parentIds: ['29'] },
-    { id: '28', parentIds: ['27'] },
-    { id: '29', parentIds: ['30'] },
-    { id: '30', parentIds: ['31', '32'] },
-    { id: '31', parentIds: [] },
-    { id: '32', parentIds: [] },
-    { id: '33', parentIds: [] },
-    { id: '34', parentIds: ['33'] },
-    { id: '35', parentIds: ['2'] },
-    { id: '36', parentIds: ['2'] },
-];
+export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[]] {
+    const builder = new GraphBuilder(family);
+    builder.buildInitialGraph(perspectiveId);
 
-const layouts: NodeLayout[] = [
-    { id: '1', level: 0, order: 0 },
-    { id: '2', level: 0, order: 1 },
-
-    { id: '3', level: 1, order: 0 },
-    { id: '4', level: 1, order: 1 },
-    { id: '35', level: 1, order: 2 },
-    { id: '36', level: 1, order: 3 },
-    { id: '31', level: 1, order: 4 },
-    { id: '32', level: 1, order: 5 },
-
-    { id: '5', level: 2, order: 0 },
-    { id: '30', level: 2, order: 1 },
-
-    { id: '6', level: 3, order: 0 },
-    { id: '9', level: 3, order: 1 },
-    { id: '16', level: 3, order: 2 },
-    { id: '17', level: 3, order: 3 },
-    { id: '33', level: 3, order: 4 },
-    { id: '18', level: 3, order: 5 },
-    { id: '25', level: 3, order: 6 },
-    { id: '29', level: 3, order: 7 },
-
-    { id: '7', level: 4, order: 0 },
-    { id: '8', level: 4, order: 1 },
-    { id: '12', level: 4, order: 2 },
-    { id: '14', level: 4, order: 3 },
-    { id: '15', level: 4, order: 4 },
-    { id: '19', level: 4, order: 5 },
-    { id: '20', level: 4, order: 6 },
-    { id: '21', level: 4, order: 7 },
-    { id: '34', level: 4, order: 8 },
-    { id: '22', level: 4, order: 9 },
-    { id: '23', level: 4, order: 10 },
-    { id: '24', level: 4, order: 11 },
-    { id: '26', level: 4, order: 12 },
-    { id: '27', level: 4, order: 13 },
-
-    { id: '10', level: 5, order: 0 },
-    { id: '11', level: 5, order: 1 },
-    { id: '13', level: 5, order: 2 },
-    { id: '28', level: 5, order: 3 },
-];
-
-export function buildNodes(_perspectiveId: string, _family: Index): [Node[], Edge[]] {
-    return buildTbt(data, layouts);
+    return [[], []];
 }
 
 function idToPerson(id: string): Person {
@@ -620,51 +456,172 @@ function idToPerson(id: string): Person {
     };
 }
 
-interface GraphNode {
-    id: Id;
+const MIDDLE_SIDE = 'middle_side';
+type ChildSide = 'left_side' | 'middle_side' | 'right_side';
+
+interface CallerChild {
+    side: ChildSide;
+    childId: string;
 }
 
 class GraphBuilder {
-    private persons = new Map<Id, Person[]>();
     private parents = new Map<Id, Id[]>();
     private children = new Map<Id, Id[]>();
     private family: Index;
+    private layers: Map<number, Id[]> = new Map<number, Id[]>();
 
     constructor(family: Index) {
         this.family = family;
-
-        this.persons = new Map<Id, Person[]>();
-        this.parents = new Map<Id, Id[]>();
-        this.children = new Map<Id, Id[]>();
     }
 
-    build(perspectiveId: string) {
-        const marriages = this.family.personMarriages.get(perspectiveId) ?? [];
+    personIdToNodeId(personId: string): Id {
+        const marriages = this.family.personMarriages.get(personId) ?? [];
         const marriage = marriages[0];
 
-        // Initialization. We form a starting node.
-        let id: Id;
         if (marriage) {
-            id = {
+            const id: Id = {
                 type: MARRIAGE_TYPE,
                 id: marriage.id,
             };
-            const marriagePersons = [];
-            if (marriage.parent1Id) {
-                marriagePersons.push(this.family.personById.get(marriage.parent1Id)!);
-            }
-            if (marriage.parent2Id) {
-                marriagePersons.push(this.family.personById.get(marriage.parent2Id)!);
-            }
-            this.persons.set(id, marriagePersons);
+
+            return id;
         } else {
-            id = {
+            return {
                 type: PERSON_TYPE,
-                id: perspectiveId,
+                id: personId,
             };
-            this.persons.set(id, [this.family.personById.get(perspectiveId)!]);
+        }
+    }
+
+    personParents(personId: string): Marriage | null {
+        const marriageId = this.family.personParents.get(personId);
+        if (!marriageId) {
+            return null;
         }
 
-        //
+        const marriage = this.family.marriageById.get(marriageId);
+        if (!marriage) {
+            throw new Error(`Marriage ${marriageId} should exist`);
+        }
+
+        return marriage;
+    }
+
+    buildInitialGraph(perspectiveId: string) {
+        // Initialization. We form a starting node.
+        let id = this.personIdToNodeId(perspectiveId);
+
+        if (id.type === MARRIAGE_TYPE) {
+            this.addParents(null, this.family.marriageById.get(id.id)!, 0);
+        } else {
+            const parents = this.personParents(id.id);
+            if (parents) {
+                this.addParents({ side: MIDDLE_SIDE, childId: id.id }, parents, -1);
+            } else {
+                if (!this.layers.has(0)) {
+                    this.layers.set(0, []);
+                }
+                // SAFE: if the layer does not exist, we will create it above.
+                const layer = this.layers.get(0)!;
+                layer.push(id);
+            }
+        }
+    }
+
+    addParents(caller: CallerChild | null, marriage: Marriage, layerNumber: number) {
+        const id: Id = {
+            type: MARRIAGE_TYPE,
+            id: marriage.id,
+        };
+
+        if (marriage.parent1Id) {
+            let p1Parents = this.personParents(marriage.parent1Id);
+
+            if (p1Parents) {
+                let side: ChildSide;
+                if (marriage.parent2Id && this.personParents(marriage.parent2Id)) {
+                    side = RIGHT_SIDE;
+                } else {
+                    side = MIDDLE_SIDE;
+                }
+
+                this.addParents({ side, childId: marriage.parent1Id }, p1Parents, layerNumber - 1);
+
+                if (!this.parents.has(id)) {
+                    this.parents.set(id, []);
+                }
+                // SAFE: if the parents of the person does not exist, we will initialize it above.
+                const parents = this.parents.get(id)!;
+                parents.push({
+                    type: MARRIAGE_TYPE,
+                    id: p1Parents.id,
+                });
+            }
+        }
+
+        if (marriage.parent2Id) {
+            let p2Parents = this.personParents(marriage.parent2Id);
+
+            if (p2Parents) {
+                let side: ChildSide;
+                if (marriage.parent1Id && this.personParents(marriage.parent1Id)) {
+                    side = LEFT_SIDE;
+                } else {
+                    side = MIDDLE_SIDE;
+                }
+
+                this.addParents({ side, childId: marriage.parent2Id }, p2Parents, layerNumber - 1);
+
+                if (!this.parents.has(id)) {
+                    this.parents.set(id, []);
+                }
+                // SAFE: if the parents of the person does not exist, we will initialize it above.
+                const parents = this.parents.get(id)!;
+                parents.push({
+                    type: MARRIAGE_TYPE,
+                    id: p2Parents.id,
+                });
+            }
+        }
+
+        if (!this.layers.has(layerNumber)) {
+            this.layers.set(layerNumber, []);
+        }
+        // SAFE: if the layer does not exist, we will create it above.
+        const layer = this.layers.get(layerNumber)!;
+        layer.push(id);
+
+        if (caller) {
+            if (!this.layers.has(layerNumber + 1)) {
+                this.layers.set(layerNumber + 1, []);
+            }
+
+            // SAFE: if the layer does not exist, we will create it above.
+            const childrenLayer = this.layers.get(layerNumber + 1)!;
+
+            const childrenIds = marriage.childrenIds.filter(
+                (childId) => childId !== caller.childId,
+            );
+            if (caller.side === LEFT_SIDE) {
+                childrenIds.splice(0, 0, caller.childId);
+            } else if (caller.side === RIGHT_SIDE) {
+                childrenIds.push(caller.childId);
+            } else {
+                childrenIds.splice(Math.ceil(childrenIds.length / 2), 0, caller.childId);
+            }
+
+            if (!this.children.get(id)) {
+                this.children.set(id, []);
+            }
+            // SAFE: if the children of the marriage does not exist, we will initialize it above.
+            const children = this.children.get(id)!;
+
+            for (const childId of childrenIds) {
+                const childNodeId = this.personIdToNodeId(childId);
+                childrenLayer.push(childNodeId);
+
+                children.push(childNodeId);
+            }
+        }
     }
 }
