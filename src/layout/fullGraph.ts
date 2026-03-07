@@ -386,41 +386,28 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
     const graph = builder.buildFamilyGraph();
 
     const nodeWidth = (id: string): number => {
-        return MARRIAGE_WIDTH;
-        // if (family.marriageById.get(id)) {
-        //     return MARRIAGE_WIDTH;
-        // }
+        if (family.marriageById.get(id)) {
+            return MARRIAGE_WIDTH;
+        }
 
-        // if (family.personById.get(id)) {
-        //     return NODE_WIDTH;
-        // }
+        if (family.personById.get(id)) {
+            return NODE_WIDTH;
+        }
 
-        // throw new Error(`Node/Marriage ${id} not found`);
+        throw new Error(`Node/Marriage ${id} not found`);
     };
 
     const xCoords = positionX(graph, nodeWidth, NODES_GAP);
     const yCoords = positionY(graph, (_id) => NODE_HEIGHT, NODES_GAP);
 
     const nodes: Node[] = [];
+    const edges: Edge[] = [];
+
     builder.getNodes().forEach((node, id) => {
         if (node.type === MARRIAGE_NODE_TYPE) {
+            // (x; y) is the geometrical center of the node.
             const x = xCoords[id] ?? 0;
             const y = yCoords[id] ?? 0;
-
-            if (node.persons.person1) {
-                nodes.push({
-                    id: node.persons.person1.id,
-                    data: { person: node.persons.person1 },
-                    position: {
-                        x,
-                        y,
-                    },
-                    type: PERSON_NODE_TYPE,
-                    style: {
-                        color: '#222',
-                    },
-                });
-            }
 
             nodes.push({
                 id,
@@ -445,7 +432,32 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
                 },
             });
 
+            if (node.persons.person1) {
+                node.persons.person1.marriageNodeSide = RIGHT_SIDE;
+                nodes.push({
+                    id: node.persons.person1.id,
+                    data: { person: node.persons.person1 },
+                    position: {
+                        x,
+                        y,
+                    },
+                    type: PERSON_NODE_TYPE,
+                    style: {
+                        color: '#222',
+                    },
+                });
+
+                edges.push({
+                    id: id + '-to-' + node.persons.person1.id,
+                    target: node.persons.person1.id,
+                    source: id,
+                    sourceHandle: 'left',
+                    targetHandle: 'right',
+                });
+            }
+
             if (node.persons.person2) {
+                node.persons.person2.marriageNodeSide = LEFT_SIDE;
                 nodes.push({
                     id: node.persons.person2.id,
                     data: { person: node.persons.person2 },
@@ -457,6 +469,14 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
                     style: {
                         color: '#222',
                     },
+                });
+
+                edges.push({
+                    id: id + '-to-' + node.persons.person2.id,
+                    target: node.persons.person2.id,
+                    source: id,
+                    sourceHandle: 'right',
+                    targetHandle: 'left',
                 });
             }
         }
@@ -476,18 +496,18 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
         }
     });
 
-    const edges: Edge[] = [];
-    // for (const n of data) {
-    //     for (const parentId of n.parentIds) {
-    //         edges.push({
-    //             id: `${parentId}-to-${n.id}`,
-    //             source: parentId,
-    //             target: n.id,
-    //             sourceHandle: 'bottom',
-    //             targetHandle: 'top',
-    //         });
-    //     }
-    // }
+    for (const [parentsMarriageId, _] of builder.getChildren().entries()) {
+        const marriage = family.marriageById.get(parentsMarriageId)!;
+        for (const childId of marriage.childrenIds) {
+            edges.push({
+                id: `${parentsMarriageId}-to-${childId}`,
+                source: parentsMarriageId,
+                target: childId,
+                sourceHandle: 'bottom',
+                targetHandle: 'top',
+            });
+        }
+    }
 
     return [nodes, edges];
 }
@@ -526,6 +546,10 @@ class GraphBuilder {
 
     getNodes(): Map<string, GraphNode> {
         return this.nodes;
+    }
+
+    getChildren(): Map<string, string[]> {
+        return this.children;
     }
 
     personIdToNodeId(personId: string): [Id, Marriage | null] {
@@ -723,13 +747,13 @@ class GraphBuilder {
                 const persons: NodePersons =
                     childNodeId.type === MARRIAGE_TYPE
                         ? {
-                              person1: childMarriage!.parent1Id
-                                  ? this.family.personById.get(childMarriage!.parent1Id)!
-                                  : undefined,
-                              person2: childMarriage!.parent2Id
-                                  ? this.family.personById.get(childMarriage!.parent2Id)!
-                                  : undefined,
-                          }
+                            person1: childMarriage!.parent1Id
+                                ? this.family.personById.get(childMarriage!.parent1Id)!
+                                : undefined,
+                            person2: childMarriage!.parent2Id
+                                ? this.family.personById.get(childMarriage!.parent2Id)!
+                                : undefined,
+                        }
                         : { person1: this.family.personById.get(childNodeId.id)! };
                 this.nodes.set(childNodeId.id, {
                     id: childNodeId.id,
