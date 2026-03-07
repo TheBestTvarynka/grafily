@@ -404,11 +404,10 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
     const edges: Edge[] = [];
 
     builder.getNodes().forEach((node, id) => {
+        // (x; y) is the geometrical center of the node.
+        const x = xCoords[id] ?? 0;
+        const y = yCoords[id] ?? 0;
         if (node.type === MARRIAGE_NODE_TYPE) {
-            // (x; y) is the geometrical center of the node.
-            const x = xCoords[id] ?? 0;
-            const y = yCoords[id] ?? 0;
-
             nodes.push({
                 id,
                 data: {
@@ -418,8 +417,8 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
                 },
                 type: MARRIAGE_NODE_TYPE,
                 position: {
-                    x: x + NODE_WIDTH + MARRIAGE_GAP - MARRIAGE_NODE_SIZE / 2,
-                    y: y + NODE_HEIGHT / 2 - MARRIAGE_NODE_SIZE / 2,
+                    x: x - MARRIAGE_NODE_SIZE / 2,
+                    y: y - MARRIAGE_NODE_SIZE / 2,
                 },
                 style: {
                     width: 10,
@@ -438,8 +437,8 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
                     id: node.persons.person1.id,
                     data: { person: node.persons.person1 },
                     position: {
-                        x,
-                        y,
+                        x: x - MARRIAGE_WIDTH / 2,
+                        y: y - NODE_HEIGHT / 2,
                     },
                     type: PERSON_NODE_TYPE,
                     style: {
@@ -462,8 +461,8 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
                     id: node.persons.person2.id,
                     data: { person: node.persons.person2 },
                     position: {
-                        x: x + NODE_WIDTH + 2 * MARRIAGE_GAP,
-                        y,
+                        x: x + MARRIAGE_GAP,
+                        y: y - NODE_HEIGHT / 2,
                     },
                     type: PERSON_NODE_TYPE,
                     style: {
@@ -485,8 +484,8 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
                 id,
                 data: { person: node.persons.person1! },
                 position: {
-                    x: xCoords[id] ?? 0,
-                    y: yCoords[id] ?? 0,
+                    x: x - NODE_WIDTH / 2,
+                    y: y - NODE_HEIGHT / 2,
                 },
                 type: PERSON_NODE_TYPE,
                 style: {
@@ -747,13 +746,13 @@ class GraphBuilder {
                 const persons: NodePersons =
                     childNodeId.type === MARRIAGE_TYPE
                         ? {
-                            person1: childMarriage!.parent1Id
-                                ? this.family.personById.get(childMarriage!.parent1Id)!
-                                : undefined,
-                            person2: childMarriage!.parent2Id
-                                ? this.family.personById.get(childMarriage!.parent2Id)!
-                                : undefined,
-                        }
+                              person1: childMarriage!.parent1Id
+                                  ? this.family.personById.get(childMarriage!.parent1Id)!
+                                  : undefined,
+                              person2: childMarriage!.parent2Id
+                                  ? this.family.personById.get(childMarriage!.parent2Id)!
+                                  : undefined,
+                          }
                         : { person1: this.family.personById.get(childNodeId.id)! };
                 this.nodes.set(childNodeId.id, {
                     id: childNodeId.id,
