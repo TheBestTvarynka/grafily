@@ -1,5 +1,4 @@
 import { Edge, Node } from '@xyflow/react';
-import { Vault } from 'obsidian';
 
 import {
     Id,
@@ -15,16 +14,6 @@ import {
     PERSON_TYPE,
 } from './consts';
 import { Index, LEFT_SIDE, RIGHT_SIDE, Person, Marriage } from '../model';
-
-/**
- * Describes one node for the input array.  `parentIds` lists all nodes that
- * are direct parents of this node (i.e. there is a directed edge
- * parent → this node).
- */
-interface NodeInput {
-    id: string;
-    parentIds: string[];
-}
 
 interface FamilyGraph {
     /** parents[nodeId] = array of parent node ids */
@@ -495,7 +484,7 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
         }
     });
 
-    for (const [parentsMarriageId, _] of builder.getChildren().entries()) {
+    for (const [parentsMarriageId] of builder.getChildren().entries()) {
         const marriage = family.marriageById.get(parentsMarriageId)!;
         for (const childId of marriage.childrenIds) {
             edges.push({
@@ -588,12 +577,9 @@ class GraphBuilder {
     }
 
     buildFamilyGraph(): FamilyGraph {
-        console.log('Layers:');
-        console.log(this.layers);
         const layering: string[][] = [...this.layers.entries()]
             .sort(([a], [b]) => a - b)
             .map(([_, layer]) => layer);
-        console.log(layering);
 
         return {
             parents: this.parents,
@@ -631,8 +617,6 @@ class GraphBuilder {
     }
 
     addParents(caller: CallerChild | null, marriage: Marriage, layerNumber: number) {
-        console.log('Caller:', caller);
-        console.log('Render marriage: ', marriage);
         const id = marriage.id;
 
         let p1ParentsExist = false;
@@ -666,7 +650,6 @@ class GraphBuilder {
             if (p2Parents) {
                 if (p1ParentsExist) {
                     const layer = this.layers.get(layerNumber)!;
-                    console.log('Current layer after first parent', layer);
                     layer.pop();
                 }
 
@@ -695,7 +678,6 @@ class GraphBuilder {
         // SAFE: if the layer does not exist, we will create it above.
         const layer = this.layers.get(layerNumber)!;
         if (!p1ParentsExist && !p2ParentsExist) {
-            console.log(`${layerNumber}: +       ${id}`);
             layer.push(id);
             this.nodes.set(id, {
                 id,
@@ -709,9 +691,6 @@ class GraphBuilder {
                         : undefined,
                 },
             });
-        }
-        if (p1ParentsExist && p2ParentsExist) {
-            console.log('Current layer', layer);
         }
 
         if (caller) {
@@ -740,7 +719,6 @@ class GraphBuilder {
 
             for (const childId of childrenIds) {
                 const [childNodeId, childMarriage] = this.personIdToNodeId(childId);
-                console.log(`${layerNumber + 1}: + child ${childNodeId.id} - side ${caller.side}`);
                 childrenLayer.push(childNodeId.id);
 
                 const persons: NodePersons =

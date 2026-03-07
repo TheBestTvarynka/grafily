@@ -172,7 +172,7 @@ export function PersonNode({ data }: any) {
                     )}
                 </div>
             </div>
-            {/* {hasParents ? <Handle type="target" position={Position.Top} id="top" /> : <></>} */}
+            {hasParents ? <Handle type="target" position={Position.Top} id="top" /> : <></>}
             {data.person.marriageNodeSide === LEFT_SIDE ? (
                 <Handle type="target" position={Position.Left} id="left" />
             ) : (
@@ -183,8 +183,6 @@ export function PersonNode({ data }: any) {
             ) : (
                 <></>
             )}
-            <Handle type="source" position={Position.Bottom} id="bottom" />
-            <Handle type="target" position={Position.Top} id="top" />
         </div>
     );
 }
