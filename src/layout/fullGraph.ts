@@ -1,7 +1,19 @@
 import { Edge, Node } from '@xyflow/react';
 import { Vault } from 'obsidian';
 
-import { Id, MARRIAGE_TYPE, NODES_GAP, NODE_HEIGHT, NODE_WIDTH, PERSON_TYPE } from './consts';
+import {
+    Id,
+    MARRIAGE_GAP,
+    MARRIAGE_NODE_SIZE,
+    MARRIAGE_NODE_TYPE,
+    MARRIAGE_TYPE,
+    MARRIAGE_WIDTH,
+    NODES_GAP,
+    NODE_HEIGHT,
+    NODE_WIDTH,
+    PERSON_NODE_TYPE,
+    PERSON_TYPE,
+} from './consts';
 import { Index, LEFT_SIDE, RIGHT_SIDE, Person, Marriage } from '../model';
 
 /**
@@ -367,114 +379,156 @@ export function positionY(
     return result;
 }
 
-/**
- * High-level helper: given raw data + explicit layout, produce positioned
- * @xyflow/react Nodes and Edges.
- *
- * @param data       Hardcoded node definitions (id + parentIds).
- * @param layouts    Hardcoded layout (level + order for every node id).
- * @param nodeWidth  Node width in pixels (constant or per-node function).
- * @param nodeHeight Node height in pixels (constant or per-node function).
- * @param nodeSep    Horizontal gap between nodes (default 50).
- * @param rankSep    Vertical gap between layers (default 80).
- */
-export function buildTbt(
-    data: NodeInput[],
-    layouts: NodeLayout[],
-    nodeWidth: number | ((id: string) => number) = NODE_WIDTH,
-    nodeHeight: number | ((id: string) => number) = NODE_HEIGHT,
-    nodeSep = NODES_GAP,
-    rankSep = NODE_HEIGHT + NODES_GAP,
-): [Node[], Edge[]] {
-    const widthFn = typeof nodeWidth === 'number' ? (_: string) => nodeWidth : nodeWidth;
-    const heightFn = typeof nodeHeight === 'number' ? (_: string) => nodeHeight : nodeHeight;
-
-    const graph = buildGraph(data, layouts);
-
-    const xCoords = positionX(graph, widthFn, nodeSep);
-    const yCoords = positionY(graph, heightFn, rankSep);
-
-    const nodes: Node[] = data.map((n) => ({
-        id: n.id,
-        position: {
-            x: xCoords[n.id] ?? 0,
-            y: yCoords[n.id] ?? 0,
-        },
-        data: { person: idToPerson(n.id) },
-        type: 'personNode',
-        style: {
-            color: '#222',
-        },
-    }));
-
-    const edges: Edge[] = [];
-    for (const n of data) {
-        for (const parentId of n.parentIds) {
-            edges.push({
-                id: `${parentId}-to-${n.id}`,
-                source: parentId,
-                target: n.id,
-                sourceHandle: 'bottom',
-                targetHandle: 'top',
-            });
-        }
-    }
-
-    return [nodes, edges];
-}
-
 export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[]] {
     const builder = new GraphBuilder(family);
     builder.buildInitialGraph(perspectiveId);
 
-    return [[], []];
-}
+    const graph = builder.buildFamilyGraph();
 
-function idToPerson(id: string): Person {
-    return {
-        id,
-        name: {
-            surname: '',
-            name: id,
-        },
-        isParentNodesHidden: false,
-        isParentNodesFoldable: false,
-        marriageNodeSide: LEFT_SIDE,
-        file: {
-            stat: {
-                ctime: 0,
-                mtime: 0,
-                size: 0,
-            },
-            basename: '',
-            extension: '',
-            path: '',
-            name: '',
-            parent: null,
-            vault: null as unknown as Vault,
-        },
+    const nodeWidth = (id: string): number => {
+        return MARRIAGE_WIDTH;
+        // if (family.marriageById.get(id)) {
+        //     return MARRIAGE_WIDTH;
+        // }
+
+        // if (family.personById.get(id)) {
+        //     return NODE_WIDTH;
+        // }
+
+        // throw new Error(`Node/Marriage ${id} not found`);
     };
+
+    const xCoords = positionX(graph, nodeWidth, NODES_GAP);
+    const yCoords = positionY(graph, (_id) => NODE_HEIGHT, NODES_GAP);
+
+    const nodes: Node[] = [];
+    builder.getNodes().forEach((node, id) => {
+        if (node.type === MARRIAGE_NODE_TYPE) {
+            const x = xCoords[id] ?? 0;
+            const y = yCoords[id] ?? 0;
+
+            if (node.persons.person1) {
+                nodes.push({
+                    id: node.persons.person1.id,
+                    data: { person: node.persons.person1 },
+                    position: {
+                        x,
+                        y,
+                    },
+                    type: PERSON_NODE_TYPE,
+                    style: {
+                        color: '#222',
+                    },
+                });
+            }
+
+            nodes.push({
+                id,
+                data: {
+                    id,
+                    isChildNodesFoldable: false,
+                    isChildNodesHidden: false,
+                },
+                type: MARRIAGE_NODE_TYPE,
+                position: {
+                    x: x + NODE_WIDTH + MARRIAGE_GAP - MARRIAGE_NODE_SIZE / 2,
+                    y: y + NODE_HEIGHT / 2 - MARRIAGE_NODE_SIZE / 2,
+                },
+                style: {
+                    width: 10,
+                    height: 10,
+                    borderRadius: 4,
+                    background: '#555',
+                    color: '#fff',
+                    fontSize: 8,
+                    textAlign: 'center',
+                },
+            });
+
+            if (node.persons.person2) {
+                nodes.push({
+                    id: node.persons.person2.id,
+                    data: { person: node.persons.person2 },
+                    position: {
+                        x: x + NODE_WIDTH + 2 * MARRIAGE_GAP,
+                        y,
+                    },
+                    type: PERSON_NODE_TYPE,
+                    style: {
+                        color: '#222',
+                    },
+                });
+            }
+        }
+        if (node.type === PERSON_NODE_TYPE) {
+            nodes.push({
+                id,
+                data: { person: node.persons.person1! },
+                position: {
+                    x: xCoords[id] ?? 0,
+                    y: yCoords[id] ?? 0,
+                },
+                type: PERSON_NODE_TYPE,
+                style: {
+                    color: '#222',
+                },
+            });
+        }
+    });
+
+    const edges: Edge[] = [];
+    // for (const n of data) {
+    //     for (const parentId of n.parentIds) {
+    //         edges.push({
+    //             id: `${parentId}-to-${n.id}`,
+    //             source: parentId,
+    //             target: n.id,
+    //             sourceHandle: 'bottom',
+    //             targetHandle: 'top',
+    //         });
+    //     }
+    // }
+
+    return [nodes, edges];
 }
 
 const MIDDLE_SIDE = 'middle_side';
-type ChildSide = 'left_side' | 'middle_side' | 'right_side';
+type ChildSide = typeof LEFT_SIDE | typeof MIDDLE_SIDE | typeof RIGHT_SIDE;
 
 interface CallerChild {
     side: ChildSide;
     childId: string;
 }
 
+type NodeType = typeof PERSON_NODE_TYPE | typeof MARRIAGE_NODE_TYPE;
+
+interface NodePersons {
+    person1?: Person;
+    person2?: Person;
+}
+
+interface GraphNode {
+    id: string;
+    type: NodeType;
+    persons: NodePersons;
+}
+
 class GraphBuilder {
-    private parents = new Map<Id, Id[]>();
-    private children = new Map<Id, Id[]>();
+    private nodes = new Map<string, GraphNode>();
+    private parents = new Map<string, string[]>();
+    private children = new Map<string, string[]>();
+    private layers: Map<number, string[]> = new Map<number, string[]>();
     private family: Index;
-    private layers: Map<number, Id[]> = new Map<number, Id[]>();
 
     constructor(family: Index) {
         this.family = family;
     }
 
-    personIdToNodeId(personId: string): Id {
+    getNodes(): Map<string, GraphNode> {
+        return this.nodes;
+    }
+
+    personIdToNodeId(personId: string): [Id, Marriage | null] {
         const marriages = this.family.personMarriages.get(personId) ?? [];
         const marriage = marriages[0];
 
@@ -484,12 +538,15 @@ class GraphBuilder {
                 id: marriage.id,
             };
 
-            return id;
+            return [id, marriage];
         } else {
-            return {
-                type: PERSON_TYPE,
-                id: personId,
-            };
+            return [
+                {
+                    type: PERSON_TYPE,
+                    id: personId,
+                },
+                null,
+            ];
         }
     }
 
@@ -507,12 +564,27 @@ class GraphBuilder {
         return marriage;
     }
 
+    buildFamilyGraph(): FamilyGraph {
+        console.log('Layers:');
+        console.log(this.layers);
+        const layering: string[][] = [...this.layers.entries()]
+            .sort(([a], [b]) => a - b)
+            .map(([_, layer]) => layer);
+        console.log(layering);
+
+        return {
+            parents: this.parents,
+            children: this.children,
+            layering,
+        };
+    }
+
     buildInitialGraph(perspectiveId: string) {
         // Initialization. We form a starting node.
-        let id = this.personIdToNodeId(perspectiveId);
+        let [id, marriage] = this.personIdToNodeId(perspectiveId);
 
-        if (id.type === MARRIAGE_TYPE) {
-            this.addParents(null, this.family.marriageById.get(id.id)!, 0);
+        if (marriage) {
+            this.addParents(null, marriage, 0);
         } else {
             const parents = this.personParents(id.id);
             if (parents) {
@@ -523,21 +595,30 @@ class GraphBuilder {
                 }
                 // SAFE: if the layer does not exist, we will create it above.
                 const layer = this.layers.get(0)!;
-                layer.push(id);
+                layer.push(id.id);
+                this.nodes.set(id.id, {
+                    id: id.id,
+                    type: PERSON_NODE_TYPE,
+                    persons: {
+                        person1: this.family.personById.get(id.id)!,
+                    },
+                });
             }
         }
     }
 
     addParents(caller: CallerChild | null, marriage: Marriage, layerNumber: number) {
-        const id: Id = {
-            type: MARRIAGE_TYPE,
-            id: marriage.id,
-        };
+        console.log('Caller:', caller);
+        console.log('Render marriage: ', marriage);
+        const id = marriage.id;
 
+        let p1ParentsExist = false;
+        let p2ParentsExist = false;
         if (marriage.parent1Id) {
             let p1Parents = this.personParents(marriage.parent1Id);
 
             if (p1Parents) {
+                p1ParentsExist = true;
                 let side: ChildSide;
                 if (marriage.parent2Id && this.personParents(marriage.parent2Id)) {
                     side = RIGHT_SIDE;
@@ -552,10 +633,7 @@ class GraphBuilder {
                 }
                 // SAFE: if the parents of the person does not exist, we will initialize it above.
                 const parents = this.parents.get(id)!;
-                parents.push({
-                    type: MARRIAGE_TYPE,
-                    id: p1Parents.id,
-                });
+                parents.push(p1Parents.id);
             }
         }
 
@@ -563,6 +641,13 @@ class GraphBuilder {
             let p2Parents = this.personParents(marriage.parent2Id);
 
             if (p2Parents) {
+                if (p1ParentsExist) {
+                    const layer = this.layers.get(layerNumber)!;
+                    console.log('Current layer after first parent', layer);
+                    layer.pop();
+                }
+
+                p2ParentsExist = true;
                 let side: ChildSide;
                 if (marriage.parent1Id && this.personParents(marriage.parent1Id)) {
                     side = LEFT_SIDE;
@@ -577,10 +662,7 @@ class GraphBuilder {
                 }
                 // SAFE: if the parents of the person does not exist, we will initialize it above.
                 const parents = this.parents.get(id)!;
-                parents.push({
-                    type: MARRIAGE_TYPE,
-                    id: p2Parents.id,
-                });
+                parents.push(p2Parents.id);
             }
         }
 
@@ -589,15 +671,38 @@ class GraphBuilder {
         }
         // SAFE: if the layer does not exist, we will create it above.
         const layer = this.layers.get(layerNumber)!;
-        layer.push(id);
+        if (!p1ParentsExist && !p2ParentsExist) {
+            console.log(`${layerNumber}: +       ${id}`);
+            layer.push(id);
+            this.nodes.set(id, {
+                id,
+                type: MARRIAGE_NODE_TYPE,
+                persons: {
+                    person1: marriage.parent1Id
+                        ? this.family.personById.get(marriage.parent1Id)!
+                        : undefined,
+                    person2: marriage.parent2Id
+                        ? this.family.personById.get(marriage.parent2Id)!
+                        : undefined,
+                },
+            });
+        }
+        if (p1ParentsExist && p2ParentsExist) {
+            console.log('Current layer', layer);
+        }
 
         if (caller) {
             if (!this.layers.has(layerNumber + 1)) {
                 this.layers.set(layerNumber + 1, []);
             }
-
             // SAFE: if the layer does not exist, we will create it above.
             const childrenLayer = this.layers.get(layerNumber + 1)!;
+
+            if (!this.children.get(id)) {
+                this.children.set(id, []);
+            }
+            // SAFE: if the children of the marriage does not exist, we will initialize it above.
+            const children = this.children.get(id)!;
 
             const childrenIds = marriage.childrenIds.filter(
                 (childId) => childId !== caller.childId,
@@ -610,17 +715,30 @@ class GraphBuilder {
                 childrenIds.splice(Math.ceil(childrenIds.length / 2), 0, caller.childId);
             }
 
-            if (!this.children.get(id)) {
-                this.children.set(id, []);
-            }
-            // SAFE: if the children of the marriage does not exist, we will initialize it above.
-            const children = this.children.get(id)!;
-
             for (const childId of childrenIds) {
-                const childNodeId = this.personIdToNodeId(childId);
-                childrenLayer.push(childNodeId);
+                const [childNodeId, childMarriage] = this.personIdToNodeId(childId);
+                console.log(`${layerNumber + 1}: + child ${childNodeId.id} - side ${caller.side}`);
+                childrenLayer.push(childNodeId.id);
 
-                children.push(childNodeId);
+                const persons: NodePersons =
+                    childNodeId.type === MARRIAGE_TYPE
+                        ? {
+                              person1: childMarriage!.parent1Id
+                                  ? this.family.personById.get(childMarriage!.parent1Id)!
+                                  : undefined,
+                              person2: childMarriage!.parent2Id
+                                  ? this.family.personById.get(childMarriage!.parent2Id)!
+                                  : undefined,
+                          }
+                        : { person1: this.family.personById.get(childNodeId.id)! };
+                this.nodes.set(childNodeId.id, {
+                    id: childNodeId.id,
+                    type:
+                        childNodeId.type === MARRIAGE_TYPE ? MARRIAGE_NODE_TYPE : PERSON_NODE_TYPE,
+                    persons,
+                });
+
+                children.push(childNodeId.id);
             }
         }
     }
