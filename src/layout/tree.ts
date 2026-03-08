@@ -20,7 +20,7 @@ import {
     MARRIAGE_GAP,
     MARRIAGE_NODE_TYPE,
     PERSON_NODE_TYPE,
-} from './consts';
+} from './index';
 
 /**
  * Represents a preliminary tree node used during the layout computation.

@@ -1,3 +1,7 @@
+import { Edge, Node } from '@xyflow/react';
+
+import { Index } from '../model';
+
 export const NODE_WIDTH = 140;
 export const NODE_HEIGHT = 70;
 export const MARRIAGE_NODE_SIZE = 10;
@@ -42,4 +46,14 @@ export function nodeWidth(id: Id): number {
     } else {
         return MARRIAGE_WIDTH;
     }
+}
+
+export abstract class Layout {
+    abstract buildNodes(perspectiveId: string): [Node[], Edge[]];
+
+    abstract collapseChildren(nodeId: string): [Node[], Edge[]];
+    abstract collapseParents(nodeId: string): [Node[], Edge[]];
+
+    abstract expandChildren(nodeId: string): [Node[], Edge[]];
+    abstract expandParents(nodeId: string): [Node[], Edge[]];
 }

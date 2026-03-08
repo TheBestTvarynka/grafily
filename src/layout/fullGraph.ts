@@ -13,7 +13,7 @@ import {
     NodeType,
     PERSON_NODE_TYPE,
     PERSON_TYPE,
-} from './consts';
+} from './index';
 import { Index, LEFT_SIDE, RIGHT_SIDE, Person, Marriage } from '../model';
 
 interface FamilyGraph {
