@@ -2,6 +2,7 @@ import { Edge, Node } from '@xyflow/react';
 
 import {
     Id,
+    Layout,
     MARRIAGE_GAP,
     MARRIAGE_NODE_SIZE,
     MARRIAGE_NODE_TYPE,
@@ -369,136 +370,163 @@ export function positionY(
     return result;
 }
 
-export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[]] {
-    const builder = new GraphBuilder(family);
-    builder.buildInitialGraph(perspectiveId);
+export class BrandesKopfLayout extends Layout {
+    family: Index;
+    graph: GraphBuilder;
 
-    const graph = builder.buildFamilyGraph();
-
-    const nodeWidth = (id: string): number => {
-        if (family.marriageById.get(id)) {
-            return MARRIAGE_WIDTH;
-        }
-
-        if (family.personById.get(id)) {
-            return NODE_WIDTH;
-        }
-
-        throw new Error(`Node/Marriage ${id} not found`);
-    };
-
-    const xCoords = positionX(graph, nodeWidth, NODES_GAP);
-    const yCoords = positionY(graph, (_id) => NODE_HEIGHT, NODES_GAP);
-
-    const nodes: Node[] = [];
-    const edges: Edge[] = [];
-
-    builder.getNodes().forEach((node, id) => {
-        // (x; y) is the geometrical center of the node.
-        const x = xCoords[id] ?? 0;
-        const y = yCoords[id] ?? 0;
-        if (node.type === MARRIAGE_NODE_TYPE) {
-            nodes.push({
-                id,
-                data: {
-                    id,
-                    isChildNodesFoldable: false,
-                    isChildNodesHidden: false,
-                },
-                type: MARRIAGE_NODE_TYPE,
-                position: {
-                    x: x - MARRIAGE_NODE_SIZE / 2,
-                    y: y - MARRIAGE_NODE_SIZE / 2,
-                },
-                style: {
-                    width: 10,
-                    height: 10,
-                    borderRadius: 4,
-                    background: '#555',
-                    color: '#fff',
-                    fontSize: 8,
-                    textAlign: 'center',
-                },
-            });
-
-            if (node.persons.person1) {
-                node.persons.person1.marriageNodeSide = RIGHT_SIDE;
-                nodes.push({
-                    id: node.persons.person1.id,
-                    data: { person: node.persons.person1 },
-                    position: {
-                        x: x - MARRIAGE_WIDTH / 2,
-                        y: y - NODE_HEIGHT / 2,
-                    },
-                    type: PERSON_NODE_TYPE,
-                    style: {
-                        color: '#222',
-                    },
-                });
-
-                edges.push({
-                    id: id + '-to-' + node.persons.person1.id,
-                    target: node.persons.person1.id,
-                    source: id,
-                    sourceHandle: 'left',
-                    targetHandle: 'right',
-                });
-            }
-
-            if (node.persons.person2) {
-                node.persons.person2.marriageNodeSide = LEFT_SIDE;
-                nodes.push({
-                    id: node.persons.person2.id,
-                    data: { person: node.persons.person2 },
-                    position: {
-                        x: x + MARRIAGE_GAP,
-                        y: y - NODE_HEIGHT / 2,
-                    },
-                    type: PERSON_NODE_TYPE,
-                    style: {
-                        color: '#222',
-                    },
-                });
-
-                edges.push({
-                    id: id + '-to-' + node.persons.person2.id,
-                    target: node.persons.person2.id,
-                    source: id,
-                    sourceHandle: 'right',
-                    targetHandle: 'left',
-                });
-            }
-        }
-        if (node.type === PERSON_NODE_TYPE) {
-            nodes.push({
-                id,
-                data: { person: node.persons.person1! },
-                position: {
-                    x: x - NODE_WIDTH / 2,
-                    y: y - NODE_HEIGHT / 2,
-                },
-                type: PERSON_NODE_TYPE,
-                style: {
-                    color: '#222',
-                },
-            });
-        }
-    });
-
-    for (const [parentsMarriageId] of builder.getChildren().entries()) {
-        const marriage = family.marriageById.get(parentsMarriageId)!;
-        for (const childId of marriage.childrenIds) {
-            edges.push({
-                id: `${parentsMarriageId}-to-${childId}`,
-                source: parentsMarriageId,
-                target: childId,
-                sourceHandle: 'bottom',
-                targetHandle: 'top',
-            });
-        }
+    constructor(family: Index) {
+        super();
+        this.family = family;
+        this.graph = new GraphBuilder(family);
     }
 
-    return [nodes, edges];
+    buildNodes(perspectiveId: string): [Node[], Edge[]] {
+        this.graph = new GraphBuilder(this.family);
+        this.graph.buildInitialGraph(perspectiveId);
+
+        const familyGraph = this.graph.buildFamilyGraph();
+
+        const nodeWidth = (id: string): number => {
+            if (this.family.marriageById.get(id)) {
+                return MARRIAGE_WIDTH;
+            }
+
+            if (this.family.personById.get(id)) {
+                return NODE_WIDTH;
+            }
+
+            throw new Error(`Node/Marriage ${id} not found`);
+        };
+
+        const xCoords = positionX(familyGraph, nodeWidth, NODES_GAP);
+        const yCoords = positionY(familyGraph, (_id) => NODE_HEIGHT, NODES_GAP);
+
+        const nodes: Node[] = [];
+        const edges: Edge[] = [];
+
+        this.graph.getNodes().forEach((node, id) => {
+            // (x; y) is the geometrical center of the node.
+            const x = xCoords[id] ?? 0;
+            const y = yCoords[id] ?? 0;
+            if (node.type === MARRIAGE_NODE_TYPE) {
+                nodes.push({
+                    id,
+                    data: {
+                        id,
+                        isChildNodesFoldable: false,
+                        isChildNodesHidden: false,
+                    },
+                    type: MARRIAGE_NODE_TYPE,
+                    position: {
+                        x: x - MARRIAGE_NODE_SIZE / 2,
+                        y: y - MARRIAGE_NODE_SIZE / 2,
+                    },
+                    style: {
+                        width: 10,
+                        height: 10,
+                        borderRadius: 4,
+                        background: '#555',
+                        color: '#fff',
+                        fontSize: 8,
+                        textAlign: 'center',
+                    },
+                });
+
+                if (node.persons.person1) {
+                    node.persons.person1.marriageNodeSide = RIGHT_SIDE;
+                    nodes.push({
+                        id: node.persons.person1.id,
+                        data: { person: node.persons.person1 },
+                        position: {
+                            x: x - MARRIAGE_WIDTH / 2,
+                            y: y - NODE_HEIGHT / 2,
+                        },
+                        type: PERSON_NODE_TYPE,
+                        style: {
+                            color: '#222',
+                        },
+                    });
+
+                    edges.push({
+                        id: id + '-to-' + node.persons.person1.id,
+                        target: node.persons.person1.id,
+                        source: id,
+                        sourceHandle: 'left',
+                        targetHandle: 'right',
+                    });
+                }
+
+                if (node.persons.person2) {
+                    node.persons.person2.marriageNodeSide = LEFT_SIDE;
+                    nodes.push({
+                        id: node.persons.person2.id,
+                        data: { person: node.persons.person2 },
+                        position: {
+                            x: x + MARRIAGE_GAP,
+                            y: y - NODE_HEIGHT / 2,
+                        },
+                        type: PERSON_NODE_TYPE,
+                        style: {
+                            color: '#222',
+                        },
+                    });
+
+                    edges.push({
+                        id: id + '-to-' + node.persons.person2.id,
+                        target: node.persons.person2.id,
+                        source: id,
+                        sourceHandle: 'right',
+                        targetHandle: 'left',
+                    });
+                }
+            }
+            if (node.type === PERSON_NODE_TYPE) {
+                nodes.push({
+                    id,
+                    data: { person: node.persons.person1! },
+                    position: {
+                        x: x - NODE_WIDTH / 2,
+                        y: y - NODE_HEIGHT / 2,
+                    },
+                    type: PERSON_NODE_TYPE,
+                    style: {
+                        color: '#222',
+                    },
+                });
+            }
+        });
+
+        for (const [parentsMarriageId] of this.graph.getChildren().entries()) {
+            const marriage = this.family.marriageById.get(parentsMarriageId)!;
+            for (const childId of marriage.childrenIds) {
+                edges.push({
+                    id: `${parentsMarriageId}-to-${childId}`,
+                    source: parentsMarriageId,
+                    target: childId,
+                    sourceHandle: 'bottom',
+                    targetHandle: 'top',
+                });
+            }
+        }
+
+        return [nodes, edges];
+    }
+
+    collapseChildren(_nodeId: string): [Node[], Edge[]] {
+        throw new Error('Not implemented');
+    }
+
+    collapseParents(_nodeId: string): [Node[], Edge[]] {
+        throw new Error('Not implemented');
+    }
+
+    expandChildren(_nodeId: string): [Node[], Edge[]] {
+        throw new Error('Not implemented');
+    }
+
+    expandParents(_nodeId: string): [Node[], Edge[]] {
+        throw new Error('Not implemented');
+    }
 }
 
 const MIDDLE_SIDE = 'middle_side';

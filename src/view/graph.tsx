@@ -13,7 +13,7 @@ import {
 
 // import { buildNodes } from '../layout';
 // import { buildNodes } from '../layout/tree';
-import { buildNodes } from '../layout/fullGraph';
+import { BrandesKopfLayout } from '../layout/fullGraph';
 import { buildIndex, emptyIndex, familyFromPersons, Index, Person } from '../model';
 import { useApp, useIndex } from '../hooks';
 import { extractPageMeta } from '../parsing';
@@ -34,7 +34,8 @@ function FamilyGraph() {
             return;
         }
 
-        const graph = buildNodes('Oleksii', index.index);
+        const layout = new BrandesKopfLayout(index.index);
+        const graph = layout.buildNodes('Oleksii');
         setGraph(graph);
     }, [index]);
 
@@ -77,7 +78,8 @@ function FamilyGraph() {
             const family = familyFromPersons(persons);
             const familyIndex = buildIndex(family);
             index.resetIndex(familyIndex);
-            const graph = buildNodes('Oleksii', familyIndex);
+            const layout = new BrandesKopfLayout(familyIndex);
+            const graph = layout.buildNodes('Oleksii');
 
             if (!cancelled) {
                 setGraph(graph);
