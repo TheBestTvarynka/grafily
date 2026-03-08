@@ -10,6 +10,7 @@ import {
     NODES_GAP,
     NODE_HEIGHT,
     NODE_WIDTH,
+    NodeType,
     PERSON_NODE_TYPE,
     PERSON_TYPE,
 } from './consts';
@@ -508,8 +509,6 @@ interface CallerChild {
     childId: string;
 }
 
-type NodeType = typeof PERSON_NODE_TYPE | typeof MARRIAGE_NODE_TYPE;
-
 interface NodePersons {
     person1?: Person;
     person2?: Person;
@@ -589,11 +588,11 @@ class GraphBuilder {
     }
 
     buildInitialGraph(perspectiveId: string) {
-        // Initialization. We form a starting node.
         let [id, marriage] = this.personIdToNodeId(perspectiveId);
 
         if (marriage) {
             this.addParents(null, marriage, 0);
+            this.addChildren(marriage, 1);
         } else {
             const parents = this.personParents(id.id);
             if (parents) {
@@ -612,6 +611,56 @@ class GraphBuilder {
                         person1: this.family.personById.get(id.id)!,
                     },
                 });
+            }
+        }
+    }
+
+    addChildren(parentsMarriage: Marriage, childrenLayerNumber: number) {
+        if (!parentsMarriage.childrenIds.length) {
+            return;
+        }
+
+        if (!this.layers.get(childrenLayerNumber)) {
+            this.layers.set(childrenLayerNumber, []);
+        }
+        const layer = this.layers.get(childrenLayerNumber)!;
+
+        if (!this.children.has(parentsMarriage.id)) {
+            this.children.set(parentsMarriage.id, []);
+        }
+        const children = this.children.get(parentsMarriage.id)!;
+
+        for (const childId of parentsMarriage.childrenIds) {
+            const [id, marriage] = this.personIdToNodeId(childId);
+
+            const persons: NodePersons = {};
+            if (marriage) {
+                if (marriage.parent1Id) {
+                    persons.person1 = this.family.personById.get(marriage.parent1Id)!;
+                }
+                if (marriage.parent2Id) {
+                    persons.person2 = this.family.personById.get(marriage.parent2Id)!;
+                }
+            } else {
+                persons.person1 = this.family.personById.get(id.id)!;
+            }
+            this.nodes.set(id.id, {
+                id: id.id,
+                type: id.type,
+                persons,
+            });
+
+            if (!this.parents.has(id.id)) {
+                this.parents.set(id.id, []);
+            }
+            const parents = this.parents.get(id.id)!;
+
+            parents.push(parentsMarriage.id);
+            children.push(id.id);
+            layer.push(id.id);
+
+            if (marriage) {
+                this.addChildren(marriage, childrenLayerNumber + 1);
             }
         }
     }

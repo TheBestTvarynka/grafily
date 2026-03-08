@@ -12,12 +12,12 @@ export const NODES_GAP = 40;
 // |                    MARRIAGE_WIDTH                     |
 export const MARRIAGE_WIDTH = (NODE_WIDTH + MARRIAGE_GAP) * 2;
 
-export const PERSON_TYPE = 'person';
-export const MARRIAGE_TYPE = 'marriage';
-export type NodeType = typeof PERSON_TYPE | typeof MARRIAGE_TYPE;
-
 export const PERSON_NODE_TYPE = 'personNode';
+export const PERSON_TYPE = PERSON_NODE_TYPE;
 export const MARRIAGE_NODE_TYPE = 'marriageNode';
+export const MARRIAGE_TYPE = MARRIAGE_NODE_TYPE;
+
+export type NodeType = typeof PERSON_TYPE | typeof MARRIAGE_TYPE;
 
 /**
  * Represents a preliminary tree node id.
