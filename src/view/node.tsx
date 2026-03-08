@@ -14,7 +14,7 @@ export function PersonNode({ data }: any) {
     const app = useApp();
     const graph = useGraph();
 
-    const [isParentNodesFoldable, setIsParentNodesFoldable] = useState<boolean>(false);
+    const [isParentsCollapsed, setIsParentNodesFoldable] = useState<boolean>(false);
     const [hasParents, setHasParents] = useState<boolean>(true);
 
     useEffect(() => {
@@ -23,7 +23,7 @@ export function PersonNode({ data }: any) {
         }
 
         const parentsMarriage = graph.index.personParents.get(data.person.id);
-        if (parentsMarriage && data.person.isParentNodesFoldable) {
+        if (parentsMarriage && data.person.isParentsCollapsed) {
             setIsParentNodesFoldable(true);
         } else {
             setIsParentNodesFoldable(false);
@@ -84,7 +84,7 @@ export function PersonNode({ data }: any) {
 
         const person: Person = data.person;
 
-        if (person.isParentNodesHidden) {
+        if (person.isParentsCollapsible) {
             graph.expandParents(data.person.id);
         } else {
             graph.collapseParents(data.person.id);
@@ -92,7 +92,7 @@ export function PersonNode({ data }: any) {
     };
 
     const getHideChildNodesIcon = (): string => {
-        if (data.person.isParentNodesHidden) {
+        if (data.person.isParentsCollapsible) {
             return PLUS_ICON;
         } else {
             return MINUS_ICON;
@@ -116,7 +116,7 @@ export function PersonNode({ data }: any) {
                 cursor: 'default',
             }}
         >
-            {isParentNodesFoldable ? (
+            {isParentsCollapsed ? (
                 <button
                     onClick={collapseParents}
                     style={{
@@ -198,7 +198,7 @@ export function MarriageNode({ data }: any) {
     const graph = useGraph();
 
     const [hasChildren, setHasChildren] = useState<boolean>(true);
-    const [isChildNodesFoldable, setIsChildNodesFoldable] = useState<boolean>(false);
+    const [isChildrenCollapsible, setIsChildNodesFoldable] = useState<boolean>(false);
 
     useEffect(() => {
         if (!graph) {
@@ -217,7 +217,7 @@ export function MarriageNode({ data }: any) {
             setHasChildren(false);
         }
 
-        if (data.isChildNodesFoldable) {
+        if (data.isChildrenCollapsible) {
             setIsChildNodesFoldable(true);
         } else {
             setIsChildNodesFoldable(false);
@@ -225,7 +225,7 @@ export function MarriageNode({ data }: any) {
     }, [graph]);
 
     const getHideChildNodesIcon = (): string => {
-        if (data.isChildNodesHidden) {
+        if (data.isChildrenCollapsed) {
             return PLUS_ICON;
         } else {
             return MINUS_ICON;
@@ -239,7 +239,7 @@ export function MarriageNode({ data }: any) {
 
         const id = data.id;
 
-        if (data.isChildNodesHidden) {
+        if (data.isChildrenCollapsed) {
             graph.expandChildren(id);
         } else {
             graph.collapseChildren(id);
@@ -255,7 +255,7 @@ export function MarriageNode({ data }: any) {
                 position: 'relative',
             }}
         >
-            {isChildNodesFoldable ? (
+            {isChildrenCollapsible ? (
                 <button
                     onClick={collapseChildren}
                     style={{

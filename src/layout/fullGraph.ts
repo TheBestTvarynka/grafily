@@ -407,13 +407,14 @@ export class BrandesKopfLayout {
             // (x; y) is the geometrical center of the node.
             const x = xCoords[id] ?? 0;
             const y = yCoords[id] ?? 0;
+
             if (node.type === MARRIAGE_NODE_TYPE) {
                 nodes.push({
                     id,
                     data: {
                         id,
-                        isChildNodesFoldable: false,
-                        isChildNodesHidden: false,
+                        isChildrenCollapsible: false,
+                        isChildrenCollapsed: false,
                     },
                     type: MARRIAGE_NODE_TYPE,
                     position: {
@@ -800,13 +801,13 @@ class GraphBuilder {
                 const persons: NodePersons =
                     childNodeId.type === MARRIAGE_TYPE
                         ? {
-                            person1: childMarriage!.parent1Id
-                                ? this.family.personById.get(childMarriage!.parent1Id)!
-                                : undefined,
-                            person2: childMarriage!.parent2Id
-                                ? this.family.personById.get(childMarriage!.parent2Id)!
-                                : undefined,
-                        }
+                              person1: childMarriage!.parent1Id
+                                  ? this.family.personById.get(childMarriage!.parent1Id)!
+                                  : undefined,
+                              person2: childMarriage!.parent2Id
+                                  ? this.family.personById.get(childMarriage!.parent2Id)!
+                                  : undefined,
+                          }
                         : { person1: this.family.personById.get(childNodeId.id)! };
                 this.nodes.set(childNodeId.id, {
                     id: childNodeId.id,

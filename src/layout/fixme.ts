@@ -44,7 +44,7 @@ function getPersonSiblings(personId: string, family: Index): string[] {
         throw new Error(`expected person(${personId}) to exist`);
     }
 
-    if (person.isParentNodesHidden) {
+    if (person.isParentsCollapsible) {
         return [personId];
     }
 
@@ -347,7 +347,7 @@ function preBuild(perspectiveId: string, family: Index, units: SiblingsUnit[]): 
 function isParentsHidden(siblings: string[], family: Index): boolean {
     for (const sibling of siblings) {
         const person = family.personById.get(sibling);
-        if (person && person.isParentNodesHidden) {
+        if (person && person.isParentsCollapsible) {
             return true;
         }
     }
@@ -604,7 +604,7 @@ function finalizeNodesLayout(
         }
 
         if (unit.rightSibling === mainSibling) {
-            person.isParentNodesFoldable = true;
+            person.isParentsCollapsed = true;
         }
 
         const nodeX = x + unit.width - NODE_WIDTH;
@@ -697,7 +697,7 @@ function finalizeNodesLayout(
         }
 
         if (unit.leftSibling === mainSibling) {
-            person.isParentNodesFoldable = true;
+            person.isParentsCollapsed = true;
         }
 
         nodes.push({
@@ -795,7 +795,7 @@ function finalizeNodesLayout(
         }
 
         if (sibling === mainSibling) {
-            person.isParentNodesFoldable = true;
+            person.isParentsCollapsed = true;
         }
 
         nodes.push({

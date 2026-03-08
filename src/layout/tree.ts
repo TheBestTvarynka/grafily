@@ -47,8 +47,8 @@ class ReingoldTilford {
     getY: (level: number) => number;
     family: Index;
     // Rendering options.
-    isParentNodesFoldable: boolean;
-    isChildNodesFoldable: boolean;
+    isParentsCollapsed: boolean;
+    isChildrenCollapsible: boolean;
 
     /**
      * Creates an instance of the ReingoldTilford algorithm with the provided functions to access the family relationships and calculating the y coordinate.
@@ -65,16 +65,16 @@ class ReingoldTilford {
         getChildNodesIds: (currentNode: Id, family: Index) => Id[],
         getY: (level: number) => number,
         family: Index,
-        isParentNodesFoldable: boolean,
-        isChildNodesFoldable: boolean,
+        isParentsCollapsed: boolean,
+        isChildrenCollapsible: boolean,
     ) {
         this.getRightmostChildren = getRightmostChildren;
         this.getLeftmostChildren = getLeftmostChildren;
         this.getChildNodesIds = getChildNodesIds;
         this.getY = getY;
         this.family = family;
-        this.isParentNodesFoldable = isParentNodesFoldable;
-        this.isChildNodesFoldable = isChildNodesFoldable;
+        this.isParentsCollapsed = isParentsCollapsed;
+        this.isChildrenCollapsible = isChildrenCollapsible;
     }
 
     /**
@@ -276,9 +276,9 @@ class ReingoldTilford {
                 id: marriage.id,
                 data: {
                     id: marriage.id,
-                    isChildNodesFoldable:
-                        this.isChildNodesFoldable && marriage.childrenIds.length > 0,
-                    isChildNodesHidden: marriage.isChildNodesHidden,
+                    isChildrenCollapsible:
+                        this.isChildrenCollapsible && marriage.childrenIds.length > 0,
+                    isChildrenCollapsed: marriage.isChildrenCollapsed,
                 },
                 type: MARRIAGE_NODE_TYPE,
                 position: {
@@ -304,7 +304,7 @@ class ReingoldTilford {
                 }
 
                 person.marriageNodeSide = RIGHT_SIDE;
-                person.isParentNodesFoldable = this.isParentNodesFoldable;
+                person.isParentsCollapsed = this.isParentsCollapsed;
                 nodes.push({
                     id: parent1NodeId,
                     data: { person },
@@ -332,7 +332,7 @@ class ReingoldTilford {
                 }
 
                 person.marriageNodeSide = LEFT_SIDE;
-                person.isParentNodesFoldable = this.isParentNodesFoldable;
+                person.isParentsCollapsed = this.isParentsCollapsed;
                 nodes.push({
                     id: parent2NodeId,
                     data: { person },
@@ -367,7 +367,7 @@ class ReingoldTilford {
                 throw new Error(`Expected person to exist for id ${nodeId.id}`);
             }
 
-            person.isParentNodesFoldable = this.isParentNodesFoldable;
+            person.isParentsCollapsed = this.isParentsCollapsed;
             nodes.push({
                 id: nodeId.id,
                 data: { person },
@@ -487,7 +487,7 @@ function getParentNodesIds(currentNode: Id, family: Index): Id[] {
             let parent1MarriageId = family.personParents.get(marriage.parent1Id);
             let parent1 = family.personById.get(marriage.parent1Id);
 
-            if (parent1MarriageId && !parent1?.isParentNodesHidden) {
+            if (parent1MarriageId && !parent1?.isParentsCollapsible) {
                 parents.push({ type: MARRIAGE_TYPE, id: parent1MarriageId });
             }
         }
@@ -496,7 +496,7 @@ function getParentNodesIds(currentNode: Id, family: Index): Id[] {
             let parent2MarriageId = family.personParents.get(marriage.parent2Id);
             let parent2 = family.personById.get(marriage.parent2Id);
 
-            if (parent2MarriageId && !parent2?.isParentNodesHidden) {
+            if (parent2MarriageId && !parent2?.isParentsCollapsible) {
                 parents.push({ type: MARRIAGE_TYPE, id: parent2MarriageId });
             }
         }
@@ -533,7 +533,7 @@ function getChildNodesIds(currentNode: Id, family: Index): Id[] {
         marriage = nodeMarriage;
     }
 
-    if (marriage.isChildNodesHidden) {
+    if (marriage.isChildrenCollapsed) {
         return [];
     }
 
@@ -657,7 +657,7 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
 
             if (node.type === PERSON_NODE_TYPE) {
                 // @ts-ignore
-                node.data.person.isParentNodesFoldable = parentsTreeBuilder.isParentNodesFoldable;
+                node.data.person.isParentsCollapsed = parentsTreeBuilder.isParentsCollapsed;
             }
 
             if (!rootAdded) {
