@@ -1,6 +1,7 @@
 import { Edge, Node } from '@xyflow/react';
 
 import { Index } from '../model';
+import { BrandesKopfLayout } from './fullGraph';
 
 export const NODE_WIDTH = 140;
 export const NODE_HEIGHT = 70;
@@ -48,12 +49,40 @@ export function nodeWidth(id: Id): number {
     }
 }
 
-export abstract class Layout {
-    abstract buildNodes(perspectiveId: string): [Node[], Edge[]];
+export const BRANDES_KORF = 'brandesKopf';
+export const REINGOLD_TILFORD = 'reingoldTilford';
+export type LayoutName = typeof BRANDES_KORF | typeof REINGOLD_TILFORD;
 
-    abstract collapseChildren(nodeId: string): [Node[], Edge[]];
-    abstract collapseParents(nodeId: string): [Node[], Edge[]];
+export class GenericLayout {
+    private layput: BrandesKopfLayout;
 
-    abstract expandChildren(nodeId: string): [Node[], Edge[]];
-    abstract expandParents(nodeId: string): [Node[], Edge[]];
+    constructor(layoutName: LayoutName, family: Index) {
+        switch (layoutName) {
+            case BRANDES_KORF:
+                this.layput = new BrandesKopfLayout(family);
+                break;
+            default:
+                throw new Error(`Unknown layout name: ${layoutName}`);
+        }
+    }
+
+    buildNodes(perspectiveId: string): [Node[], Edge[]] {
+        return this.layput.buildNodes(perspectiveId);
+    }
+
+    collapseChildren(nodeId: string): [Node[], Edge[]] {
+        return this.layput.collapseChildren(nodeId);
+    }
+
+    collapseParents(nodeId: string): [Node[], Edge[]] {
+        return this.layput.collapseParents(nodeId);
+    }
+
+    expandChildren(nodeId: string): [Node[], Edge[]] {
+        return this.layput.expandChildren(nodeId);
+    }
+
+    expandParents(nodeId: string): [Node[], Edge[]] {
+        return this.layput.expandParents(nodeId);
+    }
 }

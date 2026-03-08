@@ -2,7 +2,6 @@ import { Edge, Node } from '@xyflow/react';
 
 import {
     Id,
-    Layout,
     MARRIAGE_GAP,
     MARRIAGE_NODE_SIZE,
     MARRIAGE_NODE_TYPE,
@@ -370,12 +369,12 @@ export function positionY(
     return result;
 }
 
-export class BrandesKopfLayout extends Layout {
+export class BrandesKopfLayout {
     family: Index;
     graph: GraphBuilder;
 
     constructor(family: Index) {
-        super();
+        // super();
         this.family = family;
         this.graph = new GraphBuilder(family);
     }
@@ -801,13 +800,13 @@ class GraphBuilder {
                 const persons: NodePersons =
                     childNodeId.type === MARRIAGE_TYPE
                         ? {
-                              person1: childMarriage!.parent1Id
-                                  ? this.family.personById.get(childMarriage!.parent1Id)!
-                                  : undefined,
-                              person2: childMarriage!.parent2Id
-                                  ? this.family.personById.get(childMarriage!.parent2Id)!
-                                  : undefined,
-                          }
+                            person1: childMarriage!.parent1Id
+                                ? this.family.personById.get(childMarriage!.parent1Id)!
+                                : undefined,
+                            person2: childMarriage!.parent2Id
+                                ? this.family.personById.get(childMarriage!.parent2Id)!
+                                : undefined,
+                        }
                         : { person1: this.family.personById.get(childNodeId.id)! };
                 this.nodes.set(childNodeId.id, {
                     id: childNodeId.id,

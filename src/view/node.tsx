@@ -1,5 +1,5 @@
 import { Handle, Position } from '@xyflow/react';
-import { useApp, useIndex } from 'hooks';
+import { useApp, useGraph } from 'hooks';
 import { MINUS_ICON, PLUS_ICON, PROFILE_IMAGE_PLACEHOLDER } from 'images';
 import { MARRIAGE_NODE_SIZE, NODE_HEIGHT, NODE_WIDTH } from '../layout';
 import { LEFT_SIDE, Person, RIGHT_SIDE } from 'model';
@@ -12,17 +12,17 @@ import { useEffect, useState } from 'react';
 /* eslint-disable  @typescript-eslint/no-unsafe-argument */
 export function PersonNode({ data }: any) {
     const app = useApp();
-    const index = useIndex();
+    const graph = useGraph();
 
     const [isParentNodesFoldable, setIsParentNodesFoldable] = useState<boolean>(false);
     const [hasParents, setHasParents] = useState<boolean>(true);
 
     useEffect(() => {
-        if (!index) {
+        if (!graph) {
             return;
         }
 
-        const parentsMarriage = index.index.personParents.get(data.person.id);
+        const parentsMarriage = graph.index.personParents.get(data.person.id);
         if (parentsMarriage && data.person.isParentNodesFoldable) {
             setIsParentNodesFoldable(true);
         } else {
@@ -34,7 +34,7 @@ export function PersonNode({ data }: any) {
         } else {
             setHasParents(false);
         }
-    }, [index]);
+    }, [graph]);
 
     const onClick = () => {
         if (!app) {
@@ -78,14 +78,17 @@ export function PersonNode({ data }: any) {
     };
 
     const collapseParents = () => {
-        if (!index) {
+        if (!graph) {
             return;
         }
 
         const person: Person = data.person;
-        person.isParentNodesHidden = !person.isParentNodesHidden;
 
-        index.setPerson({ ...person });
+        if (person.isParentNodesHidden) {
+            graph.expandParents(data.person.id);
+        } else {
+            graph.collapseParents(data.person.id);
+        }
     };
 
     const getHideChildNodesIcon = (): string => {
@@ -192,17 +195,17 @@ export function PersonNode({ data }: any) {
 /* eslint-disable  @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable  @typescript-eslint/no-unsafe-argument */
 export function MarriageNode({ data }: any) {
-    const index = useIndex();
+    const graph = useGraph();
 
     const [hasChildren, setHasChildren] = useState<boolean>(true);
     const [isChildNodesFoldable, setIsChildNodesFoldable] = useState<boolean>(false);
 
     useEffect(() => {
-        if (!index) {
+        if (!graph) {
             return;
         }
 
-        const marriage = index.index.marriageById.get(data?.id);
+        const marriage = graph.index.marriageById.get(data?.id);
         if (!marriage) {
             console.warn(`Expected marriage(id=${data?.id}) to exist in index.`);
             return;
@@ -219,7 +222,7 @@ export function MarriageNode({ data }: any) {
         } else {
             setIsChildNodesFoldable(false);
         }
-    }, [index]);
+    }, [graph]);
 
     const getHideChildNodesIcon = (): string => {
         if (data.isChildNodesHidden) {
@@ -230,11 +233,17 @@ export function MarriageNode({ data }: any) {
     };
 
     const collapseChildren = () => {
-        if (!index) {
+        if (!graph) {
             return;
         }
 
-        index.setMarriageFlags(data.id, data.isChildNodesFoldable, !data.isChildNodesHidden);
+        const id = data.id;
+
+        if (data.isChildNodesHidden) {
+            graph.expandChildren(id);
+        } else {
+            graph.collapseChildren(id);
+        }
     };
 
     return (
