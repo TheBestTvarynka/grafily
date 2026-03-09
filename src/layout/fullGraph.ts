@@ -430,6 +430,8 @@ export class BrandesKopfLayout {
 
                 if (node.persons.person1) {
                     node.persons.person1.marriageNodeSide = RIGHT_SIDE;
+                    node.persons.person1.isParentsCollapsible = true;
+                    node.persons.person1.isParentsCollapsed = false;
                     nodes.push({
                         id: node.persons.person1.id,
                         data: { person: node.persons.person1 },
@@ -454,6 +456,8 @@ export class BrandesKopfLayout {
 
                 if (node.persons.person2) {
                     node.persons.person2.marriageNodeSide = LEFT_SIDE;
+                    node.persons.person2.isParentsCollapsible = true;
+                    node.persons.person2.isParentsCollapsed = false;
                     nodes.push({
                         id: node.persons.person2.id,
                         data: { person: node.persons.person2 },
@@ -477,6 +481,8 @@ export class BrandesKopfLayout {
                 }
             }
             if (node.type === PERSON_NODE_TYPE) {
+                node.persons.person1!.isParentsCollapsible = true;
+                node.persons.person1!.isParentsCollapsed = false;
                 nodes.push({
                     id,
                     data: { person: node.persons.person1! },
@@ -521,8 +527,20 @@ export class BrandesKopfLayout {
         return this.buildNodesInternal();
     }
 
-    collapseParents(_nodeId: string): [Node[], Edge[]] {
-        throw new Error('Not implemented');
+    collapseParents(personId: string): [Node[], Edge[]] {
+        const [nodeId] = this.graph.personIdToNodeId(personId);
+
+        const personParentsId = this.family.personParents.get(personId);
+        let except = '';
+        if (personParentsId) {
+            const parents = this.graph.getParents().get(nodeId.id) ?? [];
+
+            except = parents.find((parentsId) => parentsId !== personParentsId) ?? '';
+        }
+
+        this.graph.removeParentsOf(nodeId.id, except);
+
+        return this.buildNodesInternal();
     }
 
     expandChildren(_nodeId: string): [Node[], Edge[]] {
@@ -573,6 +591,10 @@ class GraphBuilder {
         return this.children;
     }
 
+    getParents(): Map<string, string[]> {
+        return this.parents;
+    }
+
     personIdToNodeId(personId: string): [Id, Marriage | null] {
         const marriages = this.family.personMarriages.get(personId) ?? [];
         const marriage = marriages[0];
@@ -615,6 +637,8 @@ class GraphBuilder {
             .map(([_, layer]) => layer);
 
         console.log(layering);
+        console.log('parents', this.parents);
+        console.log('children', this.children);
 
         return {
             parents: this.parents,
@@ -874,14 +898,19 @@ class GraphBuilder {
 
         const exceptChildIndex = children.indexOf(except);
         if (exceptChildIndex !== -1) {
-            children.splice(exceptChildIndex, 1);
+            this.children.set(
+                nodeId,
+                children.filter((childrenId) => childrenId === except),
+            );
         } else {
             this.children.delete(nodeId);
         }
     }
 
     removeParentsOf(nodeId: string, except: string = '') {
+        console.log(`Removing parents of ${nodeId} except: ${except}`);
         const parents = this.parents.get(nodeId);
+        console.log(parents);
         if (!parents) {
             return;
         }
@@ -918,7 +947,10 @@ class GraphBuilder {
 
         const exceptParentIndex = parents.indexOf(except);
         if (exceptParentIndex !== -1) {
-            parents.splice(exceptParentIndex, 1);
+            this.parents.set(
+                nodeId,
+                parents.filter((parentId) => parentId === except),
+            );
         } else {
             this.parents.delete(nodeId);
         }
