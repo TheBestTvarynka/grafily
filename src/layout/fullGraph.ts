@@ -71,7 +71,7 @@ function verticalAlignment(
                     const posB = pos[b];
 
                     if (posA === undefined || posB === undefined) {
-                        throw new Error(`Node ${posA} or ${posB} is initialized`);
+                        throw new Error(`Node position '${posA}' or '${posB}' is not initialized`);
                     }
 
                     return posA - posB;
@@ -374,15 +374,11 @@ export class BrandesKopfLayout {
     graph: GraphBuilder;
 
     constructor(family: Index) {
-        // super();
         this.family = family;
         this.graph = new GraphBuilder(family);
     }
 
-    buildNodes(perspectiveId: string): [Node[], Edge[]] {
-        this.graph = new GraphBuilder(this.family);
-        this.graph.buildInitialGraph(perspectiveId);
-
+    private buildNodesInternal(): [Node[], Edge[]] {
         const familyGraph = this.graph.buildFamilyGraph();
 
         const nodeWidth = (id: string): number => {
@@ -413,7 +409,7 @@ export class BrandesKopfLayout {
                     id,
                     data: {
                         id,
-                        isChildrenCollapsible: false,
+                        isChildrenCollapsible: true,
                         isChildrenCollapsed: false,
                     },
                     type: MARRIAGE_NODE_TYPE,
@@ -512,8 +508,17 @@ export class BrandesKopfLayout {
         return [nodes, edges];
     }
 
-    collapseChildren(_nodeId: string): [Node[], Edge[]] {
-        throw new Error('Not implemented');
+    buildNodes(perspectiveId: string): [Node[], Edge[]] {
+        this.graph = new GraphBuilder(this.family);
+        this.graph.buildInitialGraph(perspectiveId);
+
+        return this.buildNodesInternal();
+    }
+
+    collapseChildren(nodeId: string): [Node[], Edge[]] {
+        this.graph.removeChildrenOf(nodeId);
+
+        return this.buildNodesInternal();
     }
 
     collapseParents(_nodeId: string): [Node[], Edge[]] {
@@ -546,6 +551,7 @@ interface GraphNode {
     id: string;
     type: NodeType;
     persons: NodePersons;
+    layerNumber: number;
 }
 
 class GraphBuilder {
@@ -608,6 +614,8 @@ class GraphBuilder {
             .sort(([a], [b]) => a - b)
             .map(([_, layer]) => layer);
 
+        console.log(layering);
+
         return {
             parents: this.parents,
             children: this.children,
@@ -618,19 +626,21 @@ class GraphBuilder {
     buildInitialGraph(perspectiveId: string) {
         let [id, marriage] = this.personIdToNodeId(perspectiveId);
 
+        const layerNumber = 0;
+
         if (marriage) {
-            this.addParents(null, marriage, 0);
-            this.addChildren(marriage, 1);
+            this.addParents(null, marriage, layerNumber);
+            this.addChildren(marriage, layerNumber + 1);
         } else {
             const parents = this.personParents(id.id);
             if (parents) {
                 this.addParents({ side: MIDDLE_SIDE, childId: id.id }, parents, -1);
             } else {
-                if (!this.layers.has(0)) {
-                    this.layers.set(0, []);
+                if (!this.layers.has(layerNumber)) {
+                    this.layers.set(layerNumber, []);
                 }
                 // SAFE: if the layer does not exist, we will create it above.
-                const layer = this.layers.get(0)!;
+                const layer = this.layers.get(layerNumber)!;
                 layer.push(id.id);
                 this.nodes.set(id.id, {
                     id: id.id,
@@ -638,6 +648,7 @@ class GraphBuilder {
                     persons: {
                         person1: this.family.personById.get(id.id)!,
                     },
+                    layerNumber,
                 });
             }
         }
@@ -676,6 +687,7 @@ class GraphBuilder {
                 id: id.id,
                 type: id.type,
                 persons,
+                layerNumber: childrenLayerNumber,
             });
 
             if (!this.parents.has(id.id)) {
@@ -767,6 +779,7 @@ class GraphBuilder {
                         ? this.family.personById.get(marriage.parent2Id)!
                         : undefined,
                 },
+                layerNumber,
             });
         }
 
@@ -814,10 +827,100 @@ class GraphBuilder {
                     type:
                         childNodeId.type === MARRIAGE_TYPE ? MARRIAGE_NODE_TYPE : PERSON_NODE_TYPE,
                     persons,
+                    layerNumber: layerNumber + 1,
                 });
 
                 children.push(childNodeId.id);
             }
+        }
+    }
+
+    removeChildrenOf(nodeId: string, except: string = '') {
+        const children = this.children.get(nodeId);
+        if (!children) {
+            return;
+        }
+
+        for (const childId of children) {
+            if (childId === except) {
+                continue;
+            }
+
+            const childNode = this.nodes.get(childId);
+            if (!childNode) {
+                throw new Error(`Child node ${childId} should exist`);
+            }
+            // Remove children of children recursively.
+            this.removeChildrenOf(childId);
+
+            const parents = this.parents.get(childId);
+            if (parents) {
+                this.removeParentsOf(childId, nodeId);
+            }
+
+            // Remove child from the layering matrix.
+            const childLayer = this.layers.get(childNode.layerNumber);
+            if (!childLayer) {
+                throw new Error(`Layer ${childNode.layerNumber} should exist`);
+            }
+            const index = childLayer.indexOf(childId);
+            if (index === -1) {
+                throw new Error(`Child ${childId} should be in layer ${childNode.layerNumber}`);
+            }
+            childLayer.splice(index, 1);
+
+            this.nodes.delete(childId);
+        }
+
+        const exceptChildIndex = children.indexOf(except);
+        if (exceptChildIndex !== -1) {
+            children.splice(exceptChildIndex, 1);
+        } else {
+            this.children.delete(nodeId);
+        }
+    }
+
+    removeParentsOf(nodeId: string, except: string = '') {
+        const parents = this.parents.get(nodeId);
+        if (!parents) {
+            return;
+        }
+
+        for (const parentId of parents) {
+            if (parentId === except) {
+                continue;
+            }
+
+            const parentNode = this.nodes.get(parentId);
+            if (!parentNode) {
+                throw new Error(`Parent node ${parentId} should exist`);
+            }
+            this.removeParentsOf(parentId);
+
+            const parentChildren = this.children.get(parentId);
+            if (parentChildren) {
+                this.removeChildrenOf(parentId, nodeId);
+            }
+
+            // Remove parent from the layering matrix.
+            const parentLayer = this.layers.get(parentNode.layerNumber);
+            if (!parentLayer) {
+                throw new Error(`Layer ${parentNode.layerNumber} should exist`);
+            }
+            const index = parentLayer.indexOf(parentId);
+            if (index === -1) {
+                throw new Error(`Parent ${parentId} should be in layer ${parentNode.layerNumber}`);
+            }
+            parentLayer.splice(index, 1);
+
+            this.nodes.delete(parentId);
+        }
+
+        const exceptParentIndex = parents.indexOf(except);
+        if (exceptParentIndex !== -1) {
+            parents.splice(exceptParentIndex, 1);
+        } else {
+            this.parents.delete(nodeId);
         }
     }
 }
