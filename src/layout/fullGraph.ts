@@ -636,10 +636,6 @@ class GraphBuilder {
             .sort(([a], [b]) => a - b)
             .map(([_, layer]) => layer);
 
-        console.log(layering);
-        console.log('parents', this.parents);
-        console.log('children', this.children);
-
         return {
             parents: this.parents,
             children: this.children,
@@ -747,13 +743,6 @@ class GraphBuilder {
                 }
 
                 this.addParents({ side, childId: marriage.parent1Id }, p1Parents, layerNumber - 1);
-
-                if (!this.parents.has(id)) {
-                    this.parents.set(id, []);
-                }
-                // SAFE: if the parents of the person does not exist, we will initialize it above.
-                const parents = this.parents.get(id)!;
-                parents.push(p1Parents.id);
             }
         }
 
@@ -775,13 +764,6 @@ class GraphBuilder {
                 }
 
                 this.addParents({ side, childId: marriage.parent2Id }, p2Parents, layerNumber - 1);
-
-                if (!this.parents.has(id)) {
-                    this.parents.set(id, []);
-                }
-                // SAFE: if the parents of the person does not exist, we will initialize it above.
-                const parents = this.parents.get(id)!;
-                parents.push(p2Parents.id);
             }
         }
 
@@ -855,6 +837,12 @@ class GraphBuilder {
                 });
 
                 children.push(childNodeId.id);
+
+                if (!this.parents.get(childNodeId.id)) {
+                    this.parents.set(childNodeId.id, []);
+                }
+                const childParents = this.parents.get(childNodeId.id)!;
+                childParents.push(id);
             }
         }
     }
@@ -908,9 +896,8 @@ class GraphBuilder {
     }
 
     removeParentsOf(nodeId: string, except: string = '') {
-        console.log(`Removing parents of ${nodeId} except: ${except}`);
         const parents = this.parents.get(nodeId);
-        console.log(parents);
+
         if (!parents) {
             return;
         }
@@ -922,7 +909,7 @@ class GraphBuilder {
 
             const parentNode = this.nodes.get(parentId);
             if (!parentNode) {
-                throw new Error(`Parent node ${parentId} should exist`);
+                throw new Error(`removeParentsOf: Parent node ${parentId} should exist`);
             }
             this.removeParentsOf(parentId);
 
