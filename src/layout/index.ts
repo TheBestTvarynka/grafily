@@ -74,15 +74,15 @@ export class GenericLayout {
         return this.layput.collapseChildren(nodeId);
     }
 
-    collapseParents(nodeId: string): [Node[], Edge[]] {
-        return this.layput.collapseParents(nodeId);
+    collapseParents(personId: string): [Node[], Edge[]] {
+        return this.layput.collapseParents(personId);
     }
 
     expandChildren(nodeId: string): [Node[], Edge[]] {
         return this.layput.expandChildren(nodeId);
     }
 
-    expandParents(nodeId: string): [Node[], Edge[]] {
-        return this.layput.expandParents(nodeId);
+    expandParents(personId: string): [Node[], Edge[]] {
+        return this.layput.expandParents(personId);
     }
 }

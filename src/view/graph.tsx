@@ -23,10 +23,10 @@ export type GraphContextValue = {
     index: Index;
 
     collapseChildren: (nodeId: string) => void;
-    collapseParents: (nodeId: string) => void;
+    collapseParents: (personId: string) => void;
 
     expandChildren: (nodeId: string) => void;
-    expandParents: (nodeId: string) => void;
+    expandParents: (personId: string) => void;
 };
 export const GraphContext = createContext<GraphContextValue | null>(null);
 
@@ -104,8 +104,8 @@ function FamilyGraph() {
         setGraph(graph);
     };
 
-    const collapseParents = (nodeId: string) => {
-        const graph = layout.collapseParents(nodeId);
+    const collapseParents = (personId: string) => {
+        const graph = layout.collapseParents(personId);
         setGraph(graph);
     };
 
@@ -113,8 +113,8 @@ function FamilyGraph() {
         const graph = layout.expandChildren(nodeId);
         setGraph(graph);
     };
-    const expandParents = (nodeId: string) => {
-        const graph = layout.expandParents(nodeId);
+    const expandParents = (personId: string) => {
+        const graph = layout.expandParents(personId);
         setGraph(graph);
     };
 

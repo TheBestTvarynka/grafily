@@ -547,7 +547,7 @@ export class BrandesKopfLayout {
         throw new Error('Not implemented');
     }
 
-    expandParents(_nodeId: string): [Node[], Edge[]] {
+    expandParents(_personId: string): [Node[], Edge[]] {
         throw new Error('Not implemented');
     }
 }
@@ -576,6 +576,8 @@ class GraphBuilder {
     private nodes = new Map<string, GraphNode>();
     private parents = new Map<string, string[]>();
     private children = new Map<string, string[]>();
+    // number - layer index.
+    // string[] - list of node ids in the layer.
     private layers: Map<number, string[]> = new Map<number, string[]>();
     private family: Index;
 
@@ -845,6 +847,16 @@ class GraphBuilder {
                 childParents.push(id);
             }
         }
+    }
+
+    addParentsOf(personId: string) {
+        const [nodeId, marriage] = this.personIdToNodeId(personId);
+
+        //
+    }
+
+    addChildrenOf(_nodeId: string) {
+        //
     }
 
     removeChildrenOf(nodeId: string, except: string = '') {
