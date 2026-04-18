@@ -431,7 +431,7 @@ export class BrandesKopfLayout {
                 if (node.persons.person1) {
                     node.persons.person1.marriageNodeSide = RIGHT_SIDE;
                     node.persons.person1.isParentsCollapsible = true;
-                    node.persons.person1.isParentsCollapsed = false;
+
                     nodes.push({
                         id: node.persons.person1.id,
                         data: { person: node.persons.person1 },
@@ -457,7 +457,7 @@ export class BrandesKopfLayout {
                 if (node.persons.person2) {
                     node.persons.person2.marriageNodeSide = LEFT_SIDE;
                     node.persons.person2.isParentsCollapsible = true;
-                    node.persons.person2.isParentsCollapsed = false;
+
                     nodes.push({
                         id: node.persons.person2.id,
                         data: { person: node.persons.person2 },
@@ -483,6 +483,7 @@ export class BrandesKopfLayout {
             if (node.type === PERSON_NODE_TYPE) {
                 node.persons.person1!.isParentsCollapsible = true;
                 node.persons.person1!.isParentsCollapsed = false;
+
                 nodes.push({
                     id,
                     data: { person: node.persons.person1! },
@@ -539,6 +540,12 @@ export class BrandesKopfLayout {
         }
 
         this.graph.removeParentsOf(nodeId.id, except);
+        const person = this.family.personById.get(personId);
+        if (person) {
+            person.isParentsCollapsed = true;
+        } else {
+            console.warn(`Person ${personId} not found in the family index`);
+        }
 
         return this.buildNodesInternal();
     }
@@ -547,8 +554,10 @@ export class BrandesKopfLayout {
         throw new Error('Not implemented');
     }
 
-    expandParents(_personId: string): [Node[], Edge[]] {
-        throw new Error('Not implemented');
+    expandParents(personId: string): [Node[], Edge[]] {
+        this.graph.addParentsOf(personId);
+
+        return this.buildNodesInternal();
     }
 }
 
@@ -572,9 +581,27 @@ interface GraphNode {
     layerNumber: number;
 }
 
+interface NodeCoordinates {
+    layer: number;
+    position: number;
+}
+
+type Path = number[];
+
+const INF: number = 1_000_000;
+
+const LEFT_PARENT = 'left_parent';
+const RIGHT_PARENT = 'right_parent';
+const NO_PARENT = 'no_parent';
+type ParentSide = typeof LEFT_PARENT | typeof RIGHT_PARENT | typeof NO_PARENT;
+
 class GraphBuilder {
     private nodes = new Map<string, GraphNode>();
+    // string - node id.
+    // string[] - list of parent node ids.
     private parents = new Map<string, string[]>();
+    // string - node id.
+    // string[] - list of child node ids.
     private children = new Map<string, string[]>();
     // number - layer index.
     // string[] - list of node ids in the layer.
@@ -849,10 +876,318 @@ class GraphBuilder {
         }
     }
 
+    getNodeCoordinates(nodeId: string): NodeCoordinates {
+        for (const [index, layer] of this.layers.entries()) {
+            const nodeIndex = layer.indexOf(nodeId);
+            if (nodeIndex !== -1) {
+                return { layer: index, position: nodeIndex };
+            }
+        }
+
+        throw new Error(`Node ${nodeId} should be in layers`);
+    }
+
+    findMaxDepth(left: string | null, right: string | null, path: Path): number {
+        if (!left || !right) {
+            return INF;
+        }
+
+        const leftParent = (this.parents.get(left) ?? []).last();
+        const rightParent = (this.parents.get(right) ?? []).first();
+
+        const leftParentCoordinates = leftParent ? this.getNodeCoordinates(leftParent) : null;
+
+        if (!leftParentCoordinates) {
+            path.push(0);
+
+            return INF;
+        }
+
+        const rightParentCoordinates = rightParent ? this.getNodeCoordinates(rightParent) : null;
+        if (!rightParentCoordinates) {
+            path.push(INF);
+
+            return INF;
+        }
+
+        const leftIndex = leftParentCoordinates.position;
+        const rightIndex = rightParentCoordinates.position;
+
+        if (leftIndex === rightIndex) {
+            return 0;
+        } else if (rightIndex - leftIndex === 1) {
+            path.push(rightParentCoordinates.position);
+
+            return this.findMaxDepth(leftParent!, rightParent!, path) + 1;
+        } else {
+            let maxDepth = 0;
+            let maxPath: Path = [];
+
+            for (
+                let rightCandidateIndex = leftIndex + 1;
+                rightCandidateIndex <= rightIndex;
+                rightCandidateIndex++
+            ) {
+                const rightCandidate = this.layers.get(leftParentCoordinates.layer)?.[
+                    rightCandidateIndex
+                ];
+                if (!rightCandidate) {
+                    throw new Error(
+                        `Node at layer ${leftParentCoordinates.layer} and position ${rightCandidateIndex} should exist`,
+                    );
+                }
+
+                const rightCandidateCoordinates = this.getNodeCoordinates(rightCandidate);
+
+                const candidatePath: Path = [rightCandidateCoordinates.position];
+
+                const depth = this.findMaxDepth(leftParent!, rightCandidate, candidatePath);
+
+                if (depth > maxDepth) {
+                    maxDepth = depth;
+                    maxPath = candidatePath;
+
+                    if (depth === INF) {
+                        break;
+                    }
+                }
+            }
+
+            path.push(...maxPath);
+
+            return maxDepth + 1;
+        }
+    }
+
+    getParentNodesIds(id: Id): [Id[], ParentSide] {
+        if (id.type === PERSON_TYPE) {
+            // Current node is a person node. Only one parent node is possible: parents of this person.
+
+            const marriageId = this.family.personParents.get(id.id);
+            if (!marriageId) {
+                return [[], NO_PARENT];
+            }
+
+            const marriage = this.family.marriageById.get(marriageId);
+            if (!marriage) {
+                throw new Error(`Marriage ${id.id} should exist`);
+            }
+
+            return [
+                [
+                    {
+                        type: MARRIAGE_TYPE,
+                        id: marriage.id,
+                    },
+                ],
+                NO_PARENT,
+            ];
+        } else {
+            const existingParents = this.parents.get(id.id) ?? [];
+
+            const marriage = this.family.marriageById.get(id.id);
+            if (!marriage) {
+                throw new Error(`Marriage ${id.id} should exist`);
+            }
+
+            const parentsIds: Id[] = [];
+            let parentSide: ParentSide = NO_PARENT;
+
+            if (marriage.parent1Id) {
+                const parentsMarriage = this.family.personParents.get(marriage.parent1Id);
+                if (parentsMarriage) {
+                    const marriage = this.family.marriageById.get(parentsMarriage);
+                    if (!marriage) {
+                        throw new Error(`Marriage ${parentsMarriage} should exist`);
+                    }
+
+                    if (!existingParents.includes(marriage.id)) {
+                        parentsIds.push({
+                            type: MARRIAGE_TYPE,
+                            id: marriage.id,
+                        });
+                    } else {
+                        parentSide = LEFT_PARENT;
+                    }
+                }
+            }
+
+            if (marriage.parent2Id) {
+                const parentsMarriage = this.family.personParents.get(marriage.parent2Id);
+                if (parentsMarriage) {
+                    const marriage = this.family.marriageById.get(parentsMarriage);
+                    if (!marriage) {
+                        throw new Error(`Marriage ${parentsMarriage} should exist`);
+                    }
+
+                    if (!existingParents.includes(marriage.id)) {
+                        parentsIds.push({
+                            type: MARRIAGE_TYPE,
+                            id: marriage.id,
+                        });
+                    } else {
+                        parentSide = RIGHT_PARENT;
+                    }
+                }
+            }
+
+            return [parentsIds, parentSide];
+        }
+    }
+
+    addNodesByPath(path: Path, nodeId: Id) {
+        const addNodes = (nextLayerPosition: number, layer: number, currentNodes: Id[]): Id[] => {
+            const nextLayer = this.layers.get(layer)!;
+
+            const newCurrentNodes: Id[] = [];
+
+            for (const currentNode of currentNodes) {
+                const [parentNodes, parentSide] = this.getParentNodesIds(currentNode);
+
+                nextLayer.splice(nextLayerPosition, 0, ...parentNodes.map((node) => node.id));
+                nextLayerPosition += parentNodes.length;
+
+                const parents = this.parents.get(currentNode.id) ?? [];
+                if (parentSide === LEFT_PARENT) {
+                    this.parents.set(currentNode.id, [
+                        ...parents,
+                        ...parentNodes.map((node) => node.id),
+                    ]);
+                } else if (parentSide === RIGHT_PARENT) {
+                    this.parents.set(currentNode.id, [
+                        ...parentNodes.map((node) => node.id),
+                        ...parents,
+                    ]);
+                } else {
+                    this.parents.set(
+                        currentNode.id,
+                        parentNodes.map((node) => node.id),
+                    );
+                }
+
+                for (const parentNode of parentNodes) {
+                    const marriage = this.family.marriageById.get(parentNode.id);
+                    if (!marriage) {
+                        throw new Error(`Marriage ${parentNode.id} should exist`);
+                    }
+
+                    let person1: Person | undefined;
+                    if (marriage.parent1Id) {
+                        person1 = this.family.personById.get(marriage.parent1Id)!;
+                    }
+
+                    let person2: Person | undefined;
+                    if (marriage.parent2Id) {
+                        person2 = this.family.personById.get(marriage.parent2Id)!;
+                    }
+
+                    this.nodes.set(parentNode.id, {
+                        id: parentNode.id,
+                        type: parentNode.type,
+                        persons: {
+                            person1,
+                            person2,
+                        },
+                        layerNumber: currentLayer - 1,
+                    });
+
+                    this.children.set(parentNode.id, [currentNode.id]);
+                }
+
+                newCurrentNodes.push(...parentNodes);
+            }
+
+            return newCurrentNodes;
+        };
+
+        const { layer } = this.getNodeCoordinates(nodeId.id);
+
+        let currentNodes: Id[] = [nodeId];
+        let currentLayer = layer;
+
+        for (let position of path) {
+            const nextLayer = this.layers.get(currentLayer - 1);
+            if (!nextLayer) {
+                this.layers.set(currentLayer - 1, []);
+            }
+
+            if (position === 0) {
+                path.push(0);
+            } else if (position >= INF) {
+                // SAFE: Initialized above.
+                const nextLayer = this.layers.get(currentLayer - 1)!;
+
+                position = nextLayer.length;
+
+                const granLayer = this.layers.get(currentLayer - 2);
+                if (!granLayer) {
+                    path.push(0);
+                } else {
+                    path.push(granLayer.length);
+                }
+            }
+
+            currentNodes = addNodes(position, currentLayer - 1, currentNodes);
+
+            currentLayer -= 1;
+
+            if (currentNodes.length === 0) {
+                break;
+            }
+        }
+    }
+
     addParentsOf(personId: string) {
         const [nodeId, marriage] = this.personIdToNodeId(personId);
 
-        //
+        let left: string | null = null;
+        let right: string | null = null;
+
+        const { layer, position } = this.getNodeCoordinates(nodeId.id);
+
+        const nodeParents = this.parents.get(nodeId.id);
+        if (nodeParents && nodeParents.length > 0) {
+            if (nodeId.type === PERSON_TYPE) {
+                console.warn(
+                    `Something weird happens here: trying to expand parents of a person node ${nodeId.id}, but it already has parents.`,
+                );
+                return;
+            } else {
+                if (marriage?.parent1Id === personId) {
+                    right = nodeId.id;
+                    left = position > 0 ? this.layers.get(layer)![position - 1]! : null;
+                } else if (marriage?.parent2Id === personId) {
+                    left = nodeId.id;
+                    right =
+                        position < this.layers.get(layer)!.length - 1
+                            ? this.layers.get(layer)![position + 1]!
+                            : null;
+                } else {
+                    throw new Error(
+                        'This should not happen: the person should be either parent1 or parent2 of the marriage node',
+                    );
+                }
+            }
+        } else {
+            left = position > 0 ? this.layers.get(layer)![position - 1]! : null;
+            right =
+                position < this.layers.get(layer)!.length - 1
+                    ? this.layers.get(layer)![position + 1]!
+                    : null;
+        }
+
+        const path: Path = [];
+
+        if (!left && !right) {
+            // If the person node does not have neighbors, then this node is the topmost node in the entire graph.
+            // So, parent nodes can be pushed just above them at the start of corresponding layers.
+            path.push(0);
+        } else {
+            const depth = this.findMaxDepth(left, right, path);
+            console.log({ depth, path });
+        }
+
+        this.addNodesByPath(path, nodeId);
     }
 
     addChildrenOf(_nodeId: string) {

@@ -54,12 +54,12 @@ export const REINGOLD_TILFORD = 'reingoldTilford';
 export type LayoutName = typeof BRANDES_KORF | typeof REINGOLD_TILFORD;
 
 export class GenericLayout {
-    private layput: BrandesKopfLayout;
+    private layout: BrandesKopfLayout;
 
     constructor(layoutName: LayoutName, family: Index) {
         switch (layoutName) {
             case BRANDES_KORF:
-                this.layput = new BrandesKopfLayout(family);
+                this.layout = new BrandesKopfLayout(family);
                 break;
             default:
                 throw new Error(`Unknown layout name: ${layoutName}`);
@@ -67,22 +67,22 @@ export class GenericLayout {
     }
 
     buildNodes(perspectiveId: string): [Node[], Edge[]] {
-        return this.layput.buildNodes(perspectiveId);
+        return this.layout.buildNodes(perspectiveId);
     }
 
     collapseChildren(nodeId: string): [Node[], Edge[]] {
-        return this.layput.collapseChildren(nodeId);
+        return this.layout.collapseChildren(nodeId);
     }
 
     collapseParents(personId: string): [Node[], Edge[]] {
-        return this.layput.collapseParents(personId);
+        return this.layout.collapseParents(personId);
     }
 
     expandChildren(nodeId: string): [Node[], Edge[]] {
-        return this.layput.expandChildren(nodeId);
+        return this.layout.expandChildren(nodeId);
     }
 
     expandParents(personId: string): [Node[], Edge[]] {
-        return this.layput.expandParents(personId);
+        return this.layout.expandParents(personId);
     }
 }
