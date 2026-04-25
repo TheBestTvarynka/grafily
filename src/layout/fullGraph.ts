@@ -1134,7 +1134,7 @@ class GraphBuilder {
                 if (!granLayer) {
                     path.push(0);
                 } else {
-                    path.push(granLayer.length);
+                    path.push(INF);
                 }
             }
 
