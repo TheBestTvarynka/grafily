@@ -444,7 +444,9 @@ export class BrandesKopfLayout {
                 if (node.persons.person1) {
                     node.persons.person1.marriageNodeSide = RIGHT_SIDE;
                     node.persons.person1.isParentsCollapsible = true;
-                    node.persons.person1.isParentsCollapsed = isParentsCollapsed(node.persons.person1.id);
+                    node.persons.person1.isParentsCollapsed = isParentsCollapsed(
+                        node.persons.person1.id,
+                    );
 
                     nodes.push({
                         id: node.persons.person1.id,
@@ -471,7 +473,9 @@ export class BrandesKopfLayout {
                 if (node.persons.person2) {
                     node.persons.person2.marriageNodeSide = LEFT_SIDE;
                     node.persons.person2.isParentsCollapsible = true;
-                    node.persons.person2.isParentsCollapsed = isParentsCollapsed(node.persons.person2.id);
+                    node.persons.person2.isParentsCollapsed = isParentsCollapsed(
+                        node.persons.person2.id,
+                    );
 
                     nodes.push({
                         id: node.persons.person2.id,
@@ -622,6 +626,10 @@ class GraphBuilder {
     // string[] - list of node ids in the layer.
     private layers: Map<number, string[]> = new Map<number, string[]>();
     private family: Index;
+
+    // WORKAROUND: I could not create a shorted and simpler solution than this. It's not that bad but not aesthetic either.
+    // The `nodeToSkip` is used during nodes expanding to point which node we should not expand.
+    private nodeToSkip: string | null = null;
 
     constructor(family: Index) {
         this.family = family;
@@ -1006,7 +1014,7 @@ class GraphBuilder {
 
             if (marriage.parent1Id) {
                 const parentsMarriage = this.family.personParents.get(marriage.parent1Id);
-                if (parentsMarriage) {
+                if (parentsMarriage && parentsMarriage !== this.nodeToSkip) {
                     const marriage = this.family.marriageById.get(parentsMarriage);
                     if (!marriage) {
                         throw new Error(`Marriage ${parentsMarriage} should exist`);
@@ -1025,7 +1033,7 @@ class GraphBuilder {
 
             if (marriage.parent2Id) {
                 const parentsMarriage = this.family.personParents.get(marriage.parent2Id);
-                if (parentsMarriage) {
+                if (parentsMarriage && parentsMarriage !== this.nodeToSkip) {
                     const marriage = this.family.marriageById.get(parentsMarriage);
                     if (!marriage) {
                         throw new Error(`Marriage ${parentsMarriage} should exist`);
@@ -1153,21 +1161,27 @@ class GraphBuilder {
 
         let left: string | null = null;
         let right: string | null = null;
+        this.nodeToSkip = null;
 
         const { layer, position } = this.getNodeCoordinates(nodeId.id);
 
         const nodeParents = this.parents.get(nodeId.id);
         if (nodeParents && nodeParents.length > 0) {
+            // The `nodeId` node already has at least one parent. We must calculate left and right boundaries including the existing parents nodes.
             if (nodeId.type === PERSON_TYPE) {
+                // The PERSON_TYPE node can have only one parent node. So, if it already has a parent, then we have nothing to do.
                 console.warn(
                     `Something weird happens here: trying to expand parents of a person node ${nodeId.id}, but it already has parents.`,
                 );
                 return;
             } else {
+                // One of the marriage parents (parents of wife or parents of husband) are already expanded.
                 if (marriage?.parent1Id === personId) {
+                    // Parents of `marriage.parent2Id` are already expanded. So, the right boundary is the position of the current node, and the left boundary is the position of the left neighbor of the current node (if exists).
                     right = nodeId.id;
                     left = position > 0 ? this.layers.get(layer)![position - 1]! : null;
                 } else if (marriage?.parent2Id === personId) {
+                    // Parents of `marriage.parent1Id` are already expanded. So, the left boundary is the position of the current node, and the right boundary is the position of the right neighbor of the current node (if exists).
                     left = nodeId.id;
                     right =
                         position < this.layers.get(layer)!.length - 1
@@ -1180,6 +1194,30 @@ class GraphBuilder {
                 }
             }
         } else {
+            if (nodeId.type === MARRIAGE_TYPE) {
+                // When we expand parents of a person from the marriage, we need to expand only one of the parents.
+                // Here we determine what node to skip during expansion.
+                let nodeToSkipId: string | undefined = undefined;
+
+                if (marriage?.parent1Id === personId) {
+                    nodeToSkipId = marriage.parent2Id
+                        ? this.family.personParents.get(marriage.parent2Id)
+                        : undefined;
+                } else if (marriage?.parent2Id === personId) {
+                    nodeToSkipId = marriage.parent1Id
+                        ? this.family.personParents.get(marriage.parent1Id)
+                        : undefined;
+                } else {
+                    console.log(
+                        `Warn: corrupted data: the ${personId} should be either parent1 or parent2 of the marriage node(${marriage?.id})`,
+                    );
+                }
+
+                if (nodeToSkipId) {
+                    this.nodeToSkip = nodeToSkipId;
+                }
+            }
+
             left = position > 0 ? this.layers.get(layer)![position - 1]! : null;
             right =
                 position < this.layers.get(layer)!.length - 1
