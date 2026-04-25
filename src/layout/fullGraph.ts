@@ -399,6 +399,19 @@ export class BrandesKopfLayout {
         const nodes: Node[] = [];
         const edges: Edge[] = [];
 
+        // Returns `true` if the parents of the person are collapsed.
+        // Returns `false` if the person has no parents or if the parents are expanded.
+        const isParentsCollapsed = (personId: string): boolean => {
+            const personParentsMarriageId = this.family.personParents.get(personId);
+
+            if (!personParentsMarriageId) {
+                return false;
+            }
+
+            // The person's parents are expanded if and only if the marriage node corresponding to the person's parents is present in the graph.
+            return !this.graph.getNodes().has(personParentsMarriageId);
+        };
+
         this.graph.getNodes().forEach((node, id) => {
             // (x; y) is the geometrical center of the node.
             const x = xCoords[id] ?? 0;
@@ -431,6 +444,7 @@ export class BrandesKopfLayout {
                 if (node.persons.person1) {
                     node.persons.person1.marriageNodeSide = RIGHT_SIDE;
                     node.persons.person1.isParentsCollapsible = true;
+                    node.persons.person1.isParentsCollapsed = isParentsCollapsed(node.persons.person1.id);
 
                     nodes.push({
                         id: node.persons.person1.id,
@@ -457,6 +471,7 @@ export class BrandesKopfLayout {
                 if (node.persons.person2) {
                     node.persons.person2.marriageNodeSide = LEFT_SIDE;
                     node.persons.person2.isParentsCollapsible = true;
+                    node.persons.person2.isParentsCollapsed = isParentsCollapsed(node.persons.person2.id);
 
                     nodes.push({
                         id: node.persons.person2.id,
