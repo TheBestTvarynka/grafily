@@ -887,11 +887,7 @@ class GraphBuilder {
         throw new Error(`Node ${nodeId} should be in layers`);
     }
 
-    findMaxDepth(left: string | null, right: string | null, path: Path): number {
-        if (!left || !right) {
-            return INF;
-        }
-
+    findMaxDepth(left: string, right: string, path: Path): number {
         const leftParent = (this.parents.get(left) ?? []).last();
         const rightParent = (this.parents.get(right) ?? []).first();
 
@@ -1178,10 +1174,14 @@ class GraphBuilder {
 
         const path: Path = [];
 
-        if (!left && !right) {
-            // If the person node does not have neighbors, then this node is the topmost node in the entire graph.
-            // So, parent nodes can be pushed just above them at the start of corresponding layers.
+        if (!left) {
+            // If the person node does not have left neighbor, then this node is the leftmost node in the level.
+            // So, parent nodes can be placed at the start of the above layers.
             path.push(0);
+        } else if (!right) {
+            // If the person node does not have right neighbor, then this node is the rightmost node in the level.
+            // So, parent nodes can be placed at the end of the above layers.
+            path.push(INF);
         } else {
             const depth = this.findMaxDepth(left, right, path);
             console.log({ depth, path });
