@@ -15,7 +15,6 @@ import {
     PERSON_TYPE,
 } from './index';
 import { Index, LEFT_SIDE, RIGHT_SIDE, Person, Marriage } from '../model';
-import { assert } from 'console';
 
 interface FamilyGraph {
     /** parents[nodeId] = array of parent node ids */
@@ -954,6 +953,9 @@ class GraphBuilder {
         }
 
         if (!left || !leftId) {
+            // Passed `lastLeftNeighbor` and `lastRightNeighbor` are not in the path yet.
+            path.push(leftCoordinates.position + 1);
+
             path.push(0);
 
             return INF;
@@ -985,6 +987,9 @@ class GraphBuilder {
         }
 
         if (!right || !rightId) {
+            // Passed `lastLeftNeighbor` and `lastRightNeighbor` are not in the path yet.
+            path.push(leftCoordinates.position + 1);
+
             path.push(INF);
 
             return INF;
@@ -996,7 +1001,7 @@ class GraphBuilder {
         if (leftIndex === rightIndex) {
             return 0;
         } else if (rightIndex - leftIndex === 1) {
-            path.push(right.position);
+            path.push(leftIndex + 1);
 
             return this.findMaxDepth(leftId, rightId, path) + 1;
         } else {
