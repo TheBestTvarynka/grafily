@@ -8,7 +8,6 @@ import {
     BackgroundVariant,
     Node,
     Edge,
-    useReactFlow,
 } from '@xyflow/react';
 
 // import { buildNodes } from '../layout/tree';
@@ -41,16 +40,34 @@ function FamilyGraph() {
     );
     const [index, setIndex] = useState<Index>(emptyIndex());
 
-    const { fitView } = useReactFlow();
     const [graph, setGraph] = useState<[Node[], Edge[]]>([[], []]);
 
-    useEffect(() => {
-        if (graph[0].length === 0) {
-            return;
+    const shiftGraphByAnchorNode = (
+        oldNodes: Node[],
+        newNodes: Node[],
+        anchorNodeId: string,
+    ): Node[] => {
+        const oldNode = oldNodes.find((n) => n.id === anchorNodeId);
+        const newNode = newNodes.find((n) => n.id === anchorNodeId);
+
+        if (!oldNode || !newNode) {
+            console.warn(
+                `Anchor node with id ${anchorNodeId} not found in one of the graphs. Skipping viewport shift.`,
+            );
+
+            return newNodes;
         }
 
-        fitView({ padding: 0, duration: 1000 }).catch((err) => console.error(err));
-    }, [graph, fitView]);
+        const dx = newNode.position.x - oldNode.position.x;
+        const dy = newNode.position.y - oldNode.position.y;
+
+        return newNodes.map((node) => {
+            node.position.x -= dx;
+            node.position.y -= dy;
+
+            return node;
+        });
+    };
 
     const app = useApp();
     useEffect(() => {
@@ -100,22 +117,51 @@ function FamilyGraph() {
     }, [app]);
 
     const collapseChildren = (nodeId: string) => {
-        const graph = layout.collapseChildren(nodeId);
-        setGraph(graph);
+        const newGraph = layout.collapseChildren(nodeId);
+        newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], nodeId);
+
+        setGraph(newGraph);
     };
 
     const collapseParents = (personId: string) => {
-        const graph = layout.collapseParents(personId);
-        setGraph(graph);
+        const newGraph = layout.collapseParents(personId);
+
+        const personMarriage = (index.personMarriages.get(personId) ?? []).first();
+
+        let nodeId: string;
+        if (personMarriage) {
+            nodeId = personMarriage.id;
+        } else {
+            nodeId = personId;
+        }
+
+        newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], nodeId);
+
+        setGraph(newGraph);
     };
 
     const expandChildren = (nodeId: string) => {
-        const graph = layout.expandChildren(nodeId);
-        setGraph(graph);
+        const newGraph = layout.expandChildren(nodeId);
+        newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], nodeId);
+
+        setGraph(newGraph);
     };
+
     const expandParents = (personId: string) => {
-        const graph = layout.expandParents(personId);
-        setGraph(graph);
+        const newGraph = layout.expandParents(personId);
+
+        const personMarriage = (index.personMarriages.get(personId) ?? []).first();
+
+        let nodeId: string;
+        if (personMarriage) {
+            nodeId = personMarriage.id;
+        } else {
+            nodeId = personId;
+        }
+
+        newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], nodeId);
+
+        setGraph(newGraph);
     };
 
     return (
@@ -130,7 +176,7 @@ function FamilyGraph() {
             }}
         >
             <ReactFlow nodes={graph[0]} edges={graph[1]} nodeTypes={nodeTypes}>
-                <Background color="grey" variant={BackgroundVariant.Dots} gap={10} />
+                <Background color="grey" variant={BackgroundVariant.Dots} gap={20} />
                 <Controls />
             </ReactFlow>
         </GraphContext.Provider>
