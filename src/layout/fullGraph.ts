@@ -569,8 +569,10 @@ export class BrandesKopfLayout {
         return this.buildNodesInternal();
     }
 
-    expandChildren(_nodeId: string): [Node[], Edge[]] {
-        throw new Error('Not implemented');
+    expandChildren(nodeId: string): [Node[], Edge[]] {
+        this.graph.addChildrenOf(nodeId);
+
+        return this.buildNodesInternal();
     }
 
     expandParents(personId: string): [Node[], Edge[]] {
@@ -912,13 +914,18 @@ class GraphBuilder {
 
     // `left` - left neighbor node coordinates.
     // `right` - right neighbor node coordinates.
-    findMaxDepth(lastLeftNeighbor: string, lastRightNeighbor: string, path: Path): number {
-        const leftNeighbor = (this.parents.get(lastLeftNeighbor) ?? []).last();
+    findMaxDepth(
+        lastLeftNeighbor: string,
+        lastRightNeighbor: string,
+        path: Path,
+        getBranches: (nodeId: string) => string[],
+    ): number {
+        const leftNeighbor = getBranches(lastLeftNeighbor).last();
         if (!leftNeighbor) {
             throw new Error(`Left neighbor ${leftNeighbor} should have at least one parent`);
         }
 
-        const rightNeighbor = (this.parents.get(lastRightNeighbor) ?? []).first();
+        const rightNeighbor = getBranches(lastRightNeighbor).first();
         if (!rightNeighbor) {
             throw new Error(`Right neighbor ${rightNeighbor} should have at least one parent`);
         }
@@ -941,7 +948,7 @@ class GraphBuilder {
                 throw new Error(`Node at layer ${layer} and position ${leftPosition} should exist`);
             }
 
-            const leftParents = this.parents.get(leftNeighborId) ?? [];
+            const leftParents = getBranches(leftNeighborId);
 
             if (leftParents.length > 0) {
                 left = { position: leftPosition, layer };
@@ -975,7 +982,7 @@ class GraphBuilder {
                 );
             }
 
-            const rightParents = this.parents.get(rightNeighborId) ?? [];
+            const rightParents = getBranches(rightNeighborId);
 
             if (rightParents.length > 0) {
                 right = { position: rightPosition, layer };
@@ -1003,7 +1010,7 @@ class GraphBuilder {
         } else if (rightIndex - leftIndex === 1) {
             path.push(leftIndex + 1);
 
-            return this.findMaxDepth(leftId, rightId, path) + 1;
+            return this.findMaxDepth(leftId, rightId, path, getBranches) + 1;
         } else {
             let maxDepth = 0;
             let maxPath: Path = [];
@@ -1031,7 +1038,12 @@ class GraphBuilder {
 
                 const candidatePath: Path = [leftCandidateIndex];
 
-                const depth = this.findMaxDepth(leftCandidate, rightCandidate, candidatePath);
+                const depth = this.findMaxDepth(
+                    leftCandidate,
+                    rightCandidate,
+                    candidatePath,
+                    getBranches,
+                );
 
                 if (depth > maxDepth) {
                     maxDepth = depth;
@@ -1046,6 +1058,38 @@ class GraphBuilder {
             path.push(...maxPath);
 
             return maxDepth + 1;
+        }
+    }
+
+    getChildrenNodesIds(id: Id): [Id[], ParentSide] {
+        if (id.type === PERSON_TYPE) {
+            // Current node is a person node. It has no children.
+            return [[], NO_PARENT];
+        } else {
+            const marriage = this.family.marriageById.get(id.id);
+            if (!marriage) {
+                throw new Error(`Marriage ${id.id} should exist`);
+            }
+
+            const childrenIds: Id[] = marriage.childrenIds.map((childId) => {
+                const childMarriages = this.family.personMarriages.get(childId) ?? [];
+
+                if (childMarriages.length > 0) {
+                    const marriageId = childMarriages[0]!;
+
+                    return {
+                        type: MARRIAGE_TYPE,
+                        id: marriageId.id,
+                    };
+                } else {
+                    return {
+                        type: PERSON_TYPE,
+                        id: childId,
+                    };
+                }
+            });
+
+            return [childrenIds, NO_PARENT];
         }
     }
 
@@ -1125,63 +1169,86 @@ class GraphBuilder {
         }
     }
 
-    addNodesByPath(path: Path, nodeId: Id) {
+    addNodesByPath(
+        path: Path,
+        nodeId: Id,
+        getBranches: (nodeId: string) => string[],
+        setBranches: (nodeId: string, branches: string[]) => void,
+        setRedirectedBranches: (nodeId: string, branches: string[]) => void,
+        findChildNodes: (id: Id) => [Id[], ParentSide],
+        getNextLayer: (layer: number) => number,
+    ) {
         const addNodes = (nextLayerPosition: number, layer: number, currentNodes: Id[]): Id[] => {
             const nextLayer = this.layers.get(layer)!;
 
             const newCurrentNodes: Id[] = [];
 
             for (const currentNode of currentNodes) {
-                const [parentNodes, parentSide] = this.getParentNodesIds(currentNode);
+                const [parentNodes, parentSide] = findChildNodes(currentNode);
 
                 nextLayer.splice(nextLayerPosition, 0, ...parentNodes.map((node) => node.id));
                 nextLayerPosition += parentNodes.length;
 
-                const parents = this.parents.get(currentNode.id) ?? [];
+                const parents = getBranches(currentNode.id);
                 if (parentSide === LEFT_PARENT) {
-                    this.parents.set(currentNode.id, [
+                    setBranches(currentNode.id, [
                         ...parents,
                         ...parentNodes.map((node) => node.id),
                     ]);
                 } else if (parentSide === RIGHT_PARENT) {
-                    this.parents.set(currentNode.id, [
+                    setBranches(currentNode.id, [
                         ...parentNodes.map((node) => node.id),
                         ...parents,
                     ]);
                 } else {
-                    this.parents.set(
+                    setBranches(
                         currentNode.id,
                         parentNodes.map((node) => node.id),
                     );
                 }
 
                 for (const parentNode of parentNodes) {
-                    const marriage = this.family.marriageById.get(parentNode.id);
-                    if (!marriage) {
-                        throw new Error(`Marriage ${parentNode.id} should exist`);
+                    let node: GraphNode;
+
+                    if (parentNode.type === PERSON_TYPE) {
+                        node = {
+                            id: parentNode.id,
+                            type: PERSON_NODE_TYPE,
+                            persons: {
+                                person1: this.family.personById.get(parentNode.id)!,
+                            },
+                            layerNumber: getNextLayer(currentLayer),
+                        };
+                    } else {
+                        const marriage = this.family.marriageById.get(parentNode.id);
+                        if (!marriage) {
+                            throw new Error(`Marriage ${parentNode.id} should exist`);
+                        }
+
+                        let person1: Person | undefined;
+                        if (marriage.parent1Id) {
+                            person1 = this.family.personById.get(marriage.parent1Id)!;
+                        }
+
+                        let person2: Person | undefined;
+                        if (marriage.parent2Id) {
+                            person2 = this.family.personById.get(marriage.parent2Id)!;
+                        }
+
+                        node = {
+                            id: parentNode.id,
+                            type: MARRIAGE_NODE_TYPE,
+                            persons: {
+                                person1,
+                                person2,
+                            },
+                            layerNumber: getNextLayer(currentLayer),
+                        };
                     }
 
-                    let person1: Person | undefined;
-                    if (marriage.parent1Id) {
-                        person1 = this.family.personById.get(marriage.parent1Id)!;
-                    }
+                    this.nodes.set(parentNode.id, node);
 
-                    let person2: Person | undefined;
-                    if (marriage.parent2Id) {
-                        person2 = this.family.personById.get(marriage.parent2Id)!;
-                    }
-
-                    this.nodes.set(parentNode.id, {
-                        id: parentNode.id,
-                        type: parentNode.type,
-                        persons: {
-                            person1,
-                            person2,
-                        },
-                        layerNumber: currentLayer - 1,
-                    });
-
-                    this.children.set(parentNode.id, [currentNode.id]);
+                    setRedirectedBranches(parentNode.id, [currentNode.id]);
                 }
 
                 newCurrentNodes.push(...parentNodes);
@@ -1196,20 +1263,21 @@ class GraphBuilder {
         let currentLayer = layer;
 
         for (let position of path) {
-            const nextLayer = this.layers.get(currentLayer - 1);
+            const nextLayerNumber = getNextLayer(currentLayer);
+            const nextLayer = this.layers.get(nextLayerNumber);
             if (!nextLayer) {
-                this.layers.set(currentLayer - 1, []);
+                this.layers.set(nextLayerNumber, []);
             }
 
             if (position === 0) {
                 path.push(0);
             } else if (position >= INF) {
                 // SAFE: Initialized above.
-                const nextLayer = this.layers.get(currentLayer - 1)!;
+                const nextLayer = this.layers.get(nextLayerNumber)!;
 
                 position = nextLayer.length;
 
-                const granLayer = this.layers.get(currentLayer - 2);
+                const granLayer = this.layers.get(getNextLayer(nextLayerNumber));
                 if (!granLayer) {
                     path.push(0);
                 } else {
@@ -1217,9 +1285,9 @@ class GraphBuilder {
                 }
             }
 
-            currentNodes = addNodes(position, currentLayer - 1, currentNodes);
+            currentNodes = addNodes(position, nextLayerNumber, currentNodes);
 
-            currentLayer -= 1;
+            currentLayer = nextLayerNumber;
 
             if (currentNodes.length === 0) {
                 break;
@@ -1371,6 +1439,14 @@ class GraphBuilder {
 
         const path: Path = [];
 
+        const getBranches = (nodeId: string) => this.parents.get(nodeId) ?? [];
+        const setBranches = (nodeId: string, branches: string[]) =>
+            this.parents.set(nodeId, branches);
+        const setRedirectedBranches = (nodeId: string, branches: string[]) =>
+            this.children.set(nodeId, branches);
+        const findChildNodes = (id: Id) => this.getParentNodesIds(id);
+        const nextLayer = (layer: number) => layer - 1;
+
         if (!left) {
             // If the person node does not have left neighbor, then this node is the leftmost node in the level.
             // So, parent nodes can be placed at the start of the above layers.
@@ -1380,15 +1456,109 @@ class GraphBuilder {
             // So, parent nodes can be placed at the end of the above layers.
             path.push(INF);
         } else {
-            const depth = this.findMaxDepth(left, right, path);
+            const depth = this.findMaxDepth(left, right, path, getBranches);
             console.log({ depth, path });
         }
 
-        this.addNodesByPath(path, nodeId);
+        this.addNodesByPath(
+            path,
+            nodeId,
+            getBranches,
+            setBranches,
+            setRedirectedBranches,
+            findChildNodes,
+            nextLayer,
+        );
     }
 
-    addChildrenOf(_nodeId: string) {
-        //
+    addChildrenOf(id: string) {
+        // It should be impossible to call this method on the PERSON_NODE_TYPE.
+        // Only marriage nodes should have children nodes and UI button for expanding/collapsing them.
+        const nodeId: Id = {
+            type: MARRIAGE_NODE_TYPE,
+            id,
+        };
+
+        let left: string | null = null;
+        let right: string | null = null;
+        this.nodeToSkip = null;
+
+        const { layer, position } = this.getNodeCoordinates(nodeId.id);
+        const currentLayer = this.layers.get(layer);
+        if (!currentLayer) {
+            throw new Error(`Layer ${layer} should exist`);
+        }
+
+        let leftPosition = position - 1;
+
+        while (leftPosition >= 0) {
+            const leftCandidate = currentLayer[leftPosition];
+            if (!leftCandidate) {
+                throw new Error(`Node at layer ${layer} and position ${leftPosition} should exist`);
+            }
+
+            const leftCandidateParents = this.children.get(leftCandidate) ?? [];
+
+            if (leftCandidateParents.length > 0) {
+                left = leftCandidate;
+                break;
+            } else {
+                leftPosition -= 1;
+            }
+        }
+
+        let rightPosition = position + 1;
+
+        while (rightPosition < currentLayer.length) {
+            const rightCandidate = currentLayer[rightPosition];
+            if (!rightCandidate) {
+                throw new Error(
+                    `Node at layer ${layer} and position ${rightPosition} should exist`,
+                );
+            }
+
+            const rightCandidateParents = this.children.get(rightCandidate) ?? [];
+
+            if (rightCandidateParents.length > 0) {
+                right = rightCandidate;
+                break;
+            } else {
+                rightPosition += 1;
+            }
+        }
+
+        const path: Path = [];
+
+        const getBranches = (nodeId: string) => this.children.get(nodeId) ?? [];
+        const setBranches = (nodeId: string, branches: string[]) =>
+            this.children.set(nodeId, branches);
+        const setRedirectedBranches = (nodeId: string, branches: string[]) =>
+            this.parents.set(nodeId, branches);
+        const findChildNodes = (id: Id) => this.getChildrenNodesIds(id);
+        const nextLayer = (layer: number) => layer + 1;
+
+        if (!left) {
+            // If the person node does not have left neighbor, then this node is the leftmost node in the level.
+            // So, children nodes can be placed at the start of the below layers.
+            path.push(0);
+        } else if (!right) {
+            // If the person node does not have right neighbor, then this node is the rightmost node in the level.
+            // So, children nodes can be placed at the end of the below layers.
+            path.push(INF);
+        } else {
+            const depth = this.findMaxDepth(left, right, path, getBranches);
+            console.log({ depth, path });
+        }
+
+        this.addNodesByPath(
+            path,
+            nodeId,
+            getBranches,
+            setBranches,
+            setRedirectedBranches,
+            findChildNodes,
+            nextLayer,
+        );
     }
 
     removeChildrenOf(nodeId: string, except: string = '') {
