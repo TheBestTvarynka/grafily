@@ -15,6 +15,7 @@ import {
     PERSON_TYPE,
 } from './index';
 import { Index, LEFT_SIDE, RIGHT_SIDE, Person, Marriage } from '../model';
+import { assert } from 'console';
 
 interface FamilyGraph {
     /** parents[nodeId] = array of parent node ids */
@@ -910,57 +911,122 @@ class GraphBuilder {
         throw new Error(`Node ${nodeId} should be in layers`);
     }
 
-    findMaxDepth(left: string, right: string, path: Path): number {
-        const leftParent = (this.parents.get(left) ?? []).last();
-        const rightParent = (this.parents.get(right) ?? []).first();
+    // `left` - left neighbor node coordinates.
+    // `right` - right neighbor node coordinates.
+    findMaxDepth(lastLeftNeighbor: string, lastRightNeighbor: string, path: Path): number {
+        const leftNeighbor = (this.parents.get(lastLeftNeighbor) ?? []).last();
+        if (!leftNeighbor) {
+            throw new Error(`Left neighbor ${leftNeighbor} should have at least one parent`);
+        }
 
-        const leftParentCoordinates = leftParent ? this.getNodeCoordinates(leftParent) : null;
+        const rightNeighbor = (this.parents.get(lastRightNeighbor) ?? []).first();
+        if (!rightNeighbor) {
+            throw new Error(`Right neighbor ${rightNeighbor} should have at least one parent`);
+        }
 
-        if (!leftParentCoordinates) {
+        const leftCoordinates = this.getNodeCoordinates(leftNeighbor);
+
+        const layer = leftCoordinates.layer;
+        const currentLayer = this.layers.get(layer);
+        if (!currentLayer) {
+            throw new Error(`Layer ${layer} should exist`);
+        }
+
+        let leftPosition = leftCoordinates.position;
+        let left: NodeCoordinates | null = null;
+        let leftId: string | null = null;
+
+        while (leftPosition >= 0) {
+            const leftNeighborId = currentLayer[leftPosition];
+            if (!leftNeighborId) {
+                throw new Error(`Node at layer ${layer} and position ${leftPosition} should exist`);
+            }
+
+            const leftParents = this.parents.get(leftNeighborId) ?? [];
+
+            if (leftParents.length > 0) {
+                left = { position: leftPosition, layer };
+                leftId = leftNeighborId;
+                break;
+            } else {
+                leftPosition -= 1;
+            }
+        }
+
+        if (!left || !leftId) {
             path.push(0);
 
             return INF;
         }
 
-        const rightParentCoordinates = rightParent ? this.getNodeCoordinates(rightParent) : null;
-        if (!rightParentCoordinates) {
+        const rightCoordinates = this.getNodeCoordinates(rightNeighbor);
+
+        let rightPosition = rightCoordinates.position;
+        let right: NodeCoordinates | null = null;
+        let rightId: string | null = null;
+
+        while (rightPosition < currentLayer.length) {
+            const rightNeighborId = currentLayer[rightPosition];
+            if (!rightNeighborId) {
+                throw new Error(
+                    `Node at layer ${layer} and position ${rightPosition} should exist`,
+                );
+            }
+
+            const rightParents = this.parents.get(rightNeighborId) ?? [];
+
+            if (rightParents.length > 0) {
+                right = { position: rightPosition, layer };
+                rightId = rightNeighborId;
+                break;
+            } else {
+                rightPosition += 1;
+            }
+        }
+
+        if (!right || !rightId) {
             path.push(INF);
 
             return INF;
         }
 
-        const leftIndex = leftParentCoordinates.position;
-        const rightIndex = rightParentCoordinates.position;
+        const leftIndex = left.position;
+        const rightIndex = right.position;
 
         if (leftIndex === rightIndex) {
             return 0;
         } else if (rightIndex - leftIndex === 1) {
-            path.push(rightParentCoordinates.position);
+            path.push(right.position);
 
-            return this.findMaxDepth(leftParent!, rightParent!, path) + 1;
+            return this.findMaxDepth(leftId, rightId, path) + 1;
         } else {
             let maxDepth = 0;
             let maxPath: Path = [];
 
             for (
-                let rightCandidateIndex = leftIndex + 1;
-                rightCandidateIndex <= rightIndex;
-                rightCandidateIndex++
+                let leftCandidateIndex = leftIndex;
+                leftCandidateIndex < rightIndex;
+                leftCandidateIndex++
             ) {
-                const rightCandidate = this.layers.get(leftParentCoordinates.layer)?.[
-                    rightCandidateIndex
-                ];
-                if (!rightCandidate) {
+                const leftCandidate = currentLayer[leftCandidateIndex];
+                if (!leftCandidate) {
                     throw new Error(
-                        `Node at layer ${leftParentCoordinates.layer} and position ${rightCandidateIndex} should exist`,
+                        `Node at layer ${layer} and position ${leftCandidateIndex} should exist`,
                     );
                 }
 
-                const rightCandidateCoordinates = this.getNodeCoordinates(rightCandidate);
+                const rightCandidate = currentLayer[leftCandidateIndex + 1];
+                if (!rightCandidate) {
+                    throw new Error(
+                        `Node at layer ${layer} and position ${
+                            leftCandidateIndex + 1
+                        } should exist`,
+                    );
+                }
 
-                const candidatePath: Path = [rightCandidateCoordinates.position];
+                const candidatePath: Path = [leftCandidateIndex];
 
-                const depth = this.findMaxDepth(leftParent!, rightCandidate, candidatePath);
+                const depth = this.findMaxDepth(leftCandidate, rightCandidate, candidatePath);
 
                 if (depth > maxDepth) {
                     maxDepth = depth;
@@ -1164,6 +1230,10 @@ class GraphBuilder {
         this.nodeToSkip = null;
 
         const { layer, position } = this.getNodeCoordinates(nodeId.id);
+        const currentLayer = this.layers.get(layer);
+        if (!currentLayer) {
+            throw new Error(`Layer ${layer} should exist`);
+        }
 
         const nodeParents = this.parents.get(nodeId.id);
         if (nodeParents && nodeParents.length > 0) {
@@ -1179,14 +1249,49 @@ class GraphBuilder {
                 if (marriage?.parent1Id === personId) {
                     // Parents of `marriage.parent2Id` are already expanded. So, the right boundary is the position of the current node, and the left boundary is the position of the left neighbor of the current node (if exists).
                     right = nodeId.id;
-                    left = position > 0 ? this.layers.get(layer)![position - 1]! : null;
+
+                    let leftPosition = position - 1;
+
+                    while (leftPosition >= 0) {
+                        const leftCandidate = currentLayer[leftPosition];
+                        if (!leftCandidate) {
+                            throw new Error(
+                                `Node at layer ${layer} and position ${leftPosition} should exist`,
+                            );
+                        }
+
+                        const leftCandidateParents = this.parents.get(leftCandidate) ?? [];
+
+                        if (leftCandidateParents.length > 0) {
+                            left = leftCandidate;
+                            break;
+                        } else {
+                            leftPosition -= 1;
+                        }
+                    }
                 } else if (marriage?.parent2Id === personId) {
                     // Parents of `marriage.parent1Id` are already expanded. So, the left boundary is the position of the current node, and the right boundary is the position of the right neighbor of the current node (if exists).
                     left = nodeId.id;
-                    right =
-                        position < this.layers.get(layer)!.length - 1
-                            ? this.layers.get(layer)![position + 1]!
-                            : null;
+
+                    let rightPosition = position + 1;
+
+                    while (rightPosition < currentLayer.length) {
+                        const rightCandidate = currentLayer[rightPosition];
+                        if (!rightCandidate) {
+                            throw new Error(
+                                `Node at layer ${layer} and position ${rightPosition} should exist`,
+                            );
+                        }
+
+                        const rightCandidateParents = this.parents.get(rightCandidate) ?? [];
+
+                        if (rightCandidateParents.length > 0) {
+                            right = rightCandidate;
+                            break;
+                        } else {
+                            rightPosition += 1;
+                        }
+                    }
                 } else {
                     throw new Error(
                         'This should not happen: the person should be either parent1 or parent2 of the marriage node',
@@ -1218,11 +1323,45 @@ class GraphBuilder {
                 }
             }
 
-            left = position > 0 ? this.layers.get(layer)![position - 1]! : null;
-            right =
-                position < this.layers.get(layer)!.length - 1
-                    ? this.layers.get(layer)![position + 1]!
-                    : null;
+            let leftPosition = position - 1;
+
+            while (leftPosition >= 0) {
+                const leftCandidate = currentLayer[leftPosition];
+                if (!leftCandidate) {
+                    throw new Error(
+                        `Node at layer ${layer} and position ${leftPosition} should exist`,
+                    );
+                }
+
+                const leftCandidateParents = this.parents.get(leftCandidate) ?? [];
+
+                if (leftCandidateParents.length > 0) {
+                    left = leftCandidate;
+                    break;
+                } else {
+                    leftPosition -= 1;
+                }
+            }
+
+            let rightPosition = position + 1;
+
+            while (rightPosition < currentLayer.length) {
+                const rightCandidate = currentLayer[rightPosition];
+                if (!rightCandidate) {
+                    throw new Error(
+                        `Node at layer ${layer} and position ${rightPosition} should exist`,
+                    );
+                }
+
+                const rightCandidateParents = this.parents.get(rightCandidate) ?? [];
+
+                if (rightCandidateParents.length > 0) {
+                    right = rightCandidate;
+                    break;
+                } else {
+                    rightPosition += 1;
+                }
+            }
         }
 
         const path: Path = [];
