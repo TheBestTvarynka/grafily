@@ -15,7 +15,7 @@ export type Date = {
 export const LEFT_SIDE = 'left_side';
 export const RIGHT_SIDE = 'right_side';
 export const NONE_SIDE = 'none';
-export type MarriageNodeSide = 'none' | 'left_side' | 'right_side';
+export type MarriageNodeSide = typeof NONE_SIDE | typeof LEFT_SIDE | typeof RIGHT_SIDE;
 
 export type Person = {
     // Person MD file name without the extension.
@@ -34,8 +34,8 @@ export type Person = {
     file: TFile;
 
     // Rendering options.
-    isParentNodesHidden: boolean;
-    isParentNodesFoldable: boolean;
+    isParentsCollapsible: boolean;
+    isParentsCollapsed: boolean;
     marriageNodeSide: MarriageNodeSide;
 };
 
@@ -46,8 +46,8 @@ export type Marriage = {
     childrenIds: string[];
 
     // Rendering options.
-    isChildNodesHidden: boolean;
-    isChildNodesFoldable: boolean;
+    isChildrenCollapsible: boolean;
+    isChildrenCollapsed: boolean;
 };
 
 export type Family = {
@@ -90,8 +90,8 @@ export function familyFromPersons(persons: Person[]): Family {
                     parent1Id: person.id,
                     parent2Id: spouse_id,
                     childrenIds: [],
-                    isChildNodesHidden: false,
-                    isChildNodesFoldable: false,
+                    isChildrenCollapsed: false,
+                    isChildrenCollapsible: false,
                 });
             }
         }
@@ -115,8 +115,8 @@ export function familyFromPersons(persons: Person[]): Family {
                     parent1Id: person.parents[0],
                     parent2Id: person.parents[1],
                     childrenIds: [person.id],
-                    isChildNodesHidden: false,
-                    isChildNodesFoldable: false,
+                    isChildrenCollapsed: false,
+                    isChildrenCollapsible: false,
                 };
                 marriages.push(parentsMarriage);
             }
@@ -145,8 +145,8 @@ export function familyFromPersons(persons: Person[]): Family {
                     id: `${person.id}_unknown`,
                     parent1Id: person.id,
                     childrenIds: [],
-                    isChildNodesHidden: false,
-                    isChildNodesFoldable: false,
+                    isChildrenCollapsed: false,
+                    isChildrenCollapsible: false,
                 });
             }
 

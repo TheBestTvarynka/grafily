@@ -7,38 +7,20 @@
 import { Edge, Node } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 import { Index, LEFT_SIDE, Marriage, RIGHT_SIDE } from '../model';
-
-export const NODE_WIDTH = 140;
-export const NODE_HEIGHT = 70;
-export const MARRIAGE_NODE_SIZE = 10;
-const MARRIAGE_GAP = 20;
-const NODES_GAP = 40;
-
-// +------------+                             +------------+
-// |  parent1   |--------------o--------------|  parent2   |
-// +------------+                             +------------+
-//
-// | NODE_WIDTH | MARRIAGE_GAP | MARRIAGE_GAP | NODE_WIDTH |
-// |                    MARRIAGE_WIDTH                     |
-const MARRIAGE_WIDTH = (NODE_WIDTH + MARRIAGE_GAP) * 2;
-
-const PERSON_TYPE = 'person';
-const MARRIAGE_TYPE = 'marriage';
-type PreNodeType = typeof PERSON_TYPE | typeof MARRIAGE_TYPE;
-
-const PERSON_NODE_TYPE = 'personNode';
-const MARRIAGE_NODE_TYPE = 'marriageNode';
-
-/**
- * Represents a preliminary tree node id.
- *
- * @property {PreNodeType} type - The type of the node (person or marriage).
- * @property {string} id - If `type` is a person type, this is the person id. If `type` is a marriage type, this is marriage id.
- */
-type Id = {
-    type: PreNodeType;
-    id: string;
-};
+import {
+    MARRIAGE_WIDTH,
+    NODE_WIDTH,
+    PERSON_TYPE,
+    Id,
+    nodeWidth,
+    NODES_GAP,
+    MARRIAGE_TYPE,
+    NODE_HEIGHT,
+    MARRIAGE_NODE_SIZE,
+    MARRIAGE_GAP,
+    MARRIAGE_NODE_TYPE,
+    PERSON_NODE_TYPE,
+} from './index';
 
 /**
  * Represents a preliminary tree node used during the layout computation.
@@ -56,20 +38,6 @@ type PreNode = {
 };
 
 /**
- * Returns the width of the node based on its type.
- *
- * @param {Id} id The Node id to get the width for.
- * @returns The width of the node.
- */
-function nodeWidth(id: Id): number {
-    if (id.type === PERSON_TYPE) {
-        return NODE_WIDTH;
-    } else {
-        return MARRIAGE_WIDTH;
-    }
-}
-
-/**
  * The Reingold-Tilford algorithm implementation for tree layout. It calculates the position of each node in the tree to create a tidy layout.
  */
 class ReingoldTilford {
@@ -79,8 +47,8 @@ class ReingoldTilford {
     getY: (level: number) => number;
     family: Index;
     // Rendering options.
-    isParentNodesFoldable: boolean;
-    isChildNodesFoldable: boolean;
+    isParentsCollapsed: boolean;
+    isChildrenCollapsible: boolean;
 
     /**
      * Creates an instance of the ReingoldTilford algorithm with the provided functions to access the family relationships and calculating the y coordinate.
@@ -97,16 +65,16 @@ class ReingoldTilford {
         getChildNodesIds: (currentNode: Id, family: Index) => Id[],
         getY: (level: number) => number,
         family: Index,
-        isParentNodesFoldable: boolean,
-        isChildNodesFoldable: boolean,
+        isParentsCollapsed: boolean,
+        isChildrenCollapsible: boolean,
     ) {
         this.getRightmostChildren = getRightmostChildren;
         this.getLeftmostChildren = getLeftmostChildren;
         this.getChildNodesIds = getChildNodesIds;
         this.getY = getY;
         this.family = family;
-        this.isParentNodesFoldable = isParentNodesFoldable;
-        this.isChildNodesFoldable = isChildNodesFoldable;
+        this.isParentsCollapsed = isParentsCollapsed;
+        this.isChildrenCollapsible = isChildrenCollapsible;
     }
 
     /**
@@ -308,9 +276,9 @@ class ReingoldTilford {
                 id: marriage.id,
                 data: {
                     id: marriage.id,
-                    isChildNodesFoldable:
-                        this.isChildNodesFoldable && marriage.childrenIds.length > 0,
-                    isChildNodesHidden: marriage.isChildNodesHidden,
+                    isChildrenCollapsible:
+                        this.isChildrenCollapsible && marriage.childrenIds.length > 0,
+                    isChildrenCollapsed: marriage.isChildrenCollapsed,
                 },
                 type: MARRIAGE_NODE_TYPE,
                 position: {
@@ -336,7 +304,7 @@ class ReingoldTilford {
                 }
 
                 person.marriageNodeSide = RIGHT_SIDE;
-                person.isParentNodesFoldable = this.isParentNodesFoldable;
+                person.isParentsCollapsed = this.isParentsCollapsed;
                 nodes.push({
                     id: parent1NodeId,
                     data: { person },
@@ -364,7 +332,7 @@ class ReingoldTilford {
                 }
 
                 person.marriageNodeSide = LEFT_SIDE;
-                person.isParentNodesFoldable = this.isParentNodesFoldable;
+                person.isParentsCollapsed = this.isParentsCollapsed;
                 nodes.push({
                     id: parent2NodeId,
                     data: { person },
@@ -399,7 +367,7 @@ class ReingoldTilford {
                 throw new Error(`Expected person to exist for id ${nodeId.id}`);
             }
 
-            person.isParentNodesFoldable = this.isParentNodesFoldable;
+            person.isParentsCollapsed = this.isParentsCollapsed;
             nodes.push({
                 id: nodeId.id,
                 data: { person },
@@ -519,7 +487,7 @@ function getParentNodesIds(currentNode: Id, family: Index): Id[] {
             let parent1MarriageId = family.personParents.get(marriage.parent1Id);
             let parent1 = family.personById.get(marriage.parent1Id);
 
-            if (parent1MarriageId && !parent1?.isParentNodesHidden) {
+            if (parent1MarriageId && !parent1?.isParentsCollapsible) {
                 parents.push({ type: MARRIAGE_TYPE, id: parent1MarriageId });
             }
         }
@@ -528,7 +496,7 @@ function getParentNodesIds(currentNode: Id, family: Index): Id[] {
             let parent2MarriageId = family.personParents.get(marriage.parent2Id);
             let parent2 = family.personById.get(marriage.parent2Id);
 
-            if (parent2MarriageId && !parent2?.isParentNodesHidden) {
+            if (parent2MarriageId && !parent2?.isParentsCollapsible) {
                 parents.push({ type: MARRIAGE_TYPE, id: parent2MarriageId });
             }
         }
@@ -565,7 +533,7 @@ function getChildNodesIds(currentNode: Id, family: Index): Id[] {
         marriage = nodeMarriage;
     }
 
-    if (marriage.isChildNodesHidden) {
+    if (marriage.isChildrenCollapsed) {
         return [];
     }
 
@@ -689,7 +657,7 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
 
             if (node.type === PERSON_NODE_TYPE) {
                 // @ts-ignore
-                node.data.person.isParentNodesFoldable = parentsTreeBuilder.isParentNodesFoldable;
+                node.data.person.isParentsCollapsed = parentsTreeBuilder.isParentsCollapsed;
             }
 
             if (!rootAdded) {
