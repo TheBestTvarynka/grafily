@@ -412,6 +412,10 @@ export class BrandesKopfLayout {
             return !this.graph.getNodes().has(personParentsMarriageId);
         };
 
+        const isChildrenCollapsed = (marriageId: string): boolean => {
+            return (this.graph.getChildren().get(marriageId) ?? []).length === 0;
+        };
+
         this.graph.getNodes().forEach((node, id) => {
             // (x; y) is the geometrical center of the node.
             const x = xCoords[id] ?? 0;
@@ -423,7 +427,7 @@ export class BrandesKopfLayout {
                     data: {
                         id,
                         isChildrenCollapsible: true,
-                        isChildrenCollapsed: false,
+                        isChildrenCollapsed: isChildrenCollapsed(id),
                     },
                     type: MARRIAGE_NODE_TYPE,
                     position: {
@@ -1386,7 +1390,7 @@ class GraphBuilder {
                         ? this.family.personParents.get(marriage.parent1Id)
                         : undefined;
                 } else {
-                    console.log(
+                    console.warn(
                         `Warn: corrupted data: the ${personId} should be either parent1 or parent2 of the marriage node(${marriage?.id})`,
                     );
                 }
@@ -1456,8 +1460,7 @@ class GraphBuilder {
             // So, parent nodes can be placed at the end of the above layers.
             path.push(INF);
         } else {
-            const depth = this.findMaxDepth(left, right, path, getBranches);
-            console.log({ depth, path });
+            this.findMaxDepth(left, right, path, getBranches);
         }
 
         this.addNodesByPath(
@@ -1530,10 +1533,20 @@ class GraphBuilder {
         const path: Path = [];
 
         const getBranches = (nodeId: string) => this.children.get(nodeId) ?? [];
-        const setBranches = (nodeId: string, branches: string[]) =>
+        const setBranches = (nodeId: string, branches: string[]) => {
+            if (branches.length === 0) {
+                return;
+            }
+
             this.children.set(nodeId, branches);
-        const setRedirectedBranches = (nodeId: string, branches: string[]) =>
+        };
+        const setRedirectedBranches = (nodeId: string, branches: string[]) => {
+            if (branches.length === 0) {
+                return;
+            }
+
             this.parents.set(nodeId, branches);
+        };
         const findChildNodes = (id: Id) => this.getChildrenNodesIds(id);
         const nextLayer = (layer: number) => layer + 1;
 
@@ -1546,8 +1559,7 @@ class GraphBuilder {
             // So, children nodes can be placed at the end of the below layers.
             path.push(INF);
         } else {
-            const depth = this.findMaxDepth(left, right, path, getBranches);
-            console.log({ depth, path });
+            this.findMaxDepth(left, right, path, getBranches);
         }
 
         this.addNodesByPath(

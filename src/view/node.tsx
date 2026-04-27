@@ -76,15 +76,11 @@ export function PersonNode({ data }: any) {
             return;
         }
 
-        console.log({ data });
-
         const person: Person = data.person;
 
         if (person.isParentsCollapsed) {
-            console.log('expanding parents');
             graph.expandParents(data.person.id);
         } else {
-            console.log('collapsing parents');
             graph.collapseParents(data.person.id);
         }
     };
