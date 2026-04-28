@@ -13,6 +13,12 @@ import { Id, NodeType, MARRIAGE_NODE_TYPE, PERSON_NODE_TYPE } from '../';
 import { Index, LEFT_SIDE, RIGHT_SIDE, Person, Marriage } from '../../model';
 
 const MIDDLE_SIDE = 'middle_side';
+
+/**
+ * During the initial graph building (initial parents expanding), we need to determine
+ * where to place the caller child among its siblings. This type represents the side
+ * where the caller child should be placed.
+ */
 type ChildSide = typeof LEFT_SIDE | typeof MIDDLE_SIDE | typeof RIGHT_SIDE;
 
 interface CallerChild {
@@ -25,6 +31,14 @@ interface NodePersons {
     person2?: Person;
 }
 
+/**
+ * Just an additional information about graph node. It is used for easier graph building and modifying.
+ *
+ * @property {string} id - node id.
+ * @property {NodeType} type - node type.
+ * @property {NodePersons} persons - persons associated with the node. For the person node, only `person1` is filled. For the marriage node, both `person1` and `person2` are filled.
+ * @property {number} layerNumber - the layer number where the node is located.
+ */
 interface GraphNode {
     id: string;
     type: NodeType;
@@ -32,6 +46,12 @@ interface GraphNode {
     layerNumber: number;
 }
 
+/**
+ * Node coordinated in the layering matrix.
+ *
+ * @property {number} layer - the layer index.
+ * @property {number} position - the position within the layer.
+ */
 interface NodeCoordinates {
     layer: number;
     position: number;
@@ -44,8 +64,19 @@ const INF: number = 1_000_000;
 const LEFT_PARENT = 'left_parent';
 const RIGHT_PARENT = 'right_parent';
 const NO_PARENT = 'no_parent';
+
+/**
+ * When expanding node parents (parent nodes), we need to determine where to place new nodes:
+ * on the left or on the right side of the existing parent node. This type represents the side
+ * where the new parent node should be placed. If no parents exist, the new parent node will
+ * be placed just above.
+ */
 type ParentSide = typeof LEFT_PARENT | typeof RIGHT_PARENT | typeof NO_PARENT;
 
+/**
+ * A special class for all graph manipulations. It is used to build the initial graph and modify it when the user makes any changes.
+ * This implementation does not calculate any nodes positions. Its only purpose is to modify the graph structure and layering.
+ */
 export class GraphBuilder {
     private nodes = new Map<string, GraphNode>();
     // string - node id.
@@ -63,22 +94,48 @@ export class GraphBuilder {
     // The `nodeToSkip` is used during nodes expanding to point which node we should not expand.
     private nodeToSkip: string | null = null;
 
+    /**
+     * Constructs a new instance of the {@link GraphBuilder}.
+     *
+     * @param {Index} family - The family index containing all the people and their relationships.
+     */
     constructor(family: Index) {
         this.family = family;
     }
 
+    /**
+     * Returns all nodes in the graph.
+     *
+     * @returns {Map<string, GraphNode>} - All nodes in the graph.
+     */
     getNodes(): Map<string, GraphNode> {
         return this.nodes;
     }
 
+    /**
+     * Returns a map with every node children ids.
+     *
+     * @returns {Map<string, string[]>} - All child nodes in the graph.
+     */
     getChildren(): Map<string, string[]> {
         return this.children;
     }
 
+    /**
+     * Returns a map with every node parents ids.
+     *
+     * @returns {Map<string, string[]>} - All parent nodes in the graph.
+     */
     getParents(): Map<string, string[]> {
         return this.parents;
     }
 
+    /**
+     * Converts a person ID to a node ID.
+     *
+     * @param {string} personId - The ID of the person to convert.
+     * @returns {[Id, Marriage | null]} - The node ID and associated marriage, if any.
+     */
     personIdToNodeId(personId: string): [Id, Marriage | null] {
         const marriages = this.family.personMarriages.get(personId) ?? [];
         const marriage = marriages[0];
@@ -101,6 +158,12 @@ export class GraphBuilder {
         }
     }
 
+    /**
+     * Returns the parents marriage of the person with the given ID. If the person has no parents, returns null.
+     *
+     * @param {string} personId - The ID of the person to convert.
+     * @returns {Marriage | null} - The parents marriage of the person, or null if the person has no parents.
+     */
     personParents(personId: string): Marriage | null {
         const marriageId = this.family.personParents.get(personId);
         if (!marriageId) {
@@ -115,6 +178,11 @@ export class GraphBuilder {
         return marriage;
     }
 
+    /**
+     * Builds the family graph.
+     *
+     * @returns {FamilyGraph} - The family graph built by the builder, containing all nodes, their parents and children, and layering information.
+     */
     buildFamilyGraph(): FamilyGraph {
         const layering: string[][] = [...this.layers.entries()]
             .sort(([a], [b]) => a - b)
@@ -127,6 +195,12 @@ export class GraphBuilder {
         };
     }
 
+    /**
+     * Builds the initial graph for the given person's perspective. The initial graph contain all parents and children of the given person.
+     * Also, siblings of all ancestors and descendants are included in the graph.
+     *
+     * @param {string} perspectiveId - The ID of the person from whose perspective to build the graph.
+     */
     buildInitialGraph(perspectiveId: string) {
         let [id, marriage] = this.personIdToNodeId(perspectiveId);
 
@@ -158,7 +232,7 @@ export class GraphBuilder {
         }
     }
 
-    addChildren(parentsMarriage: Marriage, childrenLayerNumber: number) {
+    private addChildren(parentsMarriage: Marriage, childrenLayerNumber: number) {
         if (!parentsMarriage.childrenIds.length) {
             return;
         }
@@ -209,7 +283,7 @@ export class GraphBuilder {
         }
     }
 
-    addParents(caller: CallerChild | null, marriage: Marriage, layerNumber: number) {
+    private addParents(caller: CallerChild | null, marriage: Marriage, layerNumber: number) {
         const id = marriage.id;
 
         let p1ParentsExist = false;
@@ -330,7 +404,13 @@ export class GraphBuilder {
         }
     }
 
-    getNodeCoordinates(nodeId: string): NodeCoordinates {
+    /**
+     * Returns the coordinates of the node with the given id in the layering matrix.
+     *
+     * @param {string} nodeId - The node id.
+     * @returns {NodeCoordinates} - The coordinates of the node in the layering matrix.
+     */
+    private getNodeCoordinates(nodeId: string): NodeCoordinates {
         for (const [index, layer] of this.layers.entries()) {
             const nodeIndex = layer.indexOf(nodeId);
             if (nodeIndex !== -1) {
@@ -343,7 +423,7 @@ export class GraphBuilder {
 
     // `left` - left neighbor node coordinates.
     // `right` - right neighbor node coordinates.
-    findMaxDepth(
+    private findMaxDepth(
         lastLeftNeighbor: string,
         lastRightNeighbor: string,
         path: Path,
@@ -490,7 +570,7 @@ export class GraphBuilder {
         }
     }
 
-    getChildrenNodesIds(id: Id): [Id[], ParentSide] {
+    private getChildrenNodesIds(id: Id): [Id[], ParentSide] {
         if (id.type === PERSON_NODE_TYPE) {
             // Current node is a person node. It has no children.
             return [[], NO_PARENT];
@@ -522,7 +602,7 @@ export class GraphBuilder {
         }
     }
 
-    getParentNodesIds(id: Id): [Id[], ParentSide] {
+    private getParentNodesIds(id: Id): [Id[], ParentSide] {
         if (id.type === PERSON_NODE_TYPE) {
             // Current node is a person node. Only one parent node is possible: parents of this person.
 
@@ -598,7 +678,7 @@ export class GraphBuilder {
         }
     }
 
-    addNodesByPath(
+    private addNodesByPath(
         path: Path,
         nodeId: Id,
         getBranches: (nodeId: string) => string[],
@@ -724,6 +804,11 @@ export class GraphBuilder {
         }
     }
 
+    /**
+     * Adds parents of the person with the given ID to the graph. If the person has no parents, does nothing.
+     *
+     * @param {string} personId - The ID of the person whose parents we want to add to the graph.
+     */
     addParentsOf(personId: string) {
         const [nodeId, marriage] = this.personIdToNodeId(personId);
 
@@ -899,6 +984,11 @@ export class GraphBuilder {
         );
     }
 
+    /**
+     * Adds children of the marriage with the given ID to the graph.
+     *
+     * @param {string} id - The ID of the marriage whose children we want to add to the graph.
+     */
     addChildrenOf(id: string) {
         // It should be impossible to call this method on the PERSON_NODE_TYPE.
         // Only marriage nodes should have children nodes and UI button for expanding/collapsing them.
@@ -998,6 +1088,12 @@ export class GraphBuilder {
         );
     }
 
+    /**
+     * Removes children of the node (marriage) with the given ID from the graph.
+     *
+     * @param {string} nodeId - The ID of the marriage whose children we want to remove from the graph.
+     * @param {string} except - The ID of the child node to exclude from removal.
+     */
     removeChildrenOf(nodeId: string, except: string = '') {
         const children = this.children.get(nodeId);
         if (!children) {
@@ -1046,6 +1142,12 @@ export class GraphBuilder {
         }
     }
 
+    /**
+     * Removes parents of the person with the given ID from the graph.
+     *
+     * @param {string} nodeId - The ID of the node whose parents we want to remove from the graph.
+     * @param {string} except - The ID of the person to exclude from removal.
+     */
     removeParentsOf(nodeId: string, except: string = '') {
         const parents = this.parents.get(nodeId);
 
