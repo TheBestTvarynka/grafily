@@ -1,7 +1,15 @@
 /**
  * This module contains the direct ancestors-descendants tree layout algorithm implementation.
  * It is based on the Reingold-Tilford algorithm, but a but modified to fit the current use case.
- * @packageDocumentation
+ *
+ * Useful links:
+ * - {@link https://tbt.qkation.com/posts/draw-tree-using-reingold-tilford-algorithm/} - Drawing Genealogy Graphs. Part 1: Tree Drawing Using Reingold-Tilford Algorithm.
+ * - {@link https://www.cs.unc.edu/techreports/89-034.pdf} - A Node-Positioning Algorithm for General Trees. John Q. Walker II. September, 1989.
+ * - {@link https://reingold.co/tidier-drawings.pdf} - Tidier Drawings of Trees Edward M. Reingold and John S. Tilford. March 1981.
+ * - {@link https://towardsdatascience.com/reingold-tilford-algorithm-explained-with-walkthrough-be5810e8ed93/} - Reingold Tilford Algorithm Explained With Walkthrough. Sep 12, 2023.
+ * - {@link https://williamyaoh.com/posts/2023-04-22-drawing-trees-functionally.html} - Drawing Trees Functionally: Reingold and Tilford, 1981. April 22, 2023.
+ *
+ * @module tree
  */
 
 import { Edge, Node } from '@xyflow/react';
@@ -10,16 +18,14 @@ import { Index, LEFT_SIDE, Marriage, RIGHT_SIDE } from '../model';
 import {
     MARRIAGE_WIDTH,
     NODE_WIDTH,
-    PERSON_TYPE,
+    PERSON_NODE_TYPE,
     Id,
     nodeWidth,
     NODES_GAP,
-    MARRIAGE_TYPE,
     NODE_HEIGHT,
     MARRIAGE_NODE_SIZE,
     MARRIAGE_GAP,
     MARRIAGE_NODE_TYPE,
-    PERSON_NODE_TYPE,
 } from './index';
 
 /**
@@ -176,7 +182,7 @@ class ReingoldTilford {
         for (const childId of childIds) {
             childPreNodes.push(this.buildPreNodes(childId, preNodes, deltaX, childIds));
 
-            if (childId.type === PERSON_TYPE) {
+            if (childId.type === PERSON_NODE_TYPE) {
                 deltaX += NODE_WIDTH + NODES_GAP;
             } else {
                 deltaX += MARRIAGE_WIDTH + NODES_GAP;
@@ -265,7 +271,7 @@ class ReingoldTilford {
         const x = preNode.x + mod + preNode.shift;
         const y = this.getY(level);
 
-        if (nodeId.type === MARRIAGE_TYPE) {
+        if (nodeId.type === MARRIAGE_NODE_TYPE) {
             const marriage = this.family.marriageById.get(nodeId.id);
             if (!marriage) {
                 throw new Error(`Expected marriage to exist for id ${nodeId.id}`);
@@ -468,13 +474,13 @@ function getLeftmostChild(id: Id, family: Index): Id | null {
  */
 function getParentNodesIds(currentNode: Id, family: Index): Id[] {
     let parents: Id[] = [];
-    if (currentNode.type === PERSON_TYPE) {
+    if (currentNode.type === PERSON_NODE_TYPE) {
         const marriageId = family.personParents.get(currentNode.id);
 
         if (!marriageId) {
             parents = [];
         } else {
-            parents = [{ type: MARRIAGE_TYPE, id: marriageId }];
+            parents = [{ type: MARRIAGE_NODE_TYPE, id: marriageId }];
         }
     } else {
         const marriage = family.marriageById.get(currentNode.id);
@@ -488,7 +494,7 @@ function getParentNodesIds(currentNode: Id, family: Index): Id[] {
             let parent1 = family.personById.get(marriage.parent1Id);
 
             if (parent1MarriageId && !parent1?.isParentsCollapsible) {
-                parents.push({ type: MARRIAGE_TYPE, id: parent1MarriageId });
+                parents.push({ type: MARRIAGE_NODE_TYPE, id: parent1MarriageId });
             }
         }
 
@@ -497,7 +503,7 @@ function getParentNodesIds(currentNode: Id, family: Index): Id[] {
             let parent2 = family.personById.get(marriage.parent2Id);
 
             if (parent2MarriageId && !parent2?.isParentsCollapsible) {
-                parents.push({ type: MARRIAGE_TYPE, id: parent2MarriageId });
+                parents.push({ type: MARRIAGE_NODE_TYPE, id: parent2MarriageId });
             }
         }
     }
@@ -515,7 +521,7 @@ function getParentNodesIds(currentNode: Id, family: Index): Id[] {
 function getChildNodesIds(currentNode: Id, family: Index): Id[] {
     let marriage: Marriage;
 
-    if (currentNode.type === PERSON_TYPE) {
+    if (currentNode.type === PERSON_NODE_TYPE) {
         const marriages = family.personMarriages.get(currentNode.id);
 
         if (!marriages || !marriages[0]) {
@@ -540,9 +546,9 @@ function getChildNodesIds(currentNode: Id, family: Index): Id[] {
     return marriage.childrenIds.map((id) => {
         const marriages = family.personMarriages.get(id);
         if (!marriages || !marriages[0]) {
-            return { type: PERSON_TYPE, id };
+            return { type: PERSON_NODE_TYPE, id };
         } else {
-            return { type: MARRIAGE_TYPE, id: marriages[0].id };
+            return { type: MARRIAGE_NODE_TYPE, id: marriages[0].id };
         }
     });
 }
@@ -587,7 +593,7 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
                 `Invalid number of marriages for person(${perspectiveId}): ${marriages.length}. Only one marriage per person is supported.`,
             );
         }
-        id = { type: MARRIAGE_TYPE, id: marriage.id };
+        id = { type: MARRIAGE_NODE_TYPE, id: marriage.id };
         if (marriage.parent1Id) {
             marriagePersons.push(marriage.parent1Id);
         }
@@ -595,7 +601,7 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
             marriagePersons.push(marriage.parent2Id);
         }
     } else {
-        id = { type: PERSON_TYPE, id: perspectiveId };
+        id = { type: PERSON_NODE_TYPE, id: perspectiveId };
     }
 
     const nodes: Node[] = [];

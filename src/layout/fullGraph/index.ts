@@ -14,6 +14,15 @@ import { Index, LEFT_SIDE, RIGHT_SIDE } from '../../model';
 import { positionX, positionY } from './brandesKopf';
 import { GraphBuilder } from './graphBuilder';
 
+/**
+ * Represents the family graph. No modifications are needed to this graph. It is ready for nodes positions calculations.
+ * When the graph is modified by the user, a new instance of the graph must be created by the {@link GraphBuilder} class.
+ *
+ * @property {Map<string, string[]>} parents - A map where the key is a node id and the value is an array of parent node ids.
+ * @property {Map<string, string[]>} children - A map where the key is a node id and the value is an array of child node ids.
+ * @property {string[][]} layering - A 2D array where layering[level][order] = nodeId. For example, layering[0] is the list of node ids in the first (top) layer,
+ * sorted by their `order` value. In DAG-related papers, the `order` value is often referred to as the "position" of the node within its layer or "rank".
+ */
 export interface FamilyGraph {
     /** parents[nodeId] = array of parent node ids */
     parents: Map<string, string[]>;
@@ -27,15 +36,28 @@ export interface FamilyGraph {
     layering: string[][];
 }
 
+/**
+ * Represents the family graph layout based on the Brandes-Kopf algorithm. This layout is designed to handle general directed acyclic graphs (DAGs) and is not limited to tree structures.
+ */
 export class BrandesKopfLayout {
     family: Index;
     graph: GraphBuilder;
 
+    /**
+     * Constructs a new instance of the Brandes-Kopf layout.
+     *
+     * @param {Index} family - The family index containing all the information about persons and marriages.
+     */
     constructor(family: Index) {
         this.family = family;
         this.graph = new GraphBuilder(family);
     }
 
+    /**
+     * Calculates positions for all nodes in the graph and creates graph nodes and edges.
+     *
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
     private buildNodesInternal(): [Node[], Edge[]] {
         const familyGraph = this.graph.buildFamilyGraph();
 
@@ -196,19 +218,37 @@ export class BrandesKopfLayout {
         return [nodes, edges];
     }
 
-    buildNodes(perspectiveId: string): [Node[], Edge[]] {
+    /**
+     * Initializes the initial graph, calculates nodes coordinates, and creates graph nodes and edges.
+     *
+     * @param {string} perspectivePersonId - The person id to build the graph from the perspective of. This person will be in the "center" of the graph.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
+    buildNodes(perspectivePersonId: string): [Node[], Edge[]] {
         this.graph = new GraphBuilder(this.family);
-        this.graph.buildInitialGraph(perspectiveId);
+        this.graph.buildInitialGraph(perspectivePersonId);
 
         return this.buildNodesInternal();
     }
 
+    /**
+     * Collapses the children of a given marriage.
+     *
+     * @param {string} nodeId - The id of the node to collapse its children. This node if must be a marriage id.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
     collapseChildren(nodeId: string): [Node[], Edge[]] {
         this.graph.removeChildrenOf(nodeId);
 
         return this.buildNodesInternal();
     }
 
+    /**
+     * Collapses the parents of a given person.
+     *
+     * @param {string} personId - The person id to collapse its parents.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
     collapseParents(personId: string): [Node[], Edge[]] {
         const [nodeId] = this.graph.personIdToNodeId(personId);
 
@@ -231,12 +271,24 @@ export class BrandesKopfLayout {
         return this.buildNodesInternal();
     }
 
+    /**
+     * Expands the children of a given marriage.
+     *
+     * @param {string} nodeId - The marriage id to expand its children.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
     expandChildren(nodeId: string): [Node[], Edge[]] {
         this.graph.addChildrenOf(nodeId);
 
         return this.buildNodesInternal();
     }
 
+    /**
+     * Expands the parents of a given person.
+     *
+     * @param {string} personId - The person id to expand its parents.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
     expandParents(personId: string): [Node[], Edge[]] {
         this.graph.addParentsOf(personId);
 
