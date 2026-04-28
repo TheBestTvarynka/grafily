@@ -1,3 +1,10 @@
+/**
+ * This algorithm is a creation of my own and it needs to be rewritten and improved.
+ * Probably, I will fix it in the future, but not in the near future (that's for sure).
+ *
+ * @module fixme
+ */
+
 import { Edge, Node } from '@xyflow/react';
 import { Index } from 'model';
 

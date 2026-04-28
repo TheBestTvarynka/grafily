@@ -1,12 +1,15 @@
+/**
+ * This module builds and modifies the family graph before calculating node positions.
+ * When use makes any kind of graph change, for example marriage children collapsing,
+ * this module will remove all marriage children nodes from the graph.
+ * Or, when the user wants to add new nodes to the graph, this module will add only
+ * legal nodes (no edges crossing) to the graph and will put them on the right layers.
+ *
+ * @module graphBuilder
+ */
+
 import { FamilyGraph } from './';
-import {
-    Id,
-    NodeType,
-    MARRIAGE_NODE_TYPE,
-    PERSON_NODE_TYPE,
-    MARRIAGE_TYPE,
-    PERSON_TYPE,
-} from '../';
+import { Id, NodeType, MARRIAGE_NODE_TYPE, PERSON_NODE_TYPE } from '../';
 import { Index, LEFT_SIDE, RIGHT_SIDE, Person, Marriage } from '../../model';
 
 const MIDDLE_SIDE = 'middle_side';
@@ -82,7 +85,7 @@ export class GraphBuilder {
 
         if (marriage) {
             const id: Id = {
-                type: MARRIAGE_TYPE,
+                type: MARRIAGE_NODE_TYPE,
                 id: marriage.id,
             };
 
@@ -90,7 +93,7 @@ export class GraphBuilder {
         } else {
             return [
                 {
-                    type: PERSON_TYPE,
+                    type: PERSON_NODE_TYPE,
                     id: personId,
                 },
                 null,
@@ -299,7 +302,7 @@ export class GraphBuilder {
                 childrenLayer.push(childNodeId.id);
 
                 const persons: NodePersons =
-                    childNodeId.type === MARRIAGE_TYPE
+                    childNodeId.type === MARRIAGE_NODE_TYPE
                         ? {
                               person1: childMarriage!.parent1Id
                                   ? this.family.personById.get(childMarriage!.parent1Id)!
@@ -311,8 +314,7 @@ export class GraphBuilder {
                         : { person1: this.family.personById.get(childNodeId.id)! };
                 this.nodes.set(childNodeId.id, {
                     id: childNodeId.id,
-                    type:
-                        childNodeId.type === MARRIAGE_TYPE ? MARRIAGE_NODE_TYPE : PERSON_NODE_TYPE,
+                    type: childNodeId.type,
                     persons,
                     layerNumber: layerNumber + 1,
                 });
@@ -489,7 +491,7 @@ export class GraphBuilder {
     }
 
     getChildrenNodesIds(id: Id): [Id[], ParentSide] {
-        if (id.type === PERSON_TYPE) {
+        if (id.type === PERSON_NODE_TYPE) {
             // Current node is a person node. It has no children.
             return [[], NO_PARENT];
         } else {
@@ -505,12 +507,12 @@ export class GraphBuilder {
                     const marriageId = childMarriages[0]!;
 
                     return {
-                        type: MARRIAGE_TYPE,
+                        type: MARRIAGE_NODE_TYPE,
                         id: marriageId.id,
                     };
                 } else {
                     return {
-                        type: PERSON_TYPE,
+                        type: PERSON_NODE_TYPE,
                         id: childId,
                     };
                 }
@@ -521,7 +523,7 @@ export class GraphBuilder {
     }
 
     getParentNodesIds(id: Id): [Id[], ParentSide] {
-        if (id.type === PERSON_TYPE) {
+        if (id.type === PERSON_NODE_TYPE) {
             // Current node is a person node. Only one parent node is possible: parents of this person.
 
             const marriageId = this.family.personParents.get(id.id);
@@ -537,7 +539,7 @@ export class GraphBuilder {
             return [
                 [
                     {
-                        type: MARRIAGE_TYPE,
+                        type: MARRIAGE_NODE_TYPE,
                         id: marriage.id,
                     },
                 ],
@@ -564,7 +566,7 @@ export class GraphBuilder {
 
                     if (!existingParents.includes(marriage.id)) {
                         parentsIds.push({
-                            type: MARRIAGE_TYPE,
+                            type: MARRIAGE_NODE_TYPE,
                             id: marriage.id,
                         });
                     } else {
@@ -583,7 +585,7 @@ export class GraphBuilder {
 
                     if (!existingParents.includes(marriage.id)) {
                         parentsIds.push({
-                            type: MARRIAGE_TYPE,
+                            type: MARRIAGE_NODE_TYPE,
                             id: marriage.id,
                         });
                     } else {
@@ -637,7 +639,7 @@ export class GraphBuilder {
                 for (const parentNode of parentNodes) {
                     let node: GraphNode;
 
-                    if (parentNode.type === PERSON_TYPE) {
+                    if (parentNode.type === PERSON_NODE_TYPE) {
                         node = {
                             id: parentNode.id,
                             type: PERSON_NODE_TYPE,
@@ -738,8 +740,8 @@ export class GraphBuilder {
         const nodeParents = this.parents.get(nodeId.id);
         if (nodeParents && nodeParents.length > 0) {
             // The `nodeId` node already has at least one parent. We must calculate left and right boundaries including the existing parents nodes.
-            if (nodeId.type === PERSON_TYPE) {
-                // The PERSON_TYPE node can have only one parent node. So, if it already has a parent, then we have nothing to do.
+            if (nodeId.type === PERSON_NODE_TYPE) {
+                // The PERSON_NODE_TYPE node can have only one parent node. So, if it already has a parent, then we have nothing to do.
                 console.warn(
                     `Something weird happens here: trying to expand parents of a person node ${nodeId.id}, but it already has parents.`,
                 );
@@ -799,7 +801,7 @@ export class GraphBuilder {
                 }
             }
         } else {
-            if (nodeId.type === MARRIAGE_TYPE) {
+            if (nodeId.type === MARRIAGE_NODE_TYPE) {
                 // When we expand parents of a person from the marriage, we need to expand only one of the parents.
                 // Here we determine what node to skip during expansion.
                 let nodeToSkipId: string | undefined = undefined;

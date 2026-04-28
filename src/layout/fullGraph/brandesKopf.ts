@@ -1,3 +1,15 @@
+/**
+ * This module implements the Brandes-Köpf algorithm for calculating graph node positions (x and y coordinates).
+ * This implementation is highly inspired by the dagre project: {@link https://github.com/dagrejs/dagre/blob/2595d05a0fbb7721f35bfcaab5fbf40f5b3858ca/lib/position/bk.js}.
+ * Basically, that's the same algorithm, but rewritten in TypeScript and adapted to the current use case.
+ *
+ * Useful links:
+ * - {@link https://github.com/dagrejs/dagre} - The Dagre project on GitHub.
+ * - {@link https://scispace.com/pdf/fast-and-simple-horizontal-coordinate-assignment-2aawem94ts.pdf} - Fast and Simple Horizontal Coordinate Assignment.
+ *
+ * @module brandesKopf
+ */
+
 import { FamilyGraph } from './index';
 
 /**
