@@ -578,7 +578,7 @@ export class ReingoldTilford {
 
     /**
      * Creates an instance of the ReingoldTilford layout with the provided family index.
-     * 
+     *
      * @param {Index} family - The family index containing all the information about persons and marriages.
      */
     constructor(family: Index) {
@@ -602,7 +602,9 @@ export class ReingoldTilford {
      * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
      */
     collapseChildren(_nodeId: string): [Node[], Edge[]] {
-        throw new Error('Collapsing children is not supported in the current version of the Reingold-Tilford layout');
+        throw new Error(
+            'Collapsing children is not supported in the current version of the Reingold-Tilford layout',
+        );
     }
 
     /**
@@ -612,7 +614,9 @@ export class ReingoldTilford {
      * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
      */
     collapseParents(_personId: string): [Node[], Edge[]] {
-        throw new Error('Collapsing parents is not supported in the current version of the Reingold-Tilford layout');
+        throw new Error(
+            'Collapsing parents is not supported in the current version of the Reingold-Tilford layout',
+        );
     }
 
     /**
@@ -622,7 +626,9 @@ export class ReingoldTilford {
      * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
      */
     expandChildren(_nodeId: string): [Node[], Edge[]] {
-        throw new Error('Expanding children is not supported in the current version of the Reingold-Tilford layout');
+        throw new Error(
+            'Expanding children is not supported in the current version of the Reingold-Tilford layout',
+        );
     }
 
     /**
@@ -632,7 +638,9 @@ export class ReingoldTilford {
      * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
      */
     expandParents(_personId: string): [Node[], Edge[]] {
-        throw new Error('Expanding parents is not supported in the current version of the Reingold-Tilford layout');
+        throw new Error(
+            'Expanding parents is not supported in the current version of the Reingold-Tilford layout',
+        );
     }
 }
 

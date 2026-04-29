@@ -116,8 +116,6 @@ export class GenericLayout {
             case REINGOLD_TILFORD:
                 this.layout = new ReingoldTilford(family);
                 break;
-            default:
-                throw new Error(`Unknown layout name: ${layoutName}`);
         }
     }
 

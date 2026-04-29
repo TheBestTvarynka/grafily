@@ -10,12 +10,12 @@ import {
     Edge,
 } from '@xyflow/react';
 
-// import { buildNodes } from '../layout/tree';
 import { buildIndex, emptyIndex, familyFromPersons, Index } from '../model';
 import { useApp } from '../hooks';
 import { extractPageMeta } from '../parsing';
 import { PersonNode, MarriageNode } from './node';
-import { BRANDES_KORF, GenericLayout } from 'layout';
+import { BRANDES_KORF, GenericLayout, LayoutName } from 'layout';
+import { StartupMenu } from './StartupMenu';
 
 export type GraphContextValue = {
     layout: GenericLayout;
@@ -41,6 +41,7 @@ function FamilyGraph() {
     const [index, setIndex] = useState<Index>(emptyIndex());
 
     const [graph, setGraph] = useState<[Node[], Edge[]]>([[], []]);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     const shiftGraphByAnchorNode = (
         oldNodes: Node[],
@@ -100,14 +101,8 @@ function FamilyGraph() {
             const family = familyFromPersons(persons);
             const familyIndex = buildIndex(family);
 
-            const layout = new GenericLayout(BRANDES_KORF, familyIndex);
-            const graph = layout.buildNodes('Oleksii');
-
-            setIndex(familyIndex);
-            setLayout(layout);
-
             if (!cancelled) {
-                setGraph(graph);
+                setIndex(familyIndex);
             }
         })().catch((err) => console.error(err));
 
@@ -164,6 +159,15 @@ function FamilyGraph() {
         setGraph(newGraph);
     };
 
+    const handleStartupMenuSubmit = (layoutName: LayoutName, personId: string) => {
+        const newLayout = new GenericLayout(layoutName, index);
+        const newGraph = newLayout.buildNodes(personId);
+
+        setLayout(newLayout);
+        setGraph(newGraph);
+        setIsInitialized(true);
+    };
+
     return (
         <GraphContext.Provider
             value={{
@@ -175,10 +179,18 @@ function FamilyGraph() {
                 index,
             }}
         >
-            <ReactFlow nodes={graph[0]} edges={graph[1]} nodeTypes={nodeTypes}>
-                <Background color="grey" variant={BackgroundVariant.Dots} gap={20} />
-                <Controls />
-            </ReactFlow>
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                <ReactFlow nodes={graph[0]} edges={graph[1]} nodeTypes={nodeTypes}>
+                    <Background color="grey" variant={BackgroundVariant.Dots} gap={20} />
+                    <Controls />
+                </ReactFlow>
+                {!isInitialized && index.personById.size > 0 && (
+                    <StartupMenu
+                        persons={Array.from(index.personById.keys())}
+                        onSubmit={handleStartupMenuSubmit}
+                    />
+                )}
+            </div>
         </GraphContext.Provider>
     );
 }
