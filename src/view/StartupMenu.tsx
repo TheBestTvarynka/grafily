@@ -9,6 +9,16 @@ export type StartupMenuProps = {
 export function StartupMenu({ persons, onSubmit }: StartupMenuProps) {
     const [selectedLayout, setSelectedLayout] = useState<LayoutName>(BRANDES_KORF);
     const [selectedPerson, setSelectedPerson] = useState<string>(persons[0] ?? '');
+    const [searchQuery, setSearchQuery] = useState<string>('');
+
+    const filteredPersons = persons.filter((person) =>
+        person.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+
+    const handleSelectPerson = (person: string) => {
+        setSelectedPerson(person);
+        setSearchQuery('');
+    };
 
     const handleSubmit = () => {
         if (selectedPerson) {
@@ -48,23 +58,37 @@ export function StartupMenu({ persons, onSubmit }: StartupMenuProps) {
                 </div>
 
                 <div className="grafily-startup-menu-section">
-                    <label htmlFor="person-select" className="grafily-startup-menu-label">
+                    <label htmlFor="person-search" className="grafily-startup-menu-label">
                         Starting person:
                     </label>
-                    <select
-                        id="person-select"
-                        value={selectedPerson}
-                        onChange={(e) => setSelectedPerson(e.target.value)}
-                        className="dropdown"
-                        style={{ height: '3em' }}
-                    >
-                        <option value="">Select a person...</option>
-                        {persons.map((person) => (
-                            <option key={person} value={person}>
-                                {person}
-                            </option>
-                        ))}
-                    </select>
+                    <input
+                        id="person-search"
+                        type="text"
+                        placeholder="Search person..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="grafily-startup-menu-search-input"
+                    />
+                    {filteredPersons.length > 0 && (
+                        <ul className="grafily-startup-menu-person-list">
+                            {filteredPersons.map((person) => (
+                                <li
+                                    key={person}
+                                    className={`grafily-startup-menu-person-item ${
+                                        selectedPerson === person ? 'selected' : ''
+                                    }`}
+                                    onClick={() => handleSelectPerson(person)}
+                                >
+                                    {person}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    {selectedPerson && (
+                        <div className="grafily-startup-menu-selected-person">
+                            Selected: <strong>{selectedPerson}</strong>
+                        </div>
+                    )}
                 </div>
 
                 <div className="grafily-startup-menu-actions">
