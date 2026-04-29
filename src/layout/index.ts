@@ -2,6 +2,7 @@ import { Edge, Node } from '@xyflow/react';
 
 import { Index } from '../model';
 import { BrandesKopfLayout } from './fullGraph';
+import { ReingoldTilford } from './tree';
 
 /**
  * Node width.
@@ -99,7 +100,7 @@ export type LayoutName = typeof BRANDES_KORF | typeof REINGOLD_TILFORD;
  * Represents a generic layout for the family graph. This class serves as a wrapper around specific layout implementations, allowing for flexibility in choosing different layout algorithms in the future.
  */
 export class GenericLayout {
-    private layout: BrandesKopfLayout;
+    private layout: BrandesKopfLayout | ReingoldTilford;
 
     /**
      * Constructs a new instance of the GenericLayout class with the specified layout implementation.
@@ -111,6 +112,9 @@ export class GenericLayout {
         switch (layoutName) {
             case BRANDES_KORF:
                 this.layout = new BrandesKopfLayout(family);
+                break;
+            case REINGOLD_TILFORD:
+                this.layout = new ReingoldTilford(family);
                 break;
             default:
                 throw new Error(`Unknown layout name: ${layoutName}`);
