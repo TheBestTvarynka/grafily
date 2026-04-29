@@ -27,7 +27,7 @@ If your plugin does not need CSS, delete this file.
     padding: 24px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 400px;
-    max-width: 600px;
+    max-width: 800px;
 }
 
 .grafily-startup-menu h2 {
@@ -41,22 +41,15 @@ If your plugin does not need CSS, delete this file.
     margin-bottom: 20px;
 }
 
-.grafily-startup-menu-label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: var(--text-normal);
-    font-size: 14px;
-}
-
 .grafily-startup-menu-options {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 8px;
 }
 
 .grafily-startup-menu-radio {
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 8px;
     padding: 8px;

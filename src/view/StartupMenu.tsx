@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BRANDES_KORF, REINGOLD_TILFORD, LayoutName } from '../layout';
+import { GRAPH_ICON, TREE_ICON } from 'images';
 
 export type StartupMenuProps = {
     persons: string[];
@@ -32,7 +33,6 @@ export function StartupMenu({ persons, onSubmit }: StartupMenuProps) {
                 <h2>Grafily - Family Graph</h2>
 
                 <div className="grafily-startup-menu-section">
-                    <label className="grafily-startup-menu-label">Layout Algorithm</label>
                     <div className="grafily-startup-menu-options">
                         <label className="grafily-startup-menu-radio">
                             <input
@@ -42,7 +42,16 @@ export function StartupMenu({ persons, onSubmit }: StartupMenuProps) {
                                 checked={selectedLayout === BRANDES_KORF}
                                 onChange={() => setSelectedLayout(BRANDES_KORF)}
                             />
-                            <span>Brandes-Kopf (General Graphs)</span>
+                            <span>Brandes-Kopf</span>
+                            <span>
+                                Perfect for graph of any complexity. Interactive nodes collapsing or
+                                expanding.{' '}
+                                <strong>
+                                    Not all nodes are centered related to its ancestors or
+                                    descendants.
+                                </strong>
+                            </span>
+                            <img src={GRAPH_ICON} style={{ width: '80%' }} />
                         </label>
                         <label className="grafily-startup-menu-radio">
                             <input
@@ -52,7 +61,16 @@ export function StartupMenu({ persons, onSubmit }: StartupMenuProps) {
                                 checked={selectedLayout === REINGOLD_TILFORD}
                                 onChange={() => setSelectedLayout(REINGOLD_TILFORD)}
                             />
-                            <span>Reingold-Tilford (Tree Structures)</span>
+                            <span>Reingold-Tilford</span>
+                            <span>
+                                Includes only direct ancestors and descendants of the selected
+                                person.{' '}
+                                <strong>
+                                    All nodes are perfectly centered related to their ancestors or
+                                    descendants.
+                                </strong>
+                            </span>
+                            <img src={TREE_ICON} style={{ width: '60%' }} />
                         </label>
                     </div>
                 </div>
