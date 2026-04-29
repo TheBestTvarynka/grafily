@@ -46,7 +46,7 @@ type PreNode = {
 /**
  * The Reingold-Tilford algorithm implementation for tree layout. It calculates the position of each node in the tree to create a tidy layout.
  */
-class ReingoldTilford {
+class ReingoldTilfordLayout {
     getRightmostChildren: (id: Id, family: Index) => Id | null;
     getLeftmostChildren: (id: Id, family: Index) => Id | null;
     getChildNodesIds: (currentNode: Id, family: Index) => Id[];
@@ -93,7 +93,7 @@ class ReingoldTilford {
      * @param {Map<string, PreNode>} preNodes The map of preliminary nodes.
      * @returns The calculated shift value.
      */
-    calculateShift(
+    private calculateShift(
         siblingLeft: Id,
         leftShift: number,
         singlingRight: Id,
@@ -573,6 +573,77 @@ function getChildY(level: number): number {
     return level * (NODE_HEIGHT + NODES_GAP);
 }
 
+export class ReingoldTilford {
+    private family: Index;
+
+    /**
+     * Creates an instance of the ReingoldTilford layout with the provided family index.
+     *
+     * @param {Index} family - The family index containing all the information about persons and marriages.
+     */
+    constructor(family: Index) {
+        this.family = family;
+    }
+
+    /**
+     * Initializes the initial graph, calculates nodes coordinates, and creates graph nodes and edges.
+     *
+     * @param {string} perspectivePersonId - The person id to build the graph from the perspective of. This person will be in the "center" of the graph.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
+    buildNodes(perspectiveId: string): [Node[], Edge[]] {
+        return buildNodes(perspectiveId, this.family);
+    }
+
+    /**
+     * Collapses the children of a given marriage.
+     *
+     * @param {string} nodeId - The id of the node to collapse its children. This node if must be a marriage id.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
+    collapseChildren(_nodeId: string): [Node[], Edge[]] {
+        throw new Error(
+            'Collapsing children is not supported in the current version of the Reingold-Tilford layout',
+        );
+    }
+
+    /**
+     * Collapses the parents of a given person.
+     *
+     * @param {string} personId - The person id to collapse its parents.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
+    collapseParents(_personId: string): [Node[], Edge[]] {
+        throw new Error(
+            'Collapsing parents is not supported in the current version of the Reingold-Tilford layout',
+        );
+    }
+
+    /**
+     * Expands the children of a given marriage.
+     *
+     * @param {string} nodeId - The marriage id to expand its children.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
+    expandChildren(_nodeId: string): [Node[], Edge[]] {
+        throw new Error(
+            'Expanding children is not supported in the current version of the Reingold-Tilford layout',
+        );
+    }
+
+    /**
+     * Expands the parents of a given person.
+     *
+     * @param {string} personId - The person id to expand its parents.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
+    expandParents(_personId: string): [Node[], Edge[]] {
+        throw new Error(
+            'Expanding parents is not supported in the current version of the Reingold-Tilford layout',
+        );
+    }
+}
+
 /**
  * Builds the nodes and edges for the family tree layout.
  *
@@ -607,7 +678,7 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
     const nodes: Node[] = [];
     const edges: Edge[] = [];
 
-    const parentsTreeBuilder = new ReingoldTilford(
+    const parentsTreeBuilder = new ReingoldTilfordLayout(
         getRightmostParent,
         getLeftmostParent,
         getParentNodesIds,
@@ -622,7 +693,7 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
     // Second walk: calculate final X and Y values, and create nodes.
     parentsTreeBuilder.finalizeNodesLayout(parentsRootPreNode.id, preNodes, nodes, edges, 0, 0);
 
-    const childTreeBuilder = new ReingoldTilford(
+    const childTreeBuilder = new ReingoldTilfordLayout(
         getRightmostChild,
         getLeftmostChild,
         getChildNodesIds,
