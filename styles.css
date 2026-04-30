@@ -79,6 +79,27 @@ If your plugin does not need CSS, delete this file.
     height: 16px;
 }
 
+.grafily-startup-menu-saved-list .grafily-delete-button {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    margin-right: 8px;
+    border: none;
+    background-color: transparent;
+    color: var(--text-muted);
+}
+
+.grafily-startup-menu-saved-list .grafily-delete-button:hover {
+    color: var(--text-error);
+    background-color: var(--background-modifier-hover);
+    border: 1px solid var(--interactive-accent);
+}
+
+.grafily-startup-menu-saved-list .grafily-delete-button:active {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
 /* Save Modal Overlay */
 .grafily-save-modal-overlay {
     position: absolute;
@@ -230,12 +251,21 @@ If your plugin does not need CSS, delete this file.
 }
 
 .grafily-startup-menu-saved-list li {
-    padding: 8px 12px;
-    cursor: pointer;
+    padding: 0;
     border-bottom: 1px solid var(--background-modifier-border-hover);
     font-size: 13px;
     color: var(--text-normal);
     transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.grafily-startup-menu-saved-item-content {
+    flex: 1;
+    padding: 8px 12px;
+    cursor: pointer;
+    min-width: 0;
 }
 
 .grafily-startup-menu-saved-list li:last-child {

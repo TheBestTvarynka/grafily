@@ -259,7 +259,6 @@ function FamilyGraph({ plugin }: { plugin: any }) {
             const existingStates = (await plugin.loadData()) || {};
             const graphs = existingStates?.graphs || {};
 
-            // Remove the graph from the object
             delete graphs[graphName];
 
             const updatedStates = {
@@ -271,7 +270,6 @@ function FamilyGraph({ plugin }: { plugin: any }) {
 
             console.debug(`Graph state "${graphName}" deleted successfully`);
 
-            // Reset the loaded graph name and hide the side panel
             setLoadedGraphName(null);
             setGraph([[], []]);
             setIsInitialized(false);
@@ -316,6 +314,7 @@ function FamilyGraph({ plugin }: { plugin: any }) {
                         savedGraphs={savedGraphs}
                         onSubmit={handleStartupMenuSubmit}
                         onLoadSavedGraph={handleLoadSavedGraph}
+                        onDeleteSavedGraph={handleDeleteGraph}
                     />
                 )}
             </div>

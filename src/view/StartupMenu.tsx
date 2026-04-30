@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Node, Edge } from '@xyflow/react';
 import { BRANDES_KORF, REINGOLD_TILFORD, LayoutName } from '../layout';
 import { GRAPH_ICON, TREE_ICON } from 'images';
+import { getIcon } from 'obsidian';
 
 export type SavedGraphState = {
     nodes: Node[];
@@ -13,6 +14,7 @@ export type StartupMenuProps = {
     savedGraphs?: Record<string, SavedGraphState>;
     onSubmit: (layoutName: LayoutName, personId: string) => void;
     onLoadSavedGraph?: (graphName: string, nodes: Node[], edges: Edge[]) => void;
+    onDeleteSavedGraph?: (graphName: string) => Promise<void>;
 };
 
 export function StartupMenu({
@@ -20,6 +22,7 @@ export function StartupMenu({
     savedGraphs = {},
     onSubmit,
     onLoadSavedGraph,
+    onDeleteSavedGraph,
 }: StartupMenuProps) {
     const [selectedLayout, setSelectedLayout] = useState<LayoutName>(BRANDES_KORF);
     const [selectedPerson, setSelectedPerson] = useState<string>(persons[0] ?? '');
@@ -52,13 +55,31 @@ export function StartupMenu({
         }
     };
 
+    const handleDeleteSavedGraph = async (graphName: string) => {
+        if (!onDeleteSavedGraph) {
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete "${graphName}"?`)) {
+            return;
+        }
+
+        try {
+            await onDeleteSavedGraph(graphName);
+            if (selectedSavedGraph === graphName) {
+                setSelectedSavedGraph('');
+            }
+        } catch (err) {
+            console.error('Failed to delete graph:', err);
+        }
+    };
+
     return (
         <div className="grafily-startup-menu-overlay">
             <div className="grafily-startup-menu">
                 <h2>Grafily - Family Graph</h2>
 
                 <div className="grafily-startup-menu-container">
-                    {/* Left Column */}
                     <div className="grafily-startup-menu-left">
                         <div className="grafily-startup-menu-section">
                             <div className="grafily-startup-menu-options">
@@ -148,7 +169,6 @@ export function StartupMenu({
                         </div>
                     </div>
 
-                    {/* Right Column - Saved Graphs */}
                     {savedGraphNames.length > 0 && (
                         <div className="grafily-startup-menu-right">
                             <h3>Saved graphs</h3>
@@ -159,9 +179,23 @@ export function StartupMenu({
                                         className={`grafily-startup-menu-saved-item ${
                                             selectedSavedGraph === graphName ? 'selected' : ''
                                         }`}
-                                        onClick={() => setSelectedSavedGraph(graphName)}
                                     >
-                                        {graphName}
+                                        <div
+                                            className="grafily-startup-menu-saved-item-content"
+                                            onClick={() => setSelectedSavedGraph(graphName)}
+                                        >
+                                            {graphName}
+                                        </div>
+                                        {onDeleteSavedGraph && (
+                                            <button
+                                                className="grafily-delete-button"
+                                                onClick={() => handleDeleteSavedGraph(graphName)}
+                                                title="Delete this graph"
+                                                dangerouslySetInnerHTML={{
+                                                    __html: getIcon('trash')?.outerHTML || '',
+                                                }}
+                                            />
+                                        )}
                                     </li>
                                 ))}
                             </ul>
