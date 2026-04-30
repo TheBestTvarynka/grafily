@@ -2,30 +2,37 @@ import { useState } from 'react';
 import { Node, Edge } from '@xyflow/react';
 import { getIcon } from 'obsidian';
 
-export type SavePanelProps = {
+export type SidePanelProps = {
     nodes: Node[];
     edges: Edge[];
+    loadedGraphName?: string | null;
     onSave: (name: string, data: { nodes: Node[]; edges: Edge[] }) => Promise<void>;
+    onDelete?: (graphName: string) => Promise<void>;
 };
 
-export function SavePanel({ nodes, edges, onSave }: SavePanelProps) {
+export function SidePanel({ nodes, edges, loadedGraphName, onSave, onDelete }: SidePanelProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSaveClick = () => {
-        setIsModalOpen(true);
-        setInputValue('');
+        // If graph name is known, save directly without modal
+        if (loadedGraphName) {
+            handleSave(loadedGraphName);
+        } else {
+            setIsModalOpen(true);
+            setInputValue('');
+        }
     };
 
-    const handleSave = async () => {
-        if (!inputValue.trim()) {
+    const handleSave = async (graphName: string) => {
+        if (!graphName.trim()) {
             return;
         }
 
         setIsSaving(true);
         try {
-            await onSave(inputValue, { nodes, edges });
+            await onSave(graphName, { nodes, edges });
             setIsModalOpen(false);
             setInputValue('');
         } catch (err) {
@@ -35,6 +42,26 @@ export function SavePanel({ nodes, edges, onSave }: SavePanelProps) {
         }
     };
 
+    const handleDeleteClick = async () => {
+        if (!loadedGraphName || !onDelete) {
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete "${loadedGraphName}"?`)) {
+            return;
+        }
+
+        try {
+            await onDelete(loadedGraphName);
+        } catch (err) {
+            console.error('Failed to delete graph state:', err);
+        }
+    };
+
+    const handleSaveFromModal = async () => {
+        await handleSave(inputValue);
+    };
+
     const handleCancel = () => {
         setIsModalOpen(false);
         setInputValue('');
@@ -42,7 +69,7 @@ export function SavePanel({ nodes, edges, onSave }: SavePanelProps) {
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
-            handleSave();
+            handleSaveFromModal();
         } else if (e.key === 'Escape') {
             handleCancel();
         }
@@ -59,6 +86,16 @@ export function SavePanel({ nodes, edges, onSave }: SavePanelProps) {
                         __html: getIcon('save')?.outerHTML || '',
                     }}
                 />
+                {loadedGraphName && onDelete && (
+                    <button
+                        className="grafily-delete-button"
+                        onClick={handleDeleteClick}
+                        title="Delete current graph state"
+                        dangerouslySetInnerHTML={{
+                            __html: getIcon('trash')?.outerHTML || '',
+                        }}
+                    />
+                )}
             </div>
 
             {isModalOpen && (
@@ -83,7 +120,7 @@ export function SavePanel({ nodes, edges, onSave }: SavePanelProps) {
                                 Cancel
                             </button>
                             <button
-                                onClick={handleSave}
+                                onClick={handleSaveFromModal}
                                 disabled={isSaving || !inputValue.trim()}
                                 className="grafily-save-modal-confirm mod-cta"
                             >

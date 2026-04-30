@@ -12,7 +12,7 @@ export type StartupMenuProps = {
     persons: string[];
     savedGraphs?: Record<string, SavedGraphState>;
     onSubmit: (layoutName: LayoutName, personId: string) => void;
-    onLoadSavedGraph?: (nodes: Node[], edges: Edge[]) => void;
+    onLoadSavedGraph?: (graphName: string, nodes: Node[], edges: Edge[]) => void;
 };
 
 export function StartupMenu({
@@ -47,7 +47,7 @@ export function StartupMenu({
         if (selectedSavedGraph && onLoadSavedGraph) {
             const graphData = savedGraphs[selectedSavedGraph];
             if (graphData) {
-                onLoadSavedGraph(graphData.nodes, graphData.edges);
+                onLoadSavedGraph(selectedSavedGraph, graphData.nodes, graphData.edges);
             }
         }
     };

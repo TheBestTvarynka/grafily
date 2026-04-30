@@ -14,9 +14,9 @@ import { buildIndex, emptyIndex, familyFromPersons, Index } from '../model';
 import { useApp } from '../hooks';
 import { extractPageMeta } from '../parsing';
 import { PersonNode, MarriageNode } from './node';
-import { BRANDES_KORF, GenericLayout, LayoutName, MARRIAGE_NODE_TYPE } from 'layout';
+import { BRANDES_KORF, GenericLayout, LayoutName } from 'layout';
 import { StartupMenu } from './StartupMenu';
-import { SavePanel } from './SavePanel';
+import { SidePanel } from './SidePanel';
 
 export type GraphContextValue = {
     layout: GenericLayout;
@@ -46,6 +46,7 @@ function FamilyGraph({ plugin }: { plugin: any }) {
     const [savedGraphs, setSavedGraphs] = useState<
         Record<string, { nodes: Node[]; edges: Edge[] }>
     >({});
+    const [loadedGraphName, setLoadedGraphName] = useState<string | null>(null);
 
     const shiftGraphByAnchorNode = (
         oldNodes: Node[],
@@ -215,8 +216,9 @@ function FamilyGraph({ plugin }: { plugin: any }) {
         setIsInitialized(true);
     };
 
-    const handleLoadSavedGraph = (nodes: Node[], edges: Edge[]) => {
+    const handleLoadSavedGraph = (graphName: string, nodes: Node[], edges: Edge[]) => {
         setGraph([nodes, edges]);
+        setLoadedGraphName(graphName);
         setIsInitialized(true);
     };
 
@@ -246,6 +248,42 @@ function FamilyGraph({ plugin }: { plugin: any }) {
         }
     };
 
+    const handleDeleteGraph = async (graphName: string) => {
+        if (!plugin) {
+            console.error('Plugin instance not available');
+            throw new Error('Plugin instance not available');
+        }
+
+        try {
+            const existingStates = (await plugin.loadData()) || {};
+            const graphs = existingStates?.graphs || {};
+
+            // Remove the graph from the object
+            delete graphs[graphName];
+
+            const updatedStates = {
+                ...existingStates,
+                graphs,
+            };
+
+            await plugin.saveData(updatedStates);
+
+            console.debug(`Graph state "${graphName}" deleted successfully`);
+
+            // Reset the loaded graph name and hide the side panel
+            setLoadedGraphName(null);
+            setGraph([[], []]);
+            setIsInitialized(false);
+
+            const saved = savedGraphs;
+            delete saved[graphName];
+            setSavedGraphs({ ...saved });
+        } catch (err) {
+            console.error('Failed to delete graph state:', err);
+            throw err;
+        }
+    };
+
     return (
         <GraphContext.Provider
             value={{
@@ -263,7 +301,13 @@ function FamilyGraph({ plugin }: { plugin: any }) {
                     <Controls />
                 </ReactFlow>
                 {isInitialized && (
-                    <SavePanel nodes={graph[0]} edges={graph[1]} onSave={handleSaveGraph} />
+                    <SidePanel
+                        nodes={graph[0]}
+                        edges={graph[1]}
+                        loadedGraphName={loadedGraphName}
+                        onSave={handleSaveGraph}
+                        onDelete={handleDeleteGraph}
+                    />
                 )}
                 {!isInitialized && index.personById.size > 0 && (
                     <StartupMenu

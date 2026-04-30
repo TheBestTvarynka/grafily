@@ -14,6 +14,9 @@ If your plugin does not need CSS, delete this file.
     right: 12px;
     z-index: 50;
     pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .grafily-save-button {
@@ -42,6 +45,36 @@ If your plugin does not need CSS, delete this file.
 }
 
 .grafily-save-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+.grafily-delete-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+    cursor: pointer;
+    transition: all 200ms ease;
+}
+
+.grafily-delete-button:hover {
+    background-color: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+}
+
+.grafily-delete-button:active {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.grafily-delete-button svg {
     width: 16px;
     height: 16px;
 }
