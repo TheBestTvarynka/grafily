@@ -2,7 +2,7 @@ import { Handle, Position } from '@xyflow/react';
 import { useApp, useGraph } from 'hooks';
 import { MINUS_ICON, PLUS_ICON, PROFILE_IMAGE_PLACEHOLDER } from 'images';
 import { MARRIAGE_NODE_SIZE, NODE_HEIGHT, NODE_WIDTH } from '../layout';
-import { LEFT_SIDE, Person, RIGHT_SIDE } from 'model';
+import { LEFT_SIDE, MarriageNodeSide, Person, RIGHT_SIDE } from 'model';
 import { TFile } from 'obsidian';
 import { useEffect, useState } from 'react';
 
@@ -10,18 +10,34 @@ import { useEffect, useState } from 'react';
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 /* eslint-disable  @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable  @typescript-eslint/no-unsafe-argument */
-export function PersonNode({ data }: any) {
+export function PersonNode({ data }: { data: { id: string; side: MarriageNodeSide } }) {
     const app = useApp();
     const graph = useGraph();
 
     const [hasParents, setHasParents] = useState<boolean>(true);
+    const [person, setPerson] = useState<Person | null>(null);
 
     useEffect(() => {
         if (!graph) {
             return;
         }
 
-        const parentsMarriage = graph.index.personParents.get(data.person.id);
+        const person = graph.index.personById.get(data.id);
+
+        if (!person) {
+            console.warn(`Person with ID "${data.id}" not found`);
+            return;
+        }
+
+        setPerson(person);
+    }, [graph]);
+
+    useEffect(() => {
+        if (!graph) {
+            return;
+        }
+
+        const parentsMarriage = graph.index.personParents.get(data.id);
 
         if (parentsMarriage) {
             setHasParents(true);
@@ -36,7 +52,7 @@ export function PersonNode({ data }: any) {
         }
 
         /* eslint-disable  @typescript-eslint/no-unsafe-assignment */
-        const file = data?.person?.file;
+        const file = person?.file;
         if (!file) {
             console.warn('node data.file does not present');
             return;
@@ -57,14 +73,14 @@ export function PersonNode({ data }: any) {
             return PROFILE_IMAGE_PLACEHOLDER;
         }
 
-        if (!data.person.image) {
+        if (!person?.image) {
             return PROFILE_IMAGE_PLACEHOLDER;
         }
 
-        const file = app.vault.getFileByPath(data.person.image);
+        const file = app.vault.getFileByPath(person.image);
 
         if (!file) {
-            console.warn(`file "${data.person.image}" not found in vault`);
+            console.warn(`file "${person.image}" not found in vault`);
             return PROFILE_IMAGE_PLACEHOLDER;
         }
 
@@ -72,21 +88,19 @@ export function PersonNode({ data }: any) {
     };
 
     const collapseParents = () => {
-        if (!graph) {
+        if (!graph || !person) {
             return;
         }
 
-        const person: Person = data.person;
-
         if (person.isParentsCollapsed) {
-            graph.expandParents(data.person.id);
+            graph.expandParents(data.id);
         } else {
-            graph.collapseParents(data.person.id);
+            graph.collapseParents(data.id);
         }
     };
 
     const getHideChildNodesIcon = (): string => {
-        if (data.person.isParentsCollapsed) {
+        if (person?.isParentsCollapsed) {
             return PLUS_ICON;
         } else {
             return MINUS_ICON;
@@ -149,8 +163,8 @@ export function PersonNode({ data }: any) {
                 }}
                 onClick={onClick}
             >
-                <span>{getSurname(data.person)}</span>
-                <span>{getName(data.person)}</span>
+                <span>{person ? getSurname(person) : ''}</span>
+                <span>{person ? getName(person) : ''}</span>
                 <div
                     style={{
                         display: 'inline-flex',
@@ -158,11 +172,11 @@ export function PersonNode({ data }: any) {
                         color: 'rgba(123, 117, 117, 1)',
                     }}
                 >
-                    {renderDates(data.person) ? (
+                    {person && renderDates(person) ? (
                         <>
-                            <span>{getBirthYear(data.person)}</span>
+                            <span>{person ? getBirthYear(person) : ''}</span>
                             <span>—</span>
-                            <span>{getDeathYear(data.person)}</span>
+                            <span>{person ? getDeathYear(person) : ''}</span>
                         </>
                     ) : (
                         <></>
@@ -170,12 +184,12 @@ export function PersonNode({ data }: any) {
                 </div>
             </div>
             {hasParents ? <Handle type="target" position={Position.Top} id="top" /> : <></>}
-            {data.person.marriageNodeSide === LEFT_SIDE ? (
+            {data.side === LEFT_SIDE ? (
                 <Handle type="target" position={Position.Left} id="left" />
             ) : (
                 <></>
             )}
-            {data.person.marriageNodeSide === RIGHT_SIDE ? (
+            {data.side === RIGHT_SIDE ? (
                 <Handle type="target" position={Position.Right} id="right" />
             ) : (
                 <></>

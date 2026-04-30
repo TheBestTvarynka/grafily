@@ -123,7 +123,6 @@ function FamilyGraph({ plugin }: { plugin: any }) {
         (async () => {
             try {
                 const savedStates = (await plugin.loadData()) || {};
-                console.log({ savedStates });
 
                 if (!savedStates || Object.keys(savedStates).length === 0) {
                     setSavedGraphs({});
@@ -225,24 +224,16 @@ function FamilyGraph({ plugin }: { plugin: any }) {
         }
 
         try {
-            const serializedNodes = data.nodes.map((node) => nodeToSerializableObject(node));
-            const serializedEdges = data.edges.map((edge) => edgeToSerializableObject(edge));
-
             const existingStates = (await plugin.loadData()) || {};
 
             const updatedStates = {
                 ...existingStates,
-                [name]: {
-                    nodes: serializedNodes,
-                    edges: serializedEdges,
-                },
+                [name]: data,
             };
-            console.log({ updatedStates });
-            console.log(JSON.stringify(updatedStates));
 
             await plugin.saveData(updatedStates);
 
-            console.log(`Graph state "${name}" saved successfully`);
+            console.debug(`Graph state "${name}" saved successfully`);
         } catch (err) {
             console.error('Failed to save graph state:', err);
             throw err;
@@ -295,45 +286,4 @@ export function FamilyFlow({ plugin }: { plugin: any }) {
             </ReactFlowProvider>
         </div>
     );
-}
-
-function nodeToSerializableObject(node: Node): Record<string, any> {
-    let data: any = {};
-
-    if (node.type === MARRIAGE_NODE_TYPE) {
-        data = {
-            id: node.data.id,
-            isChildrenCollapsible: node.data.isChildrenCollapsible,
-            isChildrenCollapsed: node.data.isChildrenCollapsed,
-        };
-    } else {
-        const person = node.data.person;
-        // @ts-ignore - person is unknown at compile time; remove file reference for serialization
-        delete (person as any)['file'];
-
-        data = {
-            person,
-        };
-    }
-
-    return {
-        id: node.id,
-        data,
-        type: node.type,
-        position: {
-            x: node.position.x,
-            y: node.position.y,
-        },
-        style: node.style,
-    };
-}
-
-function edgeToSerializableObject(edge: Edge): Record<string, any> {
-    return {
-        id: edge.id,
-        target: edge.target,
-        source: edge.source,
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle,
-    };
 }

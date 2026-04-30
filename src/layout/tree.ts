@@ -313,7 +313,7 @@ class ReingoldTilfordLayout {
                 person.isParentsCollapsed = this.isParentsCollapsed;
                 nodes.push({
                     id: parent1NodeId,
-                    data: { person },
+                    data: { id: person.id, side: person.marriageNodeSide },
                     position: { x, y },
                     type: PERSON_NODE_TYPE,
                     style: {
@@ -341,7 +341,7 @@ class ReingoldTilfordLayout {
                 person.isParentsCollapsed = this.isParentsCollapsed;
                 nodes.push({
                     id: parent2NodeId,
-                    data: { person },
+                    data: { id: person.id, side: person.marriageNodeSide },
                     position: { x: x + NODE_WIDTH + 2 * MARRIAGE_GAP, y },
                     type: PERSON_NODE_TYPE,
                     style: {
@@ -376,7 +376,7 @@ class ReingoldTilfordLayout {
             person.isParentsCollapsed = this.isParentsCollapsed;
             nodes.push({
                 id: nodeId.id,
-                data: { person },
+                data: { id: person.id, side: person.marriageNodeSide },
                 position: { x, y },
                 type: PERSON_NODE_TYPE,
                 style: {
@@ -730,11 +730,6 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
         nodes.filter((node) => {
             if (!rootIds.includes(node.id)) {
                 return true;
-            }
-
-            if (node.type === PERSON_NODE_TYPE) {
-                // @ts-ignore
-                node.data.person.isParentsCollapsed = parentsTreeBuilder.isParentsCollapsed;
             }
 
             if (!rootAdded) {
