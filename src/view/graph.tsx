@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { createContext, useEffect, useState } from 'react';
 
 import {
@@ -17,6 +22,7 @@ import { PersonNode, MarriageNode } from './node';
 import { BRANDES_KORF, GenericLayout, LayoutName } from 'layout';
 import { StartupMenu } from './StartupMenu';
 import { SidePanel } from './SidePanel';
+import { Plugin } from 'obsidian';
 
 export type GraphContextValue = {
     layout: GenericLayout;
@@ -35,7 +41,7 @@ const nodeTypes = {
     marriageNode: MarriageNode,
 };
 
-function FamilyGraph({ plugin }: { plugin: any }) {
+function FamilyGraph({ plugin }: { plugin: Plugin }) {
     const [layout, setLayout] = useState<GenericLayout>(
         new GenericLayout(BRANDES_KORF, emptyIndex()),
     );
@@ -156,7 +162,7 @@ function FamilyGraph({ plugin }: { plugin: any }) {
 
                 setSavedGraphs({});
             }
-        })();
+        })().catch((err) => console.error(err));
     }, [plugin]);
 
     const collapseChildren = (nodeId: string) => {

@@ -60,6 +60,7 @@ export function StartupMenu({
             return;
         }
 
+        /* eslint-disable no-alert */
         if (!confirm(`Are you sure you want to delete "${graphName}"?`)) {
             return;
         }
@@ -189,7 +190,14 @@ export function StartupMenu({
                                         {onDeleteSavedGraph && (
                                             <button
                                                 className="grafily-delete-button"
-                                                onClick={() => handleDeleteSavedGraph(graphName)}
+                                                onClick={() => {
+                                                    handleDeleteSavedGraph(graphName).catch((err) =>
+                                                        console.error(
+                                                            'Failed to delete graph:',
+                                                            err,
+                                                        ),
+                                                    );
+                                                }}
                                                 title="Delete this graph"
                                                 dangerouslySetInnerHTML={{
                                                     __html: getIcon('trash')?.outerHTML || '',

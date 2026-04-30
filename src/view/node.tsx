@@ -6,10 +6,6 @@ import { LEFT_SIDE, MarriageNodeSide, Person, RIGHT_SIDE } from 'model';
 import { TFile } from 'obsidian';
 import { useEffect, useState } from 'react';
 
-// Fuck TS.
-/* eslint-disable  @typescript-eslint/no-explicit-any */
-/* eslint-disable  @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable  @typescript-eslint/no-unsafe-argument */
 export function PersonNode({ data }: { data: { id: string; side: MarriageNodeSide } }) {
     const app = useApp();
     const graph = useGraph();

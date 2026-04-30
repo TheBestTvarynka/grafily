@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, KeyboardEvent } from 'react';
 import { Node, Edge } from '@xyflow/react';
 import { getIcon } from 'obsidian';
 
@@ -18,7 +18,9 @@ export function SidePanel({ nodes, edges, loadedGraphName, onSave, onDelete }: S
     const handleSaveClick = () => {
         // If graph name is known, save directly without modal
         if (loadedGraphName) {
-            handleSave(loadedGraphName);
+            handleSave(loadedGraphName).catch((err) =>
+                console.error('Failed to save graph state:', err),
+            );
         } else {
             setIsModalOpen(true);
             setInputValue('');
@@ -42,24 +44,27 @@ export function SidePanel({ nodes, edges, loadedGraphName, onSave, onDelete }: S
         }
     };
 
-    const handleDeleteClick = async () => {
+    const handleDeleteClick = () => {
         if (!loadedGraphName || !onDelete) {
             return;
         }
 
+        /* eslint-disable no-alert */
         if (!confirm(`Are you sure you want to delete "${loadedGraphName}"?`)) {
             return;
         }
 
         try {
-            await onDelete(loadedGraphName);
+            onDelete(loadedGraphName).catch((err) =>
+                console.error('Failed to delete graph state:', err),
+            );
         } catch (err) {
             console.error('Failed to delete graph state:', err);
         }
     };
 
-    const handleSaveFromModal = async () => {
-        await handleSave(inputValue);
+    const handleSaveFromModal = () => {
+        handleSave(inputValue).catch((err) => console.error('Failed to save graph state:', err));
     };
 
     const handleCancel = () => {
@@ -67,7 +72,7 @@ export function SidePanel({ nodes, edges, loadedGraphName, onSave, onDelete }: S
         setInputValue('');
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleSaveFromModal();
         } else if (e.key === 'Escape') {
