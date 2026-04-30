@@ -16,6 +16,7 @@ import { extractPageMeta } from '../parsing';
 import { PersonNode, MarriageNode } from './node';
 import { BRANDES_KORF, GenericLayout, LayoutName } from 'layout';
 import { StartupMenu } from './StartupMenu';
+import { SavePanel } from './SavePanel';
 
 export type GraphContextValue = {
     layout: GenericLayout;
@@ -34,7 +35,7 @@ const nodeTypes = {
     marriageNode: MarriageNode,
 };
 
-function FamilyGraph() {
+function FamilyGraph({ plugin }: { plugin: any }) {
     const [layout, setLayout] = useState<GenericLayout>(
         new GenericLayout(BRANDES_KORF, emptyIndex()),
     );
@@ -168,6 +169,32 @@ function FamilyGraph() {
         setIsInitialized(true);
     };
 
+    const handleSaveGraph = async (name: string, data: { nodes: Node[]; edges: Edge[] }) => {
+        if (!plugin) {
+            console.error('Plugin instance not available');
+            throw new Error('Plugin instance not available');
+        }
+
+        try {
+            // Load existing saved states
+            const existingStates = (await plugin.loadData()) || {};
+
+            // Create the new state object
+            const updatedStates = {
+                ...existingStates,
+                [name]: data,
+            };
+
+            // Save back using plugin's saveData
+            await plugin.saveData(updatedStates);
+
+            console.log(`Graph state "${name}" saved successfully`);
+        } catch (err) {
+            console.error('Failed to save graph state:', err);
+            throw err;
+        }
+    };
+
     return (
         <GraphContext.Provider
             value={{
@@ -184,6 +211,9 @@ function FamilyGraph() {
                     <Background color="grey" variant={BackgroundVariant.Dots} gap={20} />
                     <Controls />
                 </ReactFlow>
+                {isInitialized && (
+                    <SavePanel nodes={graph[0]} edges={graph[1]} onSave={handleSaveGraph} />
+                )}
                 {!isInitialized && index.personById.size > 0 && (
                     <StartupMenu
                         persons={Array.from(index.personById.keys())}
@@ -195,7 +225,7 @@ function FamilyGraph() {
     );
 }
 
-export function FamilyFlow() {
+export function FamilyFlow({ plugin }: { plugin: any }) {
     return (
         <div
             style={{
@@ -205,7 +235,7 @@ export function FamilyFlow() {
             }}
         >
             <ReactFlowProvider>
-                <FamilyGraph />
+                <FamilyGraph plugin={plugin} />
             </ReactFlowProvider>
         </div>
     );

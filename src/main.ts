@@ -15,7 +15,7 @@ export default class Grafily extends Plugin {
             this.activateView().catch((err) => console.error(err));
         });
 
-        this.registerView(VIEW_TYPE, (leaf) => new GrafilyView(leaf));
+        this.registerView(VIEW_TYPE, (leaf) => new GrafilyView(leaf, this));
 
         this.addSettingTab(new GrafilySettingTab(this.app, this));
     }
