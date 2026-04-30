@@ -122,15 +122,18 @@ function FamilyGraph({ plugin }: { plugin: any }) {
 
         (async () => {
             try {
-                const savedStates = (await plugin.loadData()) || {};
+                const savedData = (await plugin.loadData()) || {};
 
-                if (!savedStates || Object.keys(savedStates).length === 0) {
+                // Extract graphs from the nested structure
+                const graphsData = savedData.graphs || {};
+
+                if (!graphsData || Object.keys(graphsData).length === 0) {
                     setSavedGraphs({});
                     return;
                 }
 
                 const validGraphs: Record<string, { nodes: Node[]; edges: Edge[] }> = {};
-                for (const [key, value] of Object.entries(savedStates)) {
+                for (const [key, value] of Object.entries(graphsData)) {
                     if (
                         value &&
                         typeof value === 'object' &&
@@ -228,7 +231,10 @@ function FamilyGraph({ plugin }: { plugin: any }) {
 
             const updatedStates = {
                 ...existingStates,
-                [name]: data,
+                graphs: {
+                    ...existingStates?.graphs,
+                    [name]: data,
+                },
             };
 
             await plugin.saveData(updatedStates);
