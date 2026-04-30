@@ -31,14 +31,10 @@ export default class Grafily extends Plugin {
     onunload() {}
 
     async loadSettings() {
-        this.settings = Object.assign(
-            {},
-            DEFAULT_SETTINGS,
-            (await this.loadData()) as Partial<GrafilySettings>,
-        );
+        //
     }
 
     async saveSettings() {
-        await this.saveData(this.settings);
+        //
     }
 }
