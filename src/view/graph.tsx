@@ -240,6 +240,7 @@ function FamilyGraph({ plugin }: { plugin: any }) {
             };
 
             await plugin.saveData(updatedStates);
+            setLoadedGraphName(name);
 
             console.debug(`Graph state "${name}" saved successfully`);
         } catch (err) {
