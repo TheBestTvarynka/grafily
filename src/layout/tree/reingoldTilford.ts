@@ -283,13 +283,16 @@ export class ReingoldTilfordLayout {
             }
 
             // Create a marriage node first.
+            const children = this.tree.children.get(marriage.id) ?? [];
+            const isChildrenCollapsible =
+                this.isChildrenCollapsible && marriage.childrenIds.length > 0;
+            const isChildrenCollapsed = this.isChildrenCollapsible ? children.length === 0 : false;
             nodes.push({
                 id: marriage.id,
                 data: {
                     id: marriage.id,
-                    isChildrenCollapsible:
-                        this.isChildrenCollapsible && marriage.childrenIds.length > 0,
-                    isChildrenCollapsed: marriage.isChildrenCollapsed,
+                    isChildrenCollapsible,
+                    isChildrenCollapsed,
                 },
                 type: MARRIAGE_NODE_TYPE,
                 position: {
@@ -316,6 +319,19 @@ export class ReingoldTilfordLayout {
 
                 person.marriageNodeSide = RIGHT_SIDE;
                 person.isParentsCollapsible = this.isParentsCollapsible;
+
+                const parentsId = this.family.personParents.get(parent1NodeId);
+                let isParentsCollapsed = false;
+                if (parentsId && this.isParentsCollapsible) {
+                    const nodeParents = this.tree.children.get(marriage.id) ?? [];
+                    if (nodeParents.find((id) => id.id === parentsId)) {
+                        isParentsCollapsed = false;
+                    } else {
+                        isParentsCollapsed = true;
+                    }
+                }
+                person.isParentsCollapsed = isParentsCollapsed;
+
                 nodes.push({
                     id: parent1NodeId,
                     data: { id: person.id, side: person.marriageNodeSide },
@@ -344,6 +360,19 @@ export class ReingoldTilfordLayout {
 
                 person.marriageNodeSide = LEFT_SIDE;
                 person.isParentsCollapsible = this.isParentsCollapsible;
+
+                const parentsId = this.family.personParents.get(parent2NodeId);
+                let isParentsCollapsed = false;
+                if (parentsId && this.isParentsCollapsible) {
+                    const nodeParents = this.tree.children.get(marriage.id) ?? [];
+                    if (nodeParents.find((id) => id.id === parentsId)) {
+                        isParentsCollapsed = false;
+                    } else {
+                        isParentsCollapsed = true;
+                    }
+                }
+                person.isParentsCollapsed = isParentsCollapsed;
+
                 nodes.push({
                     id: parent2NodeId,
                     data: { id: person.id, side: person.marriageNodeSide },

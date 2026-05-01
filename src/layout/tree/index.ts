@@ -113,7 +113,6 @@ export class ReingoldTilford {
                 rootIds.set(marriage.parent2Id, false);
             }
         }
-        console.log({ rootIds });
 
         // Yes, we can do smarter that that but I do not want to overcomplicate it.
         const uniqueEdges = new Set<string>();
