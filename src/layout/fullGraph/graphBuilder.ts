@@ -9,7 +9,7 @@
  */
 
 import { FamilyGraph } from './';
-import { Id, NodeType, MARRIAGE_NODE_TYPE, PERSON_NODE_TYPE } from '../';
+import { Id, NodeType, MARRIAGE_NODE_TYPE, PERSON_NODE_TYPE, personIdToNodeId } from '../';
 import { Index, LEFT_SIDE, RIGHT_SIDE, Person, Marriage } from '../../model';
 
 const MIDDLE_SIDE = 'middle_side';
@@ -131,34 +131,6 @@ export class GraphBuilder {
     }
 
     /**
-     * Converts a person ID to a node ID.
-     *
-     * @param {string} personId - The ID of the person to convert.
-     * @returns {[Id, Marriage | null]} - The node ID and associated marriage, if any.
-     */
-    personIdToNodeId(personId: string): [Id, Marriage | null] {
-        const marriages = this.family.personMarriages.get(personId) ?? [];
-        const marriage = marriages[0];
-
-        if (marriage) {
-            const id: Id = {
-                type: MARRIAGE_NODE_TYPE,
-                id: marriage.id,
-            };
-
-            return [id, marriage];
-        } else {
-            return [
-                {
-                    type: PERSON_NODE_TYPE,
-                    id: personId,
-                },
-                null,
-            ];
-        }
-    }
-
-    /**
      * Returns the parents marriage of the person with the given ID. If the person has no parents, returns null.
      *
      * @param {string} personId - The ID of the person to convert.
@@ -202,7 +174,7 @@ export class GraphBuilder {
      * @param {string} perspectiveId - The ID of the person from whose perspective to build the graph.
      */
     buildInitialGraph(perspectiveId: string) {
-        let [id, marriage] = this.personIdToNodeId(perspectiveId);
+        let [id, marriage] = personIdToNodeId(perspectiveId, this.family);
 
         const layerNumber = 0;
 
@@ -248,7 +220,7 @@ export class GraphBuilder {
         const children = this.children.get(parentsMarriage.id)!;
 
         for (const childId of parentsMarriage.childrenIds) {
-            const [id, marriage] = this.personIdToNodeId(childId);
+            const [id, marriage] = personIdToNodeId(childId, this.family);
 
             const persons: NodePersons = {};
             if (marriage) {
@@ -372,7 +344,7 @@ export class GraphBuilder {
             }
 
             for (const childId of childrenIds) {
-                const [childNodeId, childMarriage] = this.personIdToNodeId(childId);
+                const [childNodeId, childMarriage] = personIdToNodeId(childId, this.family);
                 childrenLayer.push(childNodeId.id);
 
                 const persons: NodePersons =
@@ -810,7 +782,7 @@ export class GraphBuilder {
      * @param {string} personId - The ID of the person whose parents we want to add to the graph.
      */
     addParentsOf(personId: string) {
-        const [nodeId, marriage] = this.personIdToNodeId(personId);
+        const [nodeId, marriage] = personIdToNodeId(personId, this.family);
 
         let left: string | null = null;
         let right: string | null = null;

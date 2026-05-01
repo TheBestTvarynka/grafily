@@ -9,6 +9,7 @@ import {
     NODE_HEIGHT,
     NODE_WIDTH,
     PERSON_NODE_TYPE,
+    personIdToNodeId,
 } from '../';
 import { Index, LEFT_SIDE, RIGHT_SIDE } from '../../model';
 import { positionX, positionY } from './brandesKopf';
@@ -259,7 +260,7 @@ export class BrandesKopfLayout {
      * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
      */
     collapseParents(personId: string): [Node[], Edge[]] {
-        const [nodeId] = this.graph.personIdToNodeId(personId);
+        const [nodeId] = personIdToNodeId(personId, this.family);
 
         const personParentsId = this.family.personParents.get(personId);
         let except = '';
