@@ -134,7 +134,10 @@ export class BrandesKopfLayout {
 
                     nodes.push({
                         id: node.persons.person1.id,
-                        data: { person: node.persons.person1 },
+                        data: {
+                            id: node.persons.person1.id,
+                            side: node.persons.person1.marriageNodeSide,
+                        },
                         position: {
                             x: x - MARRIAGE_WIDTH / 2,
                             y: y - NODE_HEIGHT / 2,
@@ -163,7 +166,10 @@ export class BrandesKopfLayout {
 
                     nodes.push({
                         id: node.persons.person2.id,
-                        data: { person: node.persons.person2 },
+                        data: {
+                            id: node.persons.person2.id,
+                            side: node.persons.person2.marriageNodeSide,
+                        },
                         position: {
                             x: x + MARRIAGE_GAP,
                             y: y - NODE_HEIGHT / 2,
@@ -189,7 +195,10 @@ export class BrandesKopfLayout {
 
                 nodes.push({
                     id,
-                    data: { person: node.persons.person1! },
+                    data: {
+                        id: node.persons.person1!.id,
+                        side: node.persons.person1!.marriageNodeSide,
+                    },
                     position: {
                         x: x - NODE_WIDTH / 2,
                         y: y - NODE_HEIGHT / 2,

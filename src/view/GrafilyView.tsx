@@ -1,26 +1,29 @@
 import { StrictMode, createContext } from 'react';
-import { ItemView, WorkspaceLeaf, App } from 'obsidian';
+import { ItemView, WorkspaceLeaf, App, Plugin } from 'obsidian';
 import { Root, createRoot } from 'react-dom/client';
 
 import { FamilyFlow } from './graph';
 
 export const VIEW_TYPE = 'grafily-view';
 
-const ReactView = () => {
+const ReactView = ({ plugin }: { plugin: Plugin }) => {
     return (
         <div style={{ width: '100%', height: '100%' }}>
-            <FamilyFlow />
+            <FamilyFlow plugin={plugin} />
         </div>
     );
 };
 
 export const AppContext = createContext<App | undefined>(undefined);
+export const PluginContext = createContext<Plugin | undefined>(undefined);
 
 export class GrafilyView extends ItemView {
     root: Root | null = null;
+    plugin: Plugin | null = null;
 
-    constructor(leaf: WorkspaceLeaf) {
+    constructor(leaf: WorkspaceLeaf, plugin?: Plugin) {
         super(leaf);
+        this.plugin = plugin || null;
     }
 
     getViewType() {
@@ -35,9 +38,11 @@ export class GrafilyView extends ItemView {
         this.root = createRoot(this.contentEl);
         this.root.render(
             <AppContext.Provider value={this.app}>
-                <StrictMode>
-                    <ReactView />
-                </StrictMode>
+                <PluginContext.Provider value={this.plugin || undefined}>
+                    <StrictMode>
+                        <ReactView plugin={this.plugin!} />
+                    </StrictMode>
+                </PluginContext.Provider>
             </AppContext.Provider>,
         );
     }

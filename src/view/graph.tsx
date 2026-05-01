@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { createContext, useEffect, useState } from 'react';
 
 import {
@@ -16,6 +21,8 @@ import { extractPageMeta } from '../parsing';
 import { PersonNode, MarriageNode } from './node';
 import { BRANDES_KORF, GenericLayout, LayoutName } from 'layout';
 import { StartupMenu } from './StartupMenu';
+import { SidePanel } from './SidePanel';
+import { Plugin } from 'obsidian';
 
 export type GraphContextValue = {
     layout: GenericLayout;
@@ -34,7 +41,7 @@ const nodeTypes = {
     marriageNode: MarriageNode,
 };
 
-function FamilyGraph() {
+function FamilyGraph({ plugin }: { plugin: Plugin }) {
     const [layout, setLayout] = useState<GenericLayout>(
         new GenericLayout(BRANDES_KORF, emptyIndex()),
     );
@@ -42,6 +49,10 @@ function FamilyGraph() {
 
     const [graph, setGraph] = useState<[Node[], Edge[]]>([[], []]);
     const [isInitialized, setIsInitialized] = useState(false);
+    const [savedGraphs, setSavedGraphs] = useState<
+        Record<string, { nodes: Node[]; edges: Edge[] }>
+    >({});
+    const [loadedGraphName, setLoadedGraphName] = useState<string | null>(null);
 
     const shiftGraphByAnchorNode = (
         oldNodes: Node[],
@@ -111,6 +122,49 @@ function FamilyGraph() {
         };
     }, [app]);
 
+    useEffect(() => {
+        if (!plugin) {
+            return;
+        }
+
+        (async () => {
+            try {
+                const savedData = (await plugin.loadData()) || {};
+
+                // Extract graphs from the nested structure
+                const graphsData = savedData.graphs || {};
+
+                if (!graphsData || Object.keys(graphsData).length === 0) {
+                    setSavedGraphs({});
+                    return;
+                }
+
+                const validGraphs: Record<string, { nodes: Node[]; edges: Edge[] }> = {};
+                for (const [key, value] of Object.entries(graphsData)) {
+                    if (
+                        value &&
+                        typeof value === 'object' &&
+                        'nodes' in value &&
+                        'edges' in value &&
+                        Array.isArray((value as any).nodes) &&
+                        Array.isArray((value as any).edges)
+                    ) {
+                        validGraphs[key] = {
+                            nodes: (value as any).nodes,
+                            edges: (value as any).edges,
+                        };
+                    }
+                }
+
+                setSavedGraphs(validGraphs);
+            } catch (err) {
+                console.error('Failed to load saved graphs:', err);
+
+                setSavedGraphs({});
+            }
+        })().catch((err) => console.error(err));
+    }, [plugin]);
+
     const collapseChildren = (nodeId: string) => {
         const newGraph = layout.collapseChildren(nodeId);
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], nodeId);
@@ -168,6 +222,73 @@ function FamilyGraph() {
         setIsInitialized(true);
     };
 
+    const handleLoadSavedGraph = (graphName: string, nodes: Node[], edges: Edge[]) => {
+        setGraph([nodes, edges]);
+        setLoadedGraphName(graphName);
+        setIsInitialized(true);
+    };
+
+    const handleSaveGraph = async (name: string, data: { nodes: Node[]; edges: Edge[] }) => {
+        if (!plugin) {
+            console.error('Plugin instance not available');
+            throw new Error('Plugin instance not available');
+        }
+
+        try {
+            const existingStates = (await plugin.loadData()) || {};
+
+            const updatedStates = {
+                ...existingStates,
+                graphs: {
+                    ...existingStates?.graphs,
+                    [name]: data,
+                },
+            };
+
+            await plugin.saveData(updatedStates);
+            setLoadedGraphName(name);
+
+            console.debug(`Graph state "${name}" saved successfully`);
+        } catch (err) {
+            console.error('Failed to save graph state:', err);
+            throw err;
+        }
+    };
+
+    const handleDeleteGraph = async (graphName: string) => {
+        if (!plugin) {
+            console.error('Plugin instance not available');
+            throw new Error('Plugin instance not available');
+        }
+
+        try {
+            const existingStates = (await plugin.loadData()) || {};
+            const graphs = existingStates?.graphs || {};
+
+            delete graphs[graphName];
+
+            const updatedStates = {
+                ...existingStates,
+                graphs,
+            };
+
+            await plugin.saveData(updatedStates);
+
+            console.debug(`Graph state "${graphName}" deleted successfully`);
+
+            setLoadedGraphName(null);
+            setGraph([[], []]);
+            setIsInitialized(false);
+
+            const saved = savedGraphs;
+            delete saved[graphName];
+            setSavedGraphs({ ...saved });
+        } catch (err) {
+            console.error('Failed to delete graph state:', err);
+            throw err;
+        }
+    };
+
     return (
         <GraphContext.Provider
             value={{
@@ -184,10 +305,22 @@ function FamilyGraph() {
                     <Background color="grey" variant={BackgroundVariant.Dots} gap={20} />
                     <Controls />
                 </ReactFlow>
+                {isInitialized && (
+                    <SidePanel
+                        nodes={graph[0]}
+                        edges={graph[1]}
+                        loadedGraphName={loadedGraphName}
+                        onSave={handleSaveGraph}
+                        onDelete={handleDeleteGraph}
+                    />
+                )}
                 {!isInitialized && index.personById.size > 0 && (
                     <StartupMenu
                         persons={Array.from(index.personById.keys())}
+                        savedGraphs={savedGraphs}
                         onSubmit={handleStartupMenuSubmit}
+                        onLoadSavedGraph={handleLoadSavedGraph}
+                        onDeleteSavedGraph={handleDeleteGraph}
                     />
                 )}
             </div>
@@ -195,7 +328,7 @@ function FamilyGraph() {
     );
 }
 
-export function FamilyFlow() {
+export function FamilyFlow({ plugin }: { plugin: any }) {
     return (
         <div
             style={{
@@ -205,7 +338,7 @@ export function FamilyFlow() {
             }}
         >
             <ReactFlowProvider>
-                <FamilyGraph />
+                <FamilyGraph plugin={plugin} />
             </ReactFlowProvider>
         </div>
     );
