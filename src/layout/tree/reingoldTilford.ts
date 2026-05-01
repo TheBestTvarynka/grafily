@@ -408,6 +408,18 @@ export class ReingoldTilfordLayout {
             }
 
             person.isParentsCollapsible = this.isParentsCollapsible;
+            const parentsId = this.family.personParents.get(nodeId.id);
+            let isParentsCollapsed = false;
+            if (parentsId && this.isParentsCollapsible) {
+                const nodeParents = this.tree.children.get(nodeId.id) ?? [];
+                if (nodeParents.find((id) => id.id === parentsId)) {
+                    isParentsCollapsed = false;
+                } else {
+                    isParentsCollapsed = true;
+                }
+            }
+            person.isParentsCollapsed = isParentsCollapsed;
+
             nodes.push({
                 id: nodeId.id,
                 data: { id: person.id, side: person.marriageNodeSide },

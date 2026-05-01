@@ -1,5 +1,5 @@
 import { Id, MARRIAGE_NODE_TYPE, PERSON_NODE_TYPE, personIdToNodeId } from 'layout';
-import { Index } from 'model';
+import { Index, LEFT_SIDE, MarriageNodeSide } from 'model';
 
 export interface FamilyTree {
     children: Map<string, Id[]>;
@@ -15,6 +15,10 @@ export class TreeBuilder {
     constructor(family: Index, getChildNodes: (nodeId: Id, family: Index) => Id[]) {
         this.family = family;
         this.getChildNodes = getChildNodes;
+    }
+
+    getChildren(): Map<string, Id[]> {
+        return this.children;
     }
 
     buildInitialTree(root: string) {
@@ -49,21 +53,6 @@ export class TreeBuilder {
         };
     }
 
-    private removeNodes(nodes: Id[]) {
-        let children = nodes;
-        while (children.length > 0) {
-            const newChildren: Id[] = [];
-
-            for (const child of children) {
-                newChildren.push(...(this.children.get(child.id) ?? []));
-
-                this.children.delete(child.id);
-            }
-
-            children = newChildren;
-        }
-    }
-
     removeNode(nodeId: string, parentNodeId: string) {
         this.removeChildrenOf(nodeId);
 
@@ -79,10 +68,21 @@ export class TreeBuilder {
     }
 
     removeChildrenOf(nodeId: string) {
-        this.removeNodes([{ id: nodeId, type: MARRIAGE_NODE_TYPE }]);
+        let children = [nodeId];
+        while (children.length > 0) {
+            const newChildren: Id[] = [];
+
+            for (const child of children) {
+                newChildren.push(...(this.children.get(child) ?? []));
+
+                this.children.delete(child);
+            }
+
+            children = newChildren.map((id) => id.id);
+        }
     }
 
-    addNodesOf(nodeId: string) {
+    addChildrenOf(nodeId: string) {
         let currentNodes: Id[] = [{ id: nodeId, type: MARRIAGE_NODE_TYPE }];
 
         while (currentNodes.length > 0) {
@@ -96,6 +96,20 @@ export class TreeBuilder {
 
             currentNodes = newNodes;
         }
+    }
+
+    addChildren(nodeId: Id, parentId: string, side: MarriageNodeSide) {
+        this.addChildrenOf(nodeId.id);
+
+        const children = this.children.get(parentId) ?? [];
+
+        if (side === LEFT_SIDE) {
+            children.splice(0, 0, nodeId);
+        } else {
+            children.push(nodeId);
+        }
+
+        this.children.set(parentId, children);
     }
 }
 

@@ -13,7 +13,7 @@
  */
 
 import { Edge, Node } from '@xyflow/react';
-import { Index, Marriage } from '../../model';
+import { Index, LEFT_SIDE, Marriage, MarriageNodeSide, NONE_SIDE, RIGHT_SIDE } from '../../model';
 import {
     PERSON_NODE_TYPE,
     Id,
@@ -132,11 +132,26 @@ export class ReingoldTilford {
                     const person = this.family.personById.get(node.id);
                     if (person) {
                         person.isParentsCollapsible = true;
+
+                        const parentsId = this.family.personParents.get(node.id);
+                        if (parentsId) {
+                            const [id] = personIdToNodeId(node.id, this.family);
+                            let isParentsCollapsed = false;
+
+                            const nodeParents =
+                                this.parentsTreeBuilder.getChildren().get(id.id) ?? [];
+                            if (nodeParents.find((id) => id.id === parentsId)) {
+                                isParentsCollapsed = false;
+                            } else {
+                                isParentsCollapsed = true;
+                            }
+
+                            person.isParentsCollapsed = isParentsCollapsed;
+                        }
                     }
 
                     return true;
                 } else {
-                    // Already used.
                     return false;
                 }
             }),
@@ -204,7 +219,7 @@ export class ReingoldTilford {
      * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
      */
     expandChildren(nodeId: string): [Node[], Edge[]] {
-        this.childrenTreeBuilder.addNodesOf(nodeId);
+        this.childrenTreeBuilder.addChildrenOf(nodeId);
 
         return this.buildNodesInternal();
     }
@@ -215,9 +230,32 @@ export class ReingoldTilford {
      * @param {string} personId - The person id to expand its parents.
      * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
      */
-    expandParents(_personId: string): [Node[], Edge[]] {
-        throw new Error(
-            'Expanding parents is not supported in the current version of the Reingold-Tilford layout',
+    expandParents(personId: string): [Node[], Edge[]] {
+        const parentsId = this.family.personParents.get(personId);
+        if (!parentsId) {
+            console.warn(`Person ${personId} should have parents`);
+
+            return this.buildNodesInternal();
+        }
+
+        const [id, marriage] = personIdToNodeId(personId, this.family);
+        let side: MarriageNodeSide = NONE_SIDE;
+
+        if (marriage) {
+            if (marriage.parent1Id === personId) {
+                side = LEFT_SIDE;
+            }
+            if (marriage.parent2Id === personId) {
+                side = RIGHT_SIDE;
+            }
+        }
+
+        this.parentsTreeBuilder.addChildren(
+            { id: parentsId, type: MARRIAGE_NODE_TYPE },
+            marriage ? marriage.id : personId,
+            side,
         );
+
+        return this.buildNodesInternal();
     }
 }
