@@ -81,6 +81,22 @@ export class TreeBuilder {
     removeChildrenOf(nodeId: string) {
         this.removeNodes([{ id: nodeId, type: MARRIAGE_NODE_TYPE }]);
     }
+
+    addNodesOf(nodeId: string) {
+        let currentNodes: Id[] = [{ id: nodeId, type: MARRIAGE_NODE_TYPE }];
+
+        while (currentNodes.length > 0) {
+            const newNodes: Id[] = [];
+            for (const currentNode of currentNodes) {
+                const children = this.getChildNodes(currentNode, this.family);
+                this.children.set(currentNode.id, children);
+
+                newNodes.push(...children);
+            }
+
+            currentNodes = newNodes;
+        }
+    }
 }
 
 export function getNodeParents(nodeId: Id, family: Index): Id[] {

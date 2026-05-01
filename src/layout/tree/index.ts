@@ -203,10 +203,10 @@ export class ReingoldTilford {
      * @param {string} nodeId - The marriage id to expand its children.
      * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
      */
-    expandChildren(_nodeId: string): [Node[], Edge[]] {
-        throw new Error(
-            'Expanding children is not supported in the current version of the Reingold-Tilford layout',
-        );
+    expandChildren(nodeId: string): [Node[], Edge[]] {
+        this.childrenTreeBuilder.addNodesOf(nodeId);
+
+        return this.buildNodesInternal();
     }
 
     /**
