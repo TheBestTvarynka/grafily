@@ -44,7 +44,7 @@ export class TreeBuilder {
             children: this.children,
             root: this.root,
         };
-        console.log(tree);
+
         return tree;
     }
 }

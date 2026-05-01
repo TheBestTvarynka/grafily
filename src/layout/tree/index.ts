@@ -130,8 +130,6 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
     const parentsRootPreNode = parentsTree.buildPreNodes(parentsTreeData.root, preNodes, 0, [
         parentsTreeData.root,
     ]);
-    console.log('Pre nodes');
-    console.log(preNodes);
     // Second walk: calculate final X and Y values, and create nodes.
     parentsTree.finalizeNodesLayout(parentsRootPreNode.id, preNodes, nodes, edges, 0, 0);
 
@@ -151,7 +149,10 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
     ]);
 
     // We need to build the children tree relatively to the parents tree.
-    const rootsDelta = parentsRootPreNode.x - childrenRootPreNode.x;
+    const rootsDelta =
+        parentsRootPreNode.x +
+        parentsRootPreNode.shift -
+        (childrenRootPreNode.x + childrenRootPreNode.shift);
 
     // Second walk: calculate final X and Y values, and create nodes.
     childTreeBuilder.finalizeNodesLayout(

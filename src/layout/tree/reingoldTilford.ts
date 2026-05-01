@@ -159,7 +159,6 @@ export class ReingoldTilfordLayout {
         siblings: Id[],
     ): PreNode {
         const childIds = this.getChildNodesIds(perspectiveId);
-        console.log(childIds);
 
         if (childIds.length === 0) {
             const preNode: PreNode = {
