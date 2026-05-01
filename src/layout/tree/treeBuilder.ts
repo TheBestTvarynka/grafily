@@ -3,24 +3,28 @@ import { Index } from 'model';
 
 export interface FamilyTree {
     children: Map<Id, Id[]>;
-    root: string;
+    root: Id;
 }
 
 export class TreeBuilder {
     private family: Index;
     private children: Map<Id, Id[]> = new Map();
-    private root: string;
+    private root: Id;
     private getChildNodes: (nodeId: Id, family: Index) => Id[];
 
-    constructor(family: Index, root: string) {
+    constructor(family: Index, root: string, getChildNodes: (nodeId: Id, family: Index) => Id[]) {
         this.family = family;
-        this.root = root;
+
+        const [id] = personIdToNodeId(root, this.family);
+        this.root = id;
+
+        this.getChildNodes = getChildNodes;
+
+        this.buildInitialTree();
     }
 
     private buildInitialTree() {
-        const [id, marriage] = personIdToNodeId(this.root, this.family);
-
-        let currentNodes = [id];
+        let currentNodes = [this.root];
 
         while (currentNodes.length > 0) {
             const newNodes: Id[] = [];
@@ -36,10 +40,12 @@ export class TreeBuilder {
     }
 
     familyTree(): FamilyTree {
-        return {
+        const tree = {
             children: this.children,
             root: this.root,
         };
+        console.log(tree);
+        return tree;
     }
 }
 

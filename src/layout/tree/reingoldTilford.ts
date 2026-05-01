@@ -13,6 +13,7 @@ import {
 import { Index, LEFT_SIDE, RIGHT_SIDE } from 'model';
 import { v4 as uuidv4 } from 'uuid';
 import { Edge, Node } from '@xyflow/react';
+import { FamilyTree } from './treeBuilder';
 
 /**
  * Represents a preliminary tree node used during the layout computation.
@@ -33,36 +34,54 @@ export type PreNode = {
  * The Reingold-Tilford algorithm implementation for tree layout. It calculates the position of each node in the tree to create a tidy layout.
  */
 export class ReingoldTilfordLayout {
-    getRightmostChildren: (id: Id, family: Index) => Id | null;
-    getLeftmostChildren: (id: Id, family: Index) => Id | null;
-    getChildNodesIds: (currentNode: Id, family: Index) => Id[];
-    getY: (level: number) => number;
-    family: Index;
+    private tree: FamilyTree;
+    private family: Index;
+    private getY: (level: number) => number;
     // Rendering options.
-    isParentsCollapsed: boolean;
-    isChildrenCollapsible: boolean;
+    private isParentsCollapsed: boolean;
+    private isChildrenCollapsible: boolean;
+
+    getRightmostChildren(id: Id): Id | null {
+        const children = this.tree.children.get(id);
+
+        if (!children || children.length === 0) {
+            return null;
+        }
+
+        // SAFE: Checked above.
+        return children.last()!;
+    }
+
+    getLeftmostChildren(id: Id): Id | null {
+        const children = this.tree.children.get(id);
+
+        if (!children || children.length === 0) {
+            return null;
+        }
+
+        // SAFE: Checked above.
+        return children.first()!;
+    }
+
+    getChildNodesIds(currentNode: Id): Id[] {
+        return this.tree.children.get(currentNode) ?? [];
+    }
 
     /**
      * Creates an instance of the ReingoldTilford algorithm with the provided functions to access the family relationships and calculating the y coordinate.
      *
-     * @param {(id: Id, family: Index) => Id | null} getRightmostChildren return the rightmost child of the provided node. For parents tree, it will return the rightmost parent marriage. For children tree, it will return the rightmost child (child or child marriage).
-     * @param {(id: Id, family: Index) => Id | null} getLeftmostChildren return the leftmost child of the provided node. For parents tree, it will return the leftmost parent marriage. For children tree, it will return the leftmost child (child or child marriage).
-     * @param {(currentNode: Id, family: Index) => Id[]} getChildNodesIds returns the children nodes of the provided note. For parents tree, it will return parents marriages. For children tree, it will return children nodes (child or child marriage).
-     * @param {(level: number) => number} getY calculates the node Y coordinate based on the generation level.
+     * @param {FamilyTree} tree pre-built tree structure that contains only nodes we need to render.
      * @param {Index} family
+     * @param {(level: number) => number} getY calculates the node Y coordinate based on the generation level.
      */
     constructor(
-        getRightmostChildren: (id: Id, family: Index) => Id | null,
-        getLeftmostChildren: (id: Id, family: Index) => Id | null,
-        getChildNodesIds: (currentNode: Id, family: Index) => Id[],
-        getY: (level: number) => number,
+        tree: FamilyTree,
         family: Index,
+        getY: (level: number) => number,
         isParentsCollapsed: boolean,
         isChildrenCollapsible: boolean,
     ) {
-        this.getRightmostChildren = getRightmostChildren;
-        this.getLeftmostChildren = getLeftmostChildren;
-        this.getChildNodesIds = getChildNodesIds;
+        this.tree = tree;
         this.getY = getY;
         this.family = family;
         this.isParentsCollapsed = isParentsCollapsed;
@@ -111,8 +130,8 @@ export class ReingoldTilfordLayout {
         leftShift += leftNode.mod + leftNode.shift;
         rightShift += rightNode.mod + rightNode.shift;
 
-        const nextLeftSibling = this.getRightmostChildren(siblingLeft, this.family);
-        const nextRightSibling = this.getLeftmostChildren(singlingRight, this.family);
+        const nextLeftSibling = this.getRightmostChildren(siblingLeft);
+        const nextRightSibling = this.getLeftmostChildren(singlingRight);
 
         if (!nextLeftSibling || !nextRightSibling) {
             return shift;
@@ -139,7 +158,8 @@ export class ReingoldTilfordLayout {
         preX: number,
         siblings: Id[],
     ): PreNode {
-        const childIds = this.getChildNodesIds(perspectiveId, this.family);
+        const childIds = this.getChildNodesIds(perspectiveId);
+        console.log(childIds);
 
         if (childIds.length === 0) {
             const preNode: PreNode = {
@@ -236,7 +256,7 @@ export class ReingoldTilfordLayout {
         level: number,
         mod: number,
     ) {
-        const parents = this.getChildNodesIds(nodeId, this.family);
+        const parents = this.getChildNodesIds(nodeId);
 
         const preNode = preNodes.get(nodeId.id);
         if (!preNode) {

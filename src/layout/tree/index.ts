@@ -16,162 +16,7 @@ import { Edge, Node } from '@xyflow/react';
 import { Index, Marriage } from '../../model';
 import { PERSON_NODE_TYPE, Id, NODES_GAP, NODE_HEIGHT, MARRIAGE_NODE_TYPE } from '../index';
 import { PreNode, ReingoldTilfordLayout } from './reingoldTilford';
-
-/**
- * Returns the rightmost parent of the given node.
- *
- * @param {Id} id The Node id to get the rightmost parent for.
- * @param {Index} family The family index containing all the people and their relationships.
- * @returns The rightmost parent of the given node or null if there are no parents.
- */
-function getRightmostParent(id: Id, family: Index): Id | null {
-    const parents = getParentNodesIds(id, family);
-
-    if (parents[parents.length - 1]) {
-        return parents[parents.length - 1] as Id /* SAFE: checked above */;
-    } else {
-        return null;
-    }
-}
-
-/**
- * Returns the leftmost parent of the given node.
- *
- * @param {Id} id The Node id to get the leftmost parent for.
- * @param {Index} family The family index containing all the people and their relationships.
- * @returns The leftmost parent of the given node or null if there are no parents.
- */
-function getLeftmostParent(id: Id, family: Index): Id | null {
-    const parents = getParentNodesIds(id, family);
-
-    if (parents[0]) {
-        return parents[0];
-    } else {
-        return null;
-    }
-}
-
-/**
- * Returns the rightmost child of the given node.
- *
- * @param {Id} id The Node id to get the rightmost child for.
- * @param {Index} family The family index containing all the people and their relationships.
- * @returns The rightmost child of the given node or null if there are no children.
- */
-function getRightmostChild(id: Id, family: Index): Id | null {
-    const children = getChildNodesIds(id, family);
-
-    if (children[children.length - 1]) {
-        return children[children.length - 1] as Id /* SAFE: checked above */;
-    } else {
-        return null;
-    }
-}
-
-/**
- * Returns the leftmost child of the given node.
- *
- * @param {Id} id The Node id to get the leftmost child for.
- * @param {Index} family The family index containing all the people and their relationships.
- * @returns The leftmost child of the given node or null if there are no children.
- */
-function getLeftmostChild(id: Id, family: Index): Id | null {
-    const children = getChildNodesIds(id, family);
-
-    if (children[0]) {
-        return children[0];
-    } else {
-        return null;
-    }
-}
-
-/**
- * Returns current node parent nodes.
- *
- * @param {Id} currentNode The current node to get the parent nodes for.
- * @param {Index} family The family index containing all the people and their relationships.
- * @returns The list of parent nodes ids.
- */
-function getParentNodesIds(currentNode: Id, family: Index): Id[] {
-    let parents: Id[] = [];
-    if (currentNode.type === PERSON_NODE_TYPE) {
-        const marriageId = family.personParents.get(currentNode.id);
-
-        if (!marriageId) {
-            parents = [];
-        } else {
-            parents = [{ type: MARRIAGE_NODE_TYPE, id: marriageId }];
-        }
-    } else {
-        const marriage = family.marriageById.get(currentNode.id);
-
-        if (!marriage) {
-            throw new Error(`Expected marriage to exist for id ${currentNode.id}`);
-        }
-
-        if (marriage.parent1Id) {
-            let parent1MarriageId = family.personParents.get(marriage.parent1Id);
-            let parent1 = family.personById.get(marriage.parent1Id);
-
-            if (parent1MarriageId && !parent1?.isParentsCollapsible) {
-                parents.push({ type: MARRIAGE_NODE_TYPE, id: parent1MarriageId });
-            }
-        }
-
-        if (marriage.parent2Id) {
-            let parent2MarriageId = family.personParents.get(marriage.parent2Id);
-            let parent2 = family.personById.get(marriage.parent2Id);
-
-            if (parent2MarriageId && !parent2?.isParentsCollapsible) {
-                parents.push({ type: MARRIAGE_NODE_TYPE, id: parent2MarriageId });
-            }
-        }
-    }
-
-    return parents;
-}
-
-/**
- * Returns current node child nodes.
- *
- * @param {Id} currentNode The current node to get the child nodes for.
- * @param {Index} family The family index containing all the people and their relationships.
- * @returns The list of child nodes ids.
- */
-function getChildNodesIds(currentNode: Id, family: Index): Id[] {
-    let marriage: Marriage;
-
-    if (currentNode.type === PERSON_NODE_TYPE) {
-        const marriages = family.personMarriages.get(currentNode.id);
-
-        if (!marriages || !marriages[0]) {
-            return [];
-        }
-
-        marriage = marriages[0];
-    } else {
-        const nodeMarriage = family.marriageById.get(currentNode.id);
-
-        if (!nodeMarriage) {
-            throw new Error(`Expected marriage to exist for id ${currentNode.id}`);
-        }
-
-        marriage = nodeMarriage;
-    }
-
-    if (marriage.isChildrenCollapsed) {
-        return [];
-    }
-
-    return marriage.childrenIds.map((id) => {
-        const marriages = family.personMarriages.get(id);
-        if (!marriages || !marriages[0]) {
-            return { type: PERSON_NODE_TYPE, id };
-        } else {
-            return { type: MARRIAGE_NODE_TYPE, id: marriages[0].id };
-        }
-    });
-}
+import { getNodeChildren, getNodeParents, TreeBuilder } from './treeBuilder';
 
 /**
  * Returns the y coordinate for the parent node of the given generation level.
@@ -274,57 +119,36 @@ export class ReingoldTilford {
 export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[]] {
     const preNodes = new Map<string, PreNode>();
 
-    let id: Id;
-    const marriages = family.personMarriages.get(perspectiveId) ?? [];
-    const marriagePersons: string[] = [];
-    if (marriages.length > 0) {
-        const marriage = marriages[0];
-        if (!marriage) {
-            throw new Error(
-                `Invalid number of marriages for person(${perspectiveId}): ${marriages.length}. Only one marriage per person is supported.`,
-            );
-        }
-        id = { type: MARRIAGE_NODE_TYPE, id: marriage.id };
-        if (marriage.parent1Id) {
-            marriagePersons.push(marriage.parent1Id);
-        }
-        if (marriage.parent2Id) {
-            marriagePersons.push(marriage.parent2Id);
-        }
-    } else {
-        id = { type: PERSON_NODE_TYPE, id: perspectiveId };
-    }
-
     const nodes: Node[] = [];
     const edges: Edge[] = [];
 
-    const parentsTreeBuilder = new ReingoldTilfordLayout(
-        getRightmostParent,
-        getLeftmostParent,
-        getParentNodesIds,
-        getParentY,
-        family,
-        true,
-        false,
-    );
+    const parentsTreeBuilder = new TreeBuilder(family, perspectiveId, getNodeParents);
+    const parentsTreeData = parentsTreeBuilder.familyTree();
+    const parentsTree = new ReingoldTilfordLayout(parentsTreeData, family, getParentY, true, false);
 
     // First walk: calculate preliminary X, mod, and shift values.
-    const parentsRootPreNode = parentsTreeBuilder.buildPreNodes(id, preNodes, 0, [id]);
+    const parentsRootPreNode = parentsTree.buildPreNodes(parentsTreeData.root, preNodes, 0, [
+        parentsTreeData.root,
+    ]);
+    console.log('Pre nodes');
+    console.log(preNodes);
     // Second walk: calculate final X and Y values, and create nodes.
-    parentsTreeBuilder.finalizeNodesLayout(parentsRootPreNode.id, preNodes, nodes, edges, 0, 0);
+    parentsTree.finalizeNodesLayout(parentsRootPreNode.id, preNodes, nodes, edges, 0, 0);
 
+    const childrenTreeBuilder = new TreeBuilder(family, perspectiveId, getNodeChildren);
+    const childrenTreeData = childrenTreeBuilder.familyTree();
     const childTreeBuilder = new ReingoldTilfordLayout(
-        getRightmostChild,
-        getLeftmostChild,
-        getChildNodesIds,
-        getChildY,
+        childrenTreeData,
         family,
+        getChildY,
         false,
         true,
     );
 
     // First walk: calculate preliminary X, mod, and shift values.
-    const childrenRootPreNode = childTreeBuilder.buildPreNodes(id, preNodes, 0, [id]);
+    const childrenRootPreNode = childTreeBuilder.buildPreNodes(childrenTreeData.root, preNodes, 0, [
+        parentsTreeData.root,
+    ]);
 
     // We need to build the children tree relatively to the parents tree.
     const rootsDelta = parentsRootPreNode.x - childrenRootPreNode.x;
@@ -339,7 +163,7 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
         rootsDelta,
     );
 
-    let rootIds = [parentsRootPreNode.id, ...marriagePersons];
+    let rootIds = [parentsRootPreNode.id.id];
     // We built two trees: one for parents and one for children. So, we have two nodes for the root person.
     // We use this flag to filter nodes and keep only one root node.
     let rootAdded = false;
