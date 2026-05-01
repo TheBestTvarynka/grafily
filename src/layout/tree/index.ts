@@ -57,7 +57,83 @@ export class ReingoldTilford {
      * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
      */
     buildNodes(perspectiveId: string): [Node[], Edge[]] {
-        return buildNodes(perspectiveId, this.family);
+        const preNodes = new Map<string, PreNode>();
+
+        const nodes: Node[] = [];
+        const edges: Edge[] = [];
+
+        const parentsTreeBuilder = new TreeBuilder(this.family, perspectiveId, getNodeParents);
+        const parentsTreeData = parentsTreeBuilder.familyTree();
+        const parentsTree = new ReingoldTilfordLayout(parentsTreeData, this.family, getParentY, true, false);
+
+        // First walk: calculate preliminary X, mod, and shift values.
+        const parentsRootPreNode = parentsTree.buildPreNodes(parentsTreeData.root, preNodes, 0, [
+            parentsTreeData.root,
+        ]);
+        // Second walk: calculate final X and Y values, and create nodes.
+        parentsTree.finalizeNodesLayout(parentsRootPreNode.id, preNodes, nodes, edges, 0, 0);
+
+        const childrenTreeBuilder = new TreeBuilder(this.family, perspectiveId, getNodeChildren);
+        const childrenTreeData = childrenTreeBuilder.familyTree();
+        const childTreeBuilder = new ReingoldTilfordLayout(
+            childrenTreeData,
+            this.family,
+            getChildY,
+            false,
+            true,
+        );
+
+        // First walk: calculate preliminary X, mod, and shift values.
+        const childrenRootPreNode = childTreeBuilder.buildPreNodes(childrenTreeData.root, preNodes, 0, [
+            parentsTreeData.root,
+        ]);
+
+        // We need to build the children tree relatively to the parents tree.
+        const rootsDelta =
+            parentsRootPreNode.x +
+            parentsRootPreNode.shift -
+            (childrenRootPreNode.x + childrenRootPreNode.shift);
+
+        // Second walk: calculate final X and Y values, and create nodes.
+        childTreeBuilder.finalizeNodesLayout(
+            childrenRootPreNode.id,
+            preNodes,
+            nodes,
+            edges,
+            0,
+            rootsDelta,
+        );
+
+        let rootIds = [parentsRootPreNode.id.id];
+        // We built two trees: one for parents and one for children. So, we have two nodes for the root person.
+        // We use this flag to filter nodes and keep only one root node.
+        let rootAdded = false;
+
+        // Yes, we can do smarter that that but I do not want to overcomplicate it.
+        const uniqueEdges = new Set<string>();
+        return [
+            nodes.filter((node) => {
+                if (!rootIds.includes(node.id)) {
+                    return true;
+                }
+
+                if (!rootAdded) {
+                    rootAdded = true;
+                    return true;
+                }
+
+                // We already added the root node, so we need to skip the second one.
+                return true;
+            }),
+            edges.filter((edge) => {
+                if (!uniqueEdges.has(edge.id)) {
+                    uniqueEdges.add(edge.id);
+                    return true;
+                }
+
+                return false;
+            }),
+        ];
     }
 
     /**
@@ -107,91 +183,4 @@ export class ReingoldTilford {
             'Expanding parents is not supported in the current version of the Reingold-Tilford layout',
         );
     }
-}
-
-/**
- * Builds the nodes and edges for the family tree layout.
- *
- * @param {string} perspectiveId The person ID to build the tree for. This person will be the root.
- * @param {Index} family The family index containing all the people and their relationships.
- * @returns Nodes and Edges that are already positioned and ready to be rendered.
- */
-export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[]] {
-    const preNodes = new Map<string, PreNode>();
-
-    const nodes: Node[] = [];
-    const edges: Edge[] = [];
-
-    const parentsTreeBuilder = new TreeBuilder(family, perspectiveId, getNodeParents);
-    const parentsTreeData = parentsTreeBuilder.familyTree();
-    const parentsTree = new ReingoldTilfordLayout(parentsTreeData, family, getParentY, true, false);
-
-    // First walk: calculate preliminary X, mod, and shift values.
-    const parentsRootPreNode = parentsTree.buildPreNodes(parentsTreeData.root, preNodes, 0, [
-        parentsTreeData.root,
-    ]);
-    // Second walk: calculate final X and Y values, and create nodes.
-    parentsTree.finalizeNodesLayout(parentsRootPreNode.id, preNodes, nodes, edges, 0, 0);
-
-    const childrenTreeBuilder = new TreeBuilder(family, perspectiveId, getNodeChildren);
-    const childrenTreeData = childrenTreeBuilder.familyTree();
-    const childTreeBuilder = new ReingoldTilfordLayout(
-        childrenTreeData,
-        family,
-        getChildY,
-        false,
-        true,
-    );
-
-    // First walk: calculate preliminary X, mod, and shift values.
-    const childrenRootPreNode = childTreeBuilder.buildPreNodes(childrenTreeData.root, preNodes, 0, [
-        parentsTreeData.root,
-    ]);
-
-    // We need to build the children tree relatively to the parents tree.
-    const rootsDelta =
-        parentsRootPreNode.x +
-        parentsRootPreNode.shift -
-        (childrenRootPreNode.x + childrenRootPreNode.shift);
-
-    // Second walk: calculate final X and Y values, and create nodes.
-    childTreeBuilder.finalizeNodesLayout(
-        childrenRootPreNode.id,
-        preNodes,
-        nodes,
-        edges,
-        0,
-        rootsDelta,
-    );
-
-    let rootIds = [parentsRootPreNode.id.id];
-    // We built two trees: one for parents and one for children. So, we have two nodes for the root person.
-    // We use this flag to filter nodes and keep only one root node.
-    let rootAdded = false;
-
-    // Yes, we can do smarter that that but I do not want to overcomplicate it.
-    const uniqueEdges = new Set<string>();
-    return [
-        nodes.filter((node) => {
-            if (!rootIds.includes(node.id)) {
-                return true;
-            }
-
-            if (!rootAdded) {
-                rootAdded = true;
-                return true;
-            }
-
-            // We already added the root node, so we need to skip the second one.
-            return true;
-        }),
-        edges.filter((edge) => {
-            if (!uniqueEdges.has(edge.id)) {
-                uniqueEdges.add(edge.id);
-                return true;
-            }
-
-            return false;
-        }),
-    ];
 }
