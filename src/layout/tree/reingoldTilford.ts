@@ -38,11 +38,11 @@ export class ReingoldTilfordLayout {
     private family: Index;
     private getY: (level: number) => number;
     // Rendering options.
-    private isParentsCollapsed: boolean;
+    private isParentsCollapsible: boolean;
     private isChildrenCollapsible: boolean;
 
     getRightmostChildren(id: Id): Id | null {
-        const children = this.tree.children.get(id);
+        const children = this.tree.children.get(id.id);
 
         if (!children || children.length === 0) {
             return null;
@@ -53,7 +53,7 @@ export class ReingoldTilfordLayout {
     }
 
     getLeftmostChildren(id: Id): Id | null {
-        const children = this.tree.children.get(id);
+        const children = this.tree.children.get(id.id);
 
         if (!children || children.length === 0) {
             return null;
@@ -64,7 +64,7 @@ export class ReingoldTilfordLayout {
     }
 
     getChildNodesIds(currentNode: Id): Id[] {
-        return this.tree.children.get(currentNode) ?? [];
+        return this.tree.children.get(currentNode.id) ?? [];
     }
 
     /**
@@ -78,13 +78,13 @@ export class ReingoldTilfordLayout {
         tree: FamilyTree,
         family: Index,
         getY: (level: number) => number,
-        isParentsCollapsed: boolean,
+        isParentsCollapsible: boolean,
         isChildrenCollapsible: boolean,
     ) {
         this.tree = tree;
         this.getY = getY;
         this.family = family;
-        this.isParentsCollapsed = isParentsCollapsed;
+        this.isParentsCollapsible = isParentsCollapsible;
         this.isChildrenCollapsible = isChildrenCollapsible;
     }
 
@@ -315,7 +315,7 @@ export class ReingoldTilfordLayout {
                 }
 
                 person.marriageNodeSide = RIGHT_SIDE;
-                person.isParentsCollapsed = this.isParentsCollapsed;
+                person.isParentsCollapsible = this.isParentsCollapsible;
                 nodes.push({
                     id: parent1NodeId,
                     data: { id: person.id, side: person.marriageNodeSide },
@@ -343,7 +343,7 @@ export class ReingoldTilfordLayout {
                 }
 
                 person.marriageNodeSide = LEFT_SIDE;
-                person.isParentsCollapsed = this.isParentsCollapsed;
+                person.isParentsCollapsible = this.isParentsCollapsible;
                 nodes.push({
                     id: parent2NodeId,
                     data: { id: person.id, side: person.marriageNodeSide },
@@ -378,7 +378,7 @@ export class ReingoldTilfordLayout {
                 throw new Error(`Expected person to exist for id ${nodeId.id}`);
             }
 
-            person.isParentsCollapsed = this.isParentsCollapsed;
+            person.isParentsCollapsible = this.isParentsCollapsible;
             nodes.push({
                 id: nodeId.id,
                 data: { id: person.id, side: person.marriageNodeSide },
@@ -400,4 +400,24 @@ export class ReingoldTilfordLayout {
             }
         }
     }
+}
+
+/**
+ * Returns the y coordinate for the parent node of the given generation level.
+ *
+ * @param {number} level Person (node) generation level.
+ * @returns The y coordinate for the given generation level.
+ */
+export function getParentY(level: number): number {
+    return -1 * level * (NODE_HEIGHT + NODES_GAP);
+}
+
+/**
+ * Returns the y coordinate for the child node of the given generation level.
+ *
+ * @param {number} level Person (node) generation level.
+ * @returns The y coordinate for the given generation level.
+ */
+export function getChildY(level: number): number {
+    return level * (NODE_HEIGHT + NODES_GAP);
 }

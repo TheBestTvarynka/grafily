@@ -14,32 +14,22 @@
 
 import { Edge, Node } from '@xyflow/react';
 import { Index, Marriage } from '../../model';
-import { PERSON_NODE_TYPE, Id, NODES_GAP, NODE_HEIGHT, MARRIAGE_NODE_TYPE } from '../index';
-import { PreNode, ReingoldTilfordLayout } from './reingoldTilford';
+import {
+    PERSON_NODE_TYPE,
+    Id,
+    NODES_GAP,
+    NODE_HEIGHT,
+    MARRIAGE_NODE_TYPE,
+    personIdToNodeId,
+} from '../index';
+import { getChildY, getParentY, PreNode, ReingoldTilfordLayout } from './reingoldTilford';
 import { getNodeChildren, getNodeParents, TreeBuilder } from './treeBuilder';
-
-/**
- * Returns the y coordinate for the parent node of the given generation level.
- *
- * @param {number} level Person (node) generation level.
- * @returns The y coordinate for the given generation level.
- */
-function getParentY(level: number): number {
-    return -1 * level * (NODE_HEIGHT + NODES_GAP);
-}
-
-/**
- * Returns the y coordinate for the child node of the given generation level.
- *
- * @param {number} level Person (node) generation level.
- * @returns The y coordinate for the given generation level.
- */
-function getChildY(level: number): number {
-    return level * (NODE_HEIGHT + NODES_GAP);
-}
 
 export class ReingoldTilford {
     private family: Index;
+    private parentsTreeBuilder: TreeBuilder;
+    private childrenTreeBuilder: TreeBuilder;
+    private root: string | null = null;
 
     /**
      * Creates an instance of the ReingoldTilford layout with the provided family index.
@@ -48,33 +38,21 @@ export class ReingoldTilford {
      */
     constructor(family: Index) {
         this.family = family;
+        this.parentsTreeBuilder = new TreeBuilder(this.family, getNodeParents);
+        this.childrenTreeBuilder = new TreeBuilder(this.family, getNodeChildren);
     }
 
-    /**
-     * Initializes the initial graph, calculates nodes coordinates, and creates graph nodes and edges.
-     *
-     * @param {string} perspectivePersonId - The person id to build the graph from the perspective of. This person will be in the "center" of the graph.
-     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
-     */
-    buildNodes(perspectiveId: string): [Node[], Edge[]] {
-        const preNodes = new Map<string, PreNode>();
+    private buildNodesInternal(): [Node[], Edge[]] {
+        const parentsTreeData = this.parentsTreeBuilder.familyTree();
+        const parentsTree = new ReingoldTilfordLayout(
+            parentsTreeData,
+            this.family,
+            getParentY,
+            true,
+            false,
+        );
 
-        const nodes: Node[] = [];
-        const edges: Edge[] = [];
-
-        const parentsTreeBuilder = new TreeBuilder(this.family, perspectiveId, getNodeParents);
-        const parentsTreeData = parentsTreeBuilder.familyTree();
-        const parentsTree = new ReingoldTilfordLayout(parentsTreeData, this.family, getParentY, true, false);
-
-        // First walk: calculate preliminary X, mod, and shift values.
-        const parentsRootPreNode = parentsTree.buildPreNodes(parentsTreeData.root, preNodes, 0, [
-            parentsTreeData.root,
-        ]);
-        // Second walk: calculate final X and Y values, and create nodes.
-        parentsTree.finalizeNodesLayout(parentsRootPreNode.id, preNodes, nodes, edges, 0, 0);
-
-        const childrenTreeBuilder = new TreeBuilder(this.family, perspectiveId, getNodeChildren);
-        const childrenTreeData = childrenTreeBuilder.familyTree();
+        const childrenTreeData = this.childrenTreeBuilder.familyTree();
         const childTreeBuilder = new ReingoldTilfordLayout(
             childrenTreeData,
             this.family,
@@ -83,10 +61,25 @@ export class ReingoldTilford {
             true,
         );
 
+        const preNodes = new Map<string, PreNode>();
+
+        const nodes: Node[] = [];
+        const edges: Edge[] = [];
+
         // First walk: calculate preliminary X, mod, and shift values.
-        const childrenRootPreNode = childTreeBuilder.buildPreNodes(childrenTreeData.root, preNodes, 0, [
+        const parentsRootPreNode = parentsTree.buildPreNodes(parentsTreeData.root, preNodes, 0, [
             parentsTreeData.root,
         ]);
+        // Second walk: calculate final X and Y values, and create nodes.
+        parentsTree.finalizeNodesLayout(parentsRootPreNode.id, preNodes, nodes, edges, 0, 0);
+
+        // First walk: calculate preliminary X, mod, and shift values.
+        const childrenRootPreNode = childTreeBuilder.buildPreNodes(
+            childrenTreeData.root,
+            preNodes,
+            0,
+            [parentsTreeData.root],
+        );
 
         // We need to build the children tree relatively to the parents tree.
         const rootsDelta =
@@ -104,26 +97,49 @@ export class ReingoldTilford {
             rootsDelta,
         );
 
-        let rootIds = [parentsRootPreNode.id.id];
-        // We built two trees: one for parents and one for children. So, we have two nodes for the root person.
-        // We use this flag to filter nodes and keep only one root node.
-        let rootAdded = false;
+        const [id, marriage] = personIdToNodeId(this.root!, this.family);
+        const rootIds: Map<string, boolean> = new Map();
+        rootIds.set(id.id, false);
+        if (id.type === MARRIAGE_NODE_TYPE) {
+            if (!marriage) {
+                throw new Error(`Marriage should exist for id ${id.id}`);
+            }
+
+            if (marriage.parent1Id) {
+                rootIds.set(marriage.parent1Id, false);
+            }
+
+            if (marriage.parent2Id) {
+                rootIds.set(marriage.parent2Id, false);
+            }
+        }
+        console.log({ rootIds });
 
         // Yes, we can do smarter that that but I do not want to overcomplicate it.
         const uniqueEdges = new Set<string>();
         return [
             nodes.filter((node) => {
-                if (!rootIds.includes(node.id)) {
+                if (!rootIds.has(node.id)) {
                     return true;
                 }
 
-                if (!rootAdded) {
-                    rootAdded = true;
-                    return true;
-                }
+                // SAFE: checked above.
+                const rootId = rootIds.get(node.id)!;
 
-                // We already added the root node, so we need to skip the second one.
-                return true;
+                if (!rootId) {
+                    // Is not used yet.
+                    rootIds.set(node.id, true);
+
+                    const person = this.family.personById.get(node.id);
+                    if (person) {
+                        person.isParentsCollapsible = true;
+                    }
+
+                    return true;
+                } else {
+                    // Already used.
+                    return false;
+                }
             }),
             edges.filter((edge) => {
                 if (!uniqueEdges.has(edge.id)) {
@@ -137,15 +153,29 @@ export class ReingoldTilford {
     }
 
     /**
+     * Initializes the initial graph, calculates nodes coordinates, and creates graph nodes and edges.
+     *
+     * @param {string} perspectivePersonId - The person id to build the graph from the perspective of. This person will be in the "center" of the graph.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
+    buildNodes(perspectiveId: string): [Node[], Edge[]] {
+        this.root = perspectiveId;
+        this.parentsTreeBuilder.buildInitialTree(perspectiveId);
+        this.childrenTreeBuilder.buildInitialTree(perspectiveId);
+
+        return this.buildNodesInternal();
+    }
+
+    /**
      * Collapses the children of a given marriage.
      *
      * @param {string} nodeId - The id of the node to collapse its children. This node if must be a marriage id.
      * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
      */
-    collapseChildren(_nodeId: string): [Node[], Edge[]] {
-        throw new Error(
-            'Collapsing children is not supported in the current version of the Reingold-Tilford layout',
-        );
+    collapseChildren(nodeId: string): [Node[], Edge[]] {
+        this.childrenTreeBuilder.removeChildrenOf(nodeId);
+
+        return this.buildNodesInternal();
     }
 
     /**
@@ -154,10 +184,18 @@ export class ReingoldTilford {
      * @param {string} personId - The person id to collapse its parents.
      * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
      */
-    collapseParents(_personId: string): [Node[], Edge[]] {
-        throw new Error(
-            'Collapsing parents is not supported in the current version of the Reingold-Tilford layout',
-        );
+    collapseParents(personId: string): [Node[], Edge[]] {
+        const parents = this.family.personParents.get(personId);
+        if (!parents) {
+            console.warn(`Person ${personId} should have parents.`);
+
+            return this.buildNodesInternal();
+        }
+
+        const [id] = personIdToNodeId(personId, this.family);
+        this.parentsTreeBuilder.removeNode(parents, id.id);
+
+        return this.buildNodesInternal();
     }
 
     /**
