@@ -248,6 +248,11 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
             await plugin.saveData(updatedStates);
             setLoadedGraphName(name);
 
+            setSavedGraphs((prevSavedGraphs) => ({
+                ...prevSavedGraphs,
+                [name]: data,
+            }));
+
             console.debug(`Graph state "${name}" saved successfully`);
         } catch (err) {
             console.error('Failed to save graph state:', err);
@@ -289,6 +294,13 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
         }
     };
 
+    const handleHome = () => {
+        // Reset graph state and return to startup menu
+        setLoadedGraphName(null);
+        setGraph([[], []]);
+        setIsInitialized(false);
+    };
+
     return (
         <GraphContext.Provider
             value={{
@@ -312,6 +324,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                         loadedGraphName={loadedGraphName}
                         onSave={handleSaveGraph}
                         onDelete={handleDeleteGraph}
+                        onHome={handleHome}
                     />
                 )}
                 {!isInitialized && index.personById.size > 0 && (
