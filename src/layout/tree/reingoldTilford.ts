@@ -10,10 +10,11 @@ import {
     nodeWidth,
     PERSON_NODE_TYPE,
 } from 'layout';
-import { Index, LEFT_SIDE, RIGHT_SIDE } from 'model';
+import { Index, LEFT_SIDE, NONE_SIDE, RIGHT_SIDE } from 'model';
 import { v4 as uuidv4 } from 'uuid';
 import { Edge, Node } from '@xyflow/react';
 import { FamilyTree } from './treeBuilder';
+import { MarriageNodeData, PersonNodeData } from 'view/node';
 
 /**
  * Represents a preliminary tree node used during the layout computation.
@@ -287,13 +288,16 @@ export class ReingoldTilfordLayout {
             const isChildrenCollapsible =
                 this.isChildrenCollapsible && marriage.childrenIds.length > 0;
             const isChildrenCollapsed = this.isChildrenCollapsible ? children.length === 0 : false;
+
+            const nodeData: MarriageNodeData = {
+                id: marriage.id,
+                isChildrenCollapsible,
+                isChildrenCollapsed,
+            };
+
             nodes.push({
                 id: marriage.id,
-                data: {
-                    id: marriage.id,
-                    isChildrenCollapsible,
-                    isChildrenCollapsed,
-                },
+                data: nodeData,
                 type: MARRIAGE_NODE_TYPE,
                 position: {
                     x: x + NODE_WIDTH + MARRIAGE_GAP - MARRIAGE_NODE_SIZE / 2,
@@ -317,9 +321,6 @@ export class ReingoldTilfordLayout {
                     throw new Error(`Expected person to exist for id ${marriage.parent1Id}`);
                 }
 
-                person.marriageNodeSide = RIGHT_SIDE;
-                person.isParentsCollapsible = this.isParentsCollapsible;
-
                 const parentsId = this.family.personParents.get(parent1NodeId);
                 let isParentsCollapsed = false;
                 if (parentsId && this.isParentsCollapsible) {
@@ -330,11 +331,17 @@ export class ReingoldTilfordLayout {
                         isParentsCollapsed = true;
                     }
                 }
-                person.isParentsCollapsed = isParentsCollapsed;
+
+                const nodeData: PersonNodeData = {
+                    id: parent1NodeId,
+                    side: RIGHT_SIDE,
+                    isParentsCollapsible: this.isParentsCollapsible,
+                    isParentsCollapsed,
+                };
 
                 nodes.push({
                     id: parent1NodeId,
-                    data: { id: person.id, side: person.marriageNodeSide },
+                    data: nodeData,
                     position: { x, y },
                     type: PERSON_NODE_TYPE,
                     style: {
@@ -358,9 +365,6 @@ export class ReingoldTilfordLayout {
                     throw new Error(`Expected person to exist for id ${marriage.parent2Id}`);
                 }
 
-                person.marriageNodeSide = LEFT_SIDE;
-                person.isParentsCollapsible = this.isParentsCollapsible;
-
                 const parentsId = this.family.personParents.get(parent2NodeId);
                 let isParentsCollapsed = false;
                 if (parentsId && this.isParentsCollapsible) {
@@ -371,11 +375,17 @@ export class ReingoldTilfordLayout {
                         isParentsCollapsed = true;
                     }
                 }
-                person.isParentsCollapsed = isParentsCollapsed;
+
+                const nodeData: PersonNodeData = {
+                    id: parent2NodeId,
+                    side: LEFT_SIDE,
+                    isParentsCollapsible: this.isParentsCollapsible,
+                    isParentsCollapsed,
+                };
 
                 nodes.push({
                     id: parent2NodeId,
-                    data: { id: person.id, side: person.marriageNodeSide },
+                    data: nodeData,
                     position: { x: x + NODE_WIDTH + 2 * MARRIAGE_GAP, y },
                     type: PERSON_NODE_TYPE,
                     style: {
@@ -407,7 +417,6 @@ export class ReingoldTilfordLayout {
                 throw new Error(`Expected person to exist for id ${nodeId.id}`);
             }
 
-            person.isParentsCollapsible = this.isParentsCollapsible;
             const parentsId = this.family.personParents.get(nodeId.id);
             let isParentsCollapsed = false;
             if (parentsId && this.isParentsCollapsible) {
@@ -418,11 +427,17 @@ export class ReingoldTilfordLayout {
                     isParentsCollapsed = true;
                 }
             }
-            person.isParentsCollapsed = isParentsCollapsed;
+
+            const nodeData: PersonNodeData = {
+                id: person.id,
+                side: NONE_SIDE,
+                isParentsCollapsible: this.isParentsCollapsible,
+                isParentsCollapsed,
+            };
 
             nodes.push({
                 id: nodeId.id,
-                data: { id: person.id, side: person.marriageNodeSide },
+                data: nodeData,
                 position: { x, y },
                 type: PERSON_NODE_TYPE,
                 style: {

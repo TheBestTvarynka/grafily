@@ -1,6 +1,6 @@
 import { TFile } from 'obsidian';
 
-import { Person, Date, Name, NONE_SIDE } from 'model';
+import { Person, Date, Name } from 'model';
 
 export function extractPageMeta(page: string, fileName: string, file: TFile): Person {
     const lines = page.split('\n').map((line) => line.trim());
@@ -83,9 +83,6 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         spouses,
         file,
         image,
-        isParentsCollapsible: false,
-        isParentsCollapsed: false,
-        marriageNodeSide: NONE_SIDE,
     };
 }
 

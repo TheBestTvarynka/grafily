@@ -22,6 +22,7 @@ import {
 } from '../index';
 import { getChildY, getParentY, PreNode, ReingoldTilfordLayout } from './reingoldTilford';
 import { FamilyTree, getNodeChildren, getNodeParents, TreeBuilder } from './treeBuilder';
+import { PersonNodeData } from 'view/node';
 
 export class ReingoldTilford {
     private family: Index;
@@ -141,10 +142,11 @@ export class ReingoldTilford {
                     // Is not used yet.
                     rootIds.set(node.id, true);
 
+                    const nodeData: PersonNodeData = node.data as PersonNodeData;
+                    nodeData.isParentsCollapsible = true;
+
                     const person = this.family.personById.get(node.id);
                     if (person) {
-                        person.isParentsCollapsible = true;
-
                         const parentsId = this.family.personParents.get(node.id);
                         if (parentsId) {
                             const [id] = personIdToNodeId(node.id, this.family);
@@ -158,7 +160,7 @@ export class ReingoldTilford {
                                 isParentsCollapsed = true;
                             }
 
-                            person.isParentsCollapsed = isParentsCollapsed;
+                            nodeData.isParentsCollapsed = isParentsCollapsed;
                         }
                     }
 

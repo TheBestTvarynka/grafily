@@ -13,9 +13,10 @@ import {
     SerializableLayout,
     personIdToNodeId,
 } from '../';
-import { Index, LEFT_SIDE, RIGHT_SIDE } from '../../model';
+import { Index, LEFT_SIDE, NONE_SIDE, RIGHT_SIDE } from '../../model';
 import { positionX, positionY } from './brandesKopf';
 import { GraphBuilder, GraphNode } from './graphBuilder';
+import { MarriageNodeData, PersonNodeData } from 'view/node';
 
 /**
  * Represents the family graph. No modifications are needed to this graph. It is ready for nodes positions calculations.
@@ -111,13 +112,15 @@ export class BrandesKopfLayout {
             const y = yCoords[id] ?? 0;
 
             if (node.type === MARRIAGE_NODE_TYPE) {
+                const nodeData: MarriageNodeData = {
+                    id,
+                    isChildrenCollapsible: true,
+                    isChildrenCollapsed: isChildrenCollapsed(id),
+                };
+
                 nodes.push({
                     id,
-                    data: {
-                        id,
-                        isChildrenCollapsible: true,
-                        isChildrenCollapsed: isChildrenCollapsed(id),
-                    },
+                    data: nodeData,
                     type: MARRIAGE_NODE_TYPE,
                     position: {
                         x: x - MARRIAGE_NODE_SIZE / 2,
@@ -135,18 +138,16 @@ export class BrandesKopfLayout {
                 });
 
                 if (node.persons.person1) {
-                    node.persons.person1.marriageNodeSide = RIGHT_SIDE;
-                    node.persons.person1.isParentsCollapsible = true;
-                    node.persons.person1.isParentsCollapsed = isParentsCollapsed(
-                        node.persons.person1.id,
-                    );
+                    const nodeData: PersonNodeData = {
+                        id: node.persons.person1.id,
+                        side: RIGHT_SIDE,
+                        isParentsCollapsible: true,
+                        isParentsCollapsed: isParentsCollapsed(node.persons.person1.id),
+                    };
 
                     nodes.push({
                         id: node.persons.person1.id,
-                        data: {
-                            id: node.persons.person1.id,
-                            side: node.persons.person1.marriageNodeSide,
-                        },
+                        data: nodeData,
                         position: {
                             x: x - MARRIAGE_WIDTH / 2,
                             y: y - NODE_HEIGHT / 2,
@@ -167,18 +168,16 @@ export class BrandesKopfLayout {
                 }
 
                 if (node.persons.person2) {
-                    node.persons.person2.marriageNodeSide = LEFT_SIDE;
-                    node.persons.person2.isParentsCollapsible = true;
-                    node.persons.person2.isParentsCollapsed = isParentsCollapsed(
-                        node.persons.person2.id,
-                    );
+                    const nodeData: PersonNodeData = {
+                        id: node.persons.person2.id,
+                        side: LEFT_SIDE,
+                        isParentsCollapsible: true,
+                        isParentsCollapsed: isParentsCollapsed(node.persons.person2.id),
+                    };
 
                     nodes.push({
                         id: node.persons.person2.id,
-                        data: {
-                            id: node.persons.person2.id,
-                            side: node.persons.person2.marriageNodeSide,
-                        },
+                        data: nodeData,
                         position: {
                             x: x + MARRIAGE_GAP,
                             y: y - NODE_HEIGHT / 2,
@@ -199,15 +198,16 @@ export class BrandesKopfLayout {
                 }
             }
             if (node.type === PERSON_NODE_TYPE) {
-                node.persons.person1!.isParentsCollapsible = true;
-                node.persons.person1!.isParentsCollapsed = false;
+                const nodeData: PersonNodeData = {
+                    id: node.persons.person1!.id,
+                    side: NONE_SIDE,
+                    isParentsCollapsible: true,
+                    isParentsCollapsed: false,
+                };
 
                 nodes.push({
                     id,
-                    data: {
-                        id: node.persons.person1!.id,
-                        side: node.persons.person1!.marriageNodeSide,
-                    },
+                    data: nodeData,
                     position: {
                         x: x - NODE_WIDTH / 2,
                         y: y - NODE_HEIGHT / 2,
@@ -279,12 +279,6 @@ export class BrandesKopfLayout {
         }
 
         this.graph.removeParentsOf(nodeId.id, except);
-        const person = this.family.personById.get(personId);
-        if (person) {
-            person.isParentsCollapsed = true;
-        } else {
-            console.warn(`Person ${personId} not found in the family index`);
-        }
 
         return this.buildNodesInternal();
     }
