@@ -283,6 +283,9 @@ export class ReingoldTilford {
 }
 
 export function fromSerializableObject(layout: SerializableLayout, family: Index): ReingoldTilford {
+    // Trust me, I am Engineer!
+    /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
     if (layout.name !== REINGOLD_TILFORD) {
         throw new Error(`Invalid layout name: ${layout.name}. Expected: ${REINGOLD_TILFORD}`);
     }

@@ -39,7 +39,7 @@ interface NodePersons {
  * @property {NodePersons} persons - persons associated with the node. For the person node, only `person1` is filled. For the marriage node, both `person1` and `person2` are filled.
  * @property {number} layerNumber - the layer number where the node is located.
  */
-interface GraphNode {
+export interface GraphNode {
     id: string;
     type: NodeType;
     persons: NodePersons;
@@ -99,7 +99,7 @@ export class GraphBuilder {
      *
      * @param {Index} family - The family index containing all the people and their relationships.
      */
-    constructor(family: Index, graph?: FamilyGraph, nodes?: Map<string, GraphNode>) {
+    constructor(family: Index, graph?: FamilyGraph, nodes?: Record<string, GraphNode>) {
         if (graph) {
             if (!nodes) {
                 throw new Error(
@@ -107,11 +107,11 @@ export class GraphBuilder {
                 );
             }
 
-            this.nodes = nodes;
+            this.nodes = new Map(Object.entries(nodes));
             this.parents = new Map(Object.entries(graph.parents));
             this.children = new Map(Object.entries(graph.children));
 
-            const layers = new Map();
+            const layers = new Map<number, string[]>();
             const firstLayer = graph.firstLayer;
             for (const [index, nodes] of graph.layering.entries()) {
                 layers.set(index + firstLayer, nodes);

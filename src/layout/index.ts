@@ -212,6 +212,7 @@ export class GenericLayout {
 
 export interface SerializableLayout {
     name: LayoutName;
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     data: any;
 }
 
@@ -226,6 +227,7 @@ export function fromSerializableObject(
     } else if (layoutData.name === REINGOLD_TILFORD) {
         layout = deserializeTree(layoutData, family);
     } else {
+        /* eslint-disable @typescript-eslint/restrict-template-expressions */
         throw new Error(`Invalid layout type: ${layoutData.name}`);
     }
 

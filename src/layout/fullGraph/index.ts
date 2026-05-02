@@ -15,7 +15,7 @@ import {
 } from '../';
 import { Index, LEFT_SIDE, RIGHT_SIDE } from '../../model';
 import { positionX, positionY } from './brandesKopf';
-import { GraphBuilder } from './graphBuilder';
+import { GraphBuilder, GraphNode } from './graphBuilder';
 
 /**
  * Represents the family graph. No modifications are needed to this graph. It is ready for nodes positions calculations.
@@ -314,11 +314,13 @@ export class BrandesKopfLayout {
     }
 
     toSerializableObject(): SerializableLayout {
+        const nodes: Record<string, GraphNode> = Object.fromEntries(this.graph.getNodes());
+
         return {
             name: BRANDES_KORF,
             data: {
                 graph: this.graph.buildFamilyGraph(),
-                nodes: this.graph.getNodes(),
+                nodes,
             },
         };
     }
@@ -328,6 +330,10 @@ export function fromSerializableObject(
     layout: SerializableLayout,
     family: Index,
 ): BrandesKopfLayout {
+    // Trust me, I am Engineer!
+    /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+    /* eslint-disable @typescript-eslint/no-unsafe-argument */
+
     if (layout.name !== BRANDES_KORF) {
         throw new Error(`Invalid layout name: ${layout.name}. Expected: ${BRANDES_KORF}`);
     }

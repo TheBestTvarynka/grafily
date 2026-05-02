@@ -245,22 +245,20 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                 data: graph,
                 layout: layout.toSerializableObject(),
             };
+            const graphs = {
+                ...savedGraphs,
+                [name]: graphDto,
+            };
 
             const updatedStates = {
                 ...existingStates,
-                graphs: {
-                    ...existingStates?.graphs,
-                    [name]: graphDto,
-                },
+                graphs,
             };
 
             await plugin.saveData(updatedStates);
             setLoadedGraphName(name);
 
-            setSavedGraphs((prevSavedGraphs) => ({
-                ...prevSavedGraphs,
-                [name]: graphDto,
-            }));
+            setSavedGraphs(graphs);
 
             console.debug(`Graph state "${name}" saved successfully`);
         } catch (err) {
