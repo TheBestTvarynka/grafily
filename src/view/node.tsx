@@ -6,7 +6,14 @@ import { LEFT_SIDE, MarriageNodeSide, Person, RIGHT_SIDE } from 'model';
 import { TFile } from 'obsidian';
 import { useEffect, useState } from 'react';
 
-export function PersonNode({ data }: { data: { id: string; side: MarriageNodeSide } }) {
+export type PersonNodeData = {
+    id: string;
+    isParentsCollapsible: boolean;
+    isParentsCollapsed: boolean;
+    side: MarriageNodeSide;
+};
+
+export function PersonNode({ data }: { data: PersonNodeData }) {
     const app = useApp();
     const graph = useGraph();
 
@@ -47,7 +54,6 @@ export function PersonNode({ data }: { data: { id: string; side: MarriageNodeSid
             return;
         }
 
-        /* eslint-disable  @typescript-eslint/no-unsafe-assignment */
         const file = person?.file;
         if (!file) {
             console.warn('node data.file does not present');
@@ -88,7 +94,7 @@ export function PersonNode({ data }: { data: { id: string; side: MarriageNodeSid
             return;
         }
 
-        if (person.isParentsCollapsed) {
+        if (data.isParentsCollapsed) {
             graph.expandParents(data.id);
         } else {
             graph.collapseParents(data.id);
@@ -96,7 +102,7 @@ export function PersonNode({ data }: { data: { id: string; side: MarriageNodeSid
     };
 
     const getHideChildNodesIcon = (): string => {
-        if (person?.isParentsCollapsed) {
+        if (data.isParentsCollapsed) {
             return PLUS_ICON;
         } else {
             return MINUS_ICON;
@@ -120,7 +126,7 @@ export function PersonNode({ data }: { data: { id: string; side: MarriageNodeSid
                 cursor: 'default',
             }}
         >
-            {hasParents && person?.isParentsCollapsible ? (
+            {hasParents && data.isParentsCollapsible ? (
                 <button
                     onClick={collapseParents}
                     style={{
@@ -194,11 +200,13 @@ export function PersonNode({ data }: { data: { id: string; side: MarriageNodeSid
     );
 }
 
-// Fuck TS.
-/* eslint-disable  @typescript-eslint/no-explicit-any */
-/* eslint-disable  @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable  @typescript-eslint/no-unsafe-argument */
-export function MarriageNode({ data }: any) {
+export type MarriageNodeData = {
+    id: string;
+    isChildrenCollapsible: boolean;
+    isChildrenCollapsed: boolean;
+};
+
+export function MarriageNode({ data }: { data: MarriageNodeData }) {
     const graph = useGraph();
 
     const [hasChildren, setHasChildren] = useState<boolean>(true);
@@ -209,9 +217,9 @@ export function MarriageNode({ data }: any) {
             return;
         }
 
-        const marriage = graph.index.marriageById.get(data?.id);
+        const marriage = graph.index.marriageById.get(data.id);
         if (!marriage) {
-            console.warn(`Expected marriage(id=${data?.id}) to exist in index.`);
+            console.warn(`Expected marriage(id=${data.id}) to exist in index.`);
             return;
         }
 

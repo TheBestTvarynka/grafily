@@ -1,10 +1,12 @@
 /**
- * This algorithm is a creation of my own and it needs to be rewritten and improved.
- * Probably, I will fix it in the future, but not in the near future (that's for sure).
+ * This algorithm is a creation of my own and it needs to be completely rewritten and improved.
+ * Probably, I will fix it in the future (or not fix it all and just delete it),
+ * but not in the near future (that's for sure).
  *
  * @module fixme
  */
 
+/*
 import { Edge, Node } from '@xyflow/react';
 import { Index } from 'model';
 
@@ -489,10 +491,12 @@ function preBuildSiblings(
     if (neighborUnit) {
         if (perspective.side == RIGHT_SIDE) {
             const shift = calculateShift(unit, 0, neighborUnit, 0, preNodes, family);
-            unit.shift = shift * -1 /* shift subgraph left */;
+            // shift subgraph left
+            unit.shift = shift * -1;
         } else {
             const shift = calculateShift(neighborUnit, 0, unit, 0, preNodes, family);
-            unit.shift = shift /* shift subgraph right */;
+            // shift subgraph right
+            unit.shift = shift;
         }
     }
 
@@ -852,3 +856,4 @@ export function buildNodes(perspectiveId: string, family: Index): [Node[], Edge[
 
     return [nodes, edges];
 }
+*/

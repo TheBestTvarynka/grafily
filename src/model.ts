@@ -32,11 +32,6 @@ export type Person = {
     // Avatar image to render in the person node.
     image?: string;
     file: TFile;
-
-    // Rendering options.
-    isParentsCollapsible: boolean;
-    isParentsCollapsed: boolean;
-    marriageNodeSide: MarriageNodeSide;
 };
 
 export type Marriage = {
@@ -44,10 +39,6 @@ export type Marriage = {
     parent1Id?: string;
     parent2Id?: string;
     childrenIds: string[];
-
-    // Rendering options.
-    isChildrenCollapsible: boolean;
-    isChildrenCollapsed: boolean;
 };
 
 export type Family = {
@@ -90,8 +81,6 @@ export function familyFromPersons(persons: Person[]): Family {
                     parent1Id: person.id,
                     parent2Id: spouse_id,
                     childrenIds: [],
-                    isChildrenCollapsed: false,
-                    isChildrenCollapsible: false,
                 });
             }
         }
@@ -115,8 +104,6 @@ export function familyFromPersons(persons: Person[]): Family {
                     parent1Id: person.parents[0],
                     parent2Id: person.parents[1],
                     childrenIds: [person.id],
-                    isChildrenCollapsed: false,
-                    isChildrenCollapsible: false,
                 };
                 marriages.push(parentsMarriage);
             }
@@ -145,8 +132,6 @@ export function familyFromPersons(persons: Person[]): Family {
                     id: `${person.id}_unknown`,
                     parent1Id: person.id,
                     childrenIds: [],
-                    isChildrenCollapsed: false,
-                    isChildrenCollapsible: false,
                 });
             }
 
