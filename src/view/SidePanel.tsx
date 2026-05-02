@@ -1,16 +1,14 @@
 import { useState, KeyboardEvent } from 'react';
-import { Node, Edge } from '@xyflow/react';
 import { getIcon } from 'obsidian';
 
 export type SidePanelProps = {
-    nodes: Node[];
-    edges: Edge[];
     loadedGraphName?: string | null;
-    onSave: (name: string, data: { nodes: Node[]; edges: Edge[] }) => Promise<void>;
+    onSave: (name: string) => Promise<void>;
     onDelete?: (graphName: string) => Promise<void>;
+    onHome: () => void;
 };
 
-export function SidePanel({ nodes, edges, loadedGraphName, onSave, onDelete }: SidePanelProps) {
+export function SidePanel({ loadedGraphName, onSave, onDelete, onHome }: SidePanelProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -34,7 +32,7 @@ export function SidePanel({ nodes, edges, loadedGraphName, onSave, onDelete }: S
 
         setIsSaving(true);
         try {
-            await onSave(graphName, { nodes, edges });
+            await onSave(graphName);
             setIsModalOpen(false);
             setInputValue('');
         } catch (err) {
@@ -83,6 +81,14 @@ export function SidePanel({ nodes, edges, loadedGraphName, onSave, onDelete }: S
     return (
         <>
             <div className="grafily-save-panel">
+                <button
+                    className="grafily-home-button"
+                    onClick={onHome}
+                    title="Return to home menu"
+                    dangerouslySetInnerHTML={{
+                        __html: getIcon('house')?.outerHTML || '',
+                    }}
+                />
                 <button
                     className="grafily-save-button"
                     onClick={handleSaveClick}

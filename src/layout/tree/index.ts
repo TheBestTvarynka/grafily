@@ -14,9 +14,14 @@
 
 import { Edge, Node } from '@xyflow/react';
 import { Index, LEFT_SIDE, MarriageNodeSide, NONE_SIDE, RIGHT_SIDE } from '../../model';
-import { MARRIAGE_NODE_TYPE, personIdToNodeId } from '../index';
+import {
+    MARRIAGE_NODE_TYPE,
+    personIdToNodeId,
+    REINGOLD_TILFORD,
+    SerializableLayout,
+} from '../index';
 import { getChildY, getParentY, PreNode, ReingoldTilfordLayout } from './reingoldTilford';
-import { getNodeChildren, getNodeParents, TreeBuilder } from './treeBuilder';
+import { FamilyTree, getNodeChildren, getNodeParents, TreeBuilder } from './treeBuilder';
 
 export class ReingoldTilford {
     private family: Index;
@@ -29,10 +34,24 @@ export class ReingoldTilford {
      *
      * @param {Index} family - The family index containing all the information about persons and marriages.
      */
-    constructor(family: Index) {
+    constructor(
+        family: Index,
+        parentsTreeBuilder?: TreeBuilder,
+        childrenTreeBuilder?: TreeBuilder,
+    ) {
         this.family = family;
-        this.parentsTreeBuilder = new TreeBuilder(this.family, getNodeParents);
-        this.childrenTreeBuilder = new TreeBuilder(this.family, getNodeChildren);
+
+        if (parentsTreeBuilder) {
+            this.parentsTreeBuilder = parentsTreeBuilder;
+        } else {
+            this.parentsTreeBuilder = new TreeBuilder(this.family, getNodeParents);
+        }
+
+        if (childrenTreeBuilder) {
+            this.childrenTreeBuilder = childrenTreeBuilder;
+        } else {
+            this.childrenTreeBuilder = new TreeBuilder(this.family, getNodeChildren);
+        }
     }
 
     private buildNodesInternal(): [Node[], Edge[]] {
@@ -251,4 +270,36 @@ export class ReingoldTilford {
 
         return this.buildNodesInternal();
     }
+
+    toSerializableObject(): SerializableLayout {
+        return {
+            name: REINGOLD_TILFORD,
+            data: {
+                parentsTreeBuilder: this.parentsTreeBuilder.familyTree(),
+                childrenTreeBuilder: this.childrenTreeBuilder.familyTree(),
+            },
+        };
+    }
+}
+
+export function fromSerializableObject(layout: SerializableLayout, family: Index): ReingoldTilford {
+    // Trust me, I am Engineer!
+    /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
+    if (layout.name !== REINGOLD_TILFORD) {
+        throw new Error(`Invalid layout name: ${layout.name}. Expected: ${REINGOLD_TILFORD}`);
+    }
+
+    const parentsTreeBuilder = new TreeBuilder(
+        family,
+        getNodeParents,
+        layout.data.parentsTreeBuilder as FamilyTree,
+    );
+    const childrenTreeBuilder = new TreeBuilder(
+        family,
+        getNodeChildren,
+        layout.data.childrenTreeBuilder as FamilyTree,
+    );
+
+    return new ReingoldTilford(family, parentsTreeBuilder, childrenTreeBuilder);
 }

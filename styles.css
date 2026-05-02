@@ -19,6 +19,36 @@ If your plugin does not need CSS, delete this file.
     gap: 8px;
 }
 
+.grafily-home-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+    cursor: pointer;
+    transition: all 200ms ease;
+}
+
+.grafily-home-button:hover {
+    background-color: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+}
+
+.grafily-home-button:active {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.grafily-home-button svg {
+    width: 16px;
+    height: 16px;
+}
+
 .grafily-save-button {
     display: flex;
     align-items: center;

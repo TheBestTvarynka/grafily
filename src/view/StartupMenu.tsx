@@ -1,19 +1,14 @@
 import { useState } from 'react';
-import { Node, Edge } from '@xyflow/react';
 import { BRANDES_KORF, REINGOLD_TILFORD, LayoutName } from '../layout';
 import { GRAPH_ICON, TREE_ICON } from 'images';
 import { getIcon } from 'obsidian';
-
-export type SavedGraphState = {
-    nodes: Node[];
-    edges: Edge[];
-};
+import { GraphDto } from './graph';
 
 export type StartupMenuProps = {
     persons: string[];
-    savedGraphs?: Record<string, SavedGraphState>;
+    savedGraphs?: Record<string, GraphDto>;
     onSubmit: (layoutName: LayoutName, personId: string) => void;
-    onLoadSavedGraph?: (graphName: string, nodes: Node[], edges: Edge[]) => void;
+    onLoadSavedGraph?: (graphName: string) => void;
     onDeleteSavedGraph?: (graphName: string) => Promise<void>;
 };
 
@@ -50,7 +45,7 @@ export function StartupMenu({
         if (selectedSavedGraph && onLoadSavedGraph) {
             const graphData = savedGraphs[selectedSavedGraph];
             if (graphData) {
-                onLoadSavedGraph(selectedSavedGraph, graphData.nodes, graphData.edges);
+                onLoadSavedGraph(selectedSavedGraph);
             }
         }
     };

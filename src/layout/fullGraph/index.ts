@@ -1,6 +1,7 @@
 import { Edge, Node } from '@xyflow/react';
 
 import {
+    BRANDES_KORF,
     MARRIAGE_GAP,
     MARRIAGE_NODE_SIZE,
     MARRIAGE_NODE_TYPE,
@@ -9,11 +10,12 @@ import {
     NODE_HEIGHT,
     NODE_WIDTH,
     PERSON_NODE_TYPE,
+    SerializableLayout,
     personIdToNodeId,
 } from '../';
 import { Index, LEFT_SIDE, RIGHT_SIDE } from '../../model';
 import { positionX, positionY } from './brandesKopf';
-import { GraphBuilder } from './graphBuilder';
+import { GraphBuilder, GraphNode } from './graphBuilder';
 
 /**
  * Represents the family graph. No modifications are needed to this graph. It is ready for nodes positions calculations.
@@ -26,15 +28,17 @@ import { GraphBuilder } from './graphBuilder';
  */
 export interface FamilyGraph {
     /** parents[nodeId] = array of parent node ids */
-    parents: Map<string, string[]>;
+    parents: Record<string, string[]>;
     /** children[nodeId] = array of child node ids */
-    children: Map<string, string[]>;
+    children: Record<string, string[]>;
     /**
      * layering[level][order] = nodeId
      * e.g. layering[0] is the list of node ids in the first (top) layer,
      * sorted by their `order` value.
      */
     layering: string[][];
+    /** This field is not used during coordinates calculation. It is only needed for deserializing graph from the file. */
+    firstLayer: number;
 }
 
 /**
@@ -49,9 +53,13 @@ export class BrandesKopfLayout {
      *
      * @param {Index} family - The family index containing all the information about persons and marriages.
      */
-    constructor(family: Index) {
+    constructor(family: Index, graph?: GraphBuilder) {
         this.family = family;
-        this.graph = new GraphBuilder(family);
+        if (graph) {
+            this.graph = graph;
+        } else {
+            this.graph = new GraphBuilder(family);
+        }
     }
 
     /**
@@ -304,4 +312,34 @@ export class BrandesKopfLayout {
 
         return this.buildNodesInternal();
     }
+
+    toSerializableObject(): SerializableLayout {
+        const nodes: Record<string, GraphNode> = Object.fromEntries(this.graph.getNodes());
+
+        return {
+            name: BRANDES_KORF,
+            data: {
+                graph: this.graph.buildFamilyGraph(),
+                nodes,
+            },
+        };
+    }
+}
+
+export function fromSerializableObject(
+    layout: SerializableLayout,
+    family: Index,
+): BrandesKopfLayout {
+    // Trust me, I am Engineer!
+    /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+    /* eslint-disable @typescript-eslint/no-unsafe-argument */
+
+    if (layout.name !== BRANDES_KORF) {
+        throw new Error(`Invalid layout name: ${layout.name}. Expected: ${BRANDES_KORF}`);
+    }
+
+    return new BrandesKopfLayout(
+        family,
+        new GraphBuilder(family, layout.data.graph as FamilyGraph, layout.data.nodes),
+    );
 }
