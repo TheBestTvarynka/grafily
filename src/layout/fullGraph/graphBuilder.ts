@@ -10,7 +10,7 @@
 
 import { FamilyGraph } from './';
 import { Id, NodeType, MARRIAGE_NODE_TYPE, PERSON_NODE_TYPE, personIdToNodeId } from '../';
-import { Index, LEFT_SIDE, RIGHT_SIDE, Person, Marriage } from '../../model';
+import { Index, LEFT_SIDE, RIGHT_SIDE, Marriage } from '../../model';
 
 const MIDDLE_SIDE = 'middle_side';
 
@@ -27,8 +27,8 @@ interface CallerChild {
 }
 
 interface NodePersons {
-    person1?: Person;
-    person2?: Person;
+    person1?: string;
+    person2?: string;
 }
 
 /**
@@ -218,7 +218,7 @@ export class GraphBuilder {
                     id: id.id,
                     type: PERSON_NODE_TYPE,
                     persons: {
-                        person1: this.family.personById.get(id.id)!,
+                        person1: id.id,
                     },
                     layerNumber,
                 });
@@ -247,13 +247,13 @@ export class GraphBuilder {
             const persons: NodePersons = {};
             if (marriage) {
                 if (marriage.parent1Id) {
-                    persons.person1 = this.family.personById.get(marriage.parent1Id)!;
+                    persons.person1 = marriage.parent1Id;
                 }
                 if (marriage.parent2Id) {
-                    persons.person2 = this.family.personById.get(marriage.parent2Id)!;
+                    persons.person2 = marriage.parent2Id;
                 }
             } else {
-                persons.person1 = this.family.personById.get(id.id)!;
+                persons.person1 = id.id;
             }
             this.nodes.set(id.id, {
                 id: id.id,
@@ -330,12 +330,8 @@ export class GraphBuilder {
                 id,
                 type: MARRIAGE_NODE_TYPE,
                 persons: {
-                    person1: marriage.parent1Id
-                        ? this.family.personById.get(marriage.parent1Id)!
-                        : undefined,
-                    person2: marriage.parent2Id
-                        ? this.family.personById.get(marriage.parent2Id)!
-                        : undefined,
+                    person1: marriage.parent1Id,
+                    person2: marriage.parent2Id,
                 },
                 layerNumber,
             });
@@ -372,14 +368,10 @@ export class GraphBuilder {
                 const persons: NodePersons =
                     childNodeId.type === MARRIAGE_NODE_TYPE
                         ? {
-                              person1: childMarriage!.parent1Id
-                                  ? this.family.personById.get(childMarriage!.parent1Id)!
-                                  : undefined,
-                              person2: childMarriage!.parent2Id
-                                  ? this.family.personById.get(childMarriage!.parent2Id)!
-                                  : undefined,
+                              person1: childMarriage!.parent1Id,
+                              person2: childMarriage!.parent2Id,
                           }
-                        : { person1: this.family.personById.get(childNodeId.id)! };
+                        : { person1: childNodeId.id };
                 this.nodes.set(childNodeId.id, {
                     id: childNodeId.id,
                     type: childNodeId.type,
@@ -718,7 +710,7 @@ export class GraphBuilder {
                             id: parentNode.id,
                             type: PERSON_NODE_TYPE,
                             persons: {
-                                person1: this.family.personById.get(parentNode.id)!,
+                                person1: parentNode.id,
                             },
                             layerNumber: getNextLayer(currentLayer),
                         };
@@ -728,22 +720,12 @@ export class GraphBuilder {
                             throw new Error(`Marriage ${parentNode.id} should exist`);
                         }
 
-                        let person1: Person | undefined;
-                        if (marriage.parent1Id) {
-                            person1 = this.family.personById.get(marriage.parent1Id)!;
-                        }
-
-                        let person2: Person | undefined;
-                        if (marriage.parent2Id) {
-                            person2 = this.family.personById.get(marriage.parent2Id)!;
-                        }
-
                         node = {
                             id: parentNode.id,
                             type: MARRIAGE_NODE_TYPE,
                             persons: {
-                                person1,
-                                person2,
+                                person1: marriage.parent1Id,
+                                person2: marriage.parent2Id,
                             },
                             layerNumber: getNextLayer(currentLayer),
                         };

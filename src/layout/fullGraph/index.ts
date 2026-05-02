@@ -139,14 +139,14 @@ export class BrandesKopfLayout {
 
                 if (node.persons.person1) {
                     const nodeData: PersonNodeData = {
-                        id: node.persons.person1.id,
+                        id: node.persons.person1,
                         side: RIGHT_SIDE,
                         isParentsCollapsible: true,
-                        isParentsCollapsed: isParentsCollapsed(node.persons.person1.id),
+                        isParentsCollapsed: isParentsCollapsed(node.persons.person1),
                     };
 
                     nodes.push({
-                        id: node.persons.person1.id,
+                        id: node.persons.person1,
                         data: nodeData,
                         position: {
                             x: x - MARRIAGE_WIDTH / 2,
@@ -159,8 +159,8 @@ export class BrandesKopfLayout {
                     });
 
                     edges.push({
-                        id: id + '-to-' + node.persons.person1.id,
-                        target: node.persons.person1.id,
+                        id: id + '-to-' + node.persons.person1,
+                        target: node.persons.person1,
                         source: id,
                         sourceHandle: 'left',
                         targetHandle: 'right',
@@ -169,14 +169,14 @@ export class BrandesKopfLayout {
 
                 if (node.persons.person2) {
                     const nodeData: PersonNodeData = {
-                        id: node.persons.person2.id,
+                        id: node.persons.person2,
                         side: LEFT_SIDE,
                         isParentsCollapsible: true,
-                        isParentsCollapsed: isParentsCollapsed(node.persons.person2.id),
+                        isParentsCollapsed: isParentsCollapsed(node.persons.person2),
                     };
 
                     nodes.push({
-                        id: node.persons.person2.id,
+                        id: node.persons.person2,
                         data: nodeData,
                         position: {
                             x: x + MARRIAGE_GAP,
@@ -189,8 +189,8 @@ export class BrandesKopfLayout {
                     });
 
                     edges.push({
-                        id: id + '-to-' + node.persons.person2.id,
-                        target: node.persons.person2.id,
+                        id: id + '-to-' + node.persons.person2,
+                        target: node.persons.person2,
                         source: id,
                         sourceHandle: 'right',
                         targetHandle: 'left',
@@ -199,7 +199,7 @@ export class BrandesKopfLayout {
             }
             if (node.type === PERSON_NODE_TYPE) {
                 const nodeData: PersonNodeData = {
-                    id: node.persons.person1!.id,
+                    id: node.persons.person1!,
                     side: NONE_SIDE,
                     isParentsCollapsible: true,
                     isParentsCollapsed: false,

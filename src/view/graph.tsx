@@ -254,6 +254,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                 ...existingStates,
                 graphs,
             };
+            JSON.stringify(updatedStates);
 
             await plugin.saveData(updatedStates);
             setLoadedGraphName(name);
