@@ -13,15 +13,8 @@
  */
 
 import { Edge, Node } from '@xyflow/react';
-import { Index, LEFT_SIDE, Marriage, MarriageNodeSide, NONE_SIDE, RIGHT_SIDE } from '../../model';
-import {
-    PERSON_NODE_TYPE,
-    Id,
-    NODES_GAP,
-    NODE_HEIGHT,
-    MARRIAGE_NODE_TYPE,
-    personIdToNodeId,
-} from '../index';
+import { Index, LEFT_SIDE, MarriageNodeSide, NONE_SIDE, RIGHT_SIDE } from '../../model';
+import { MARRIAGE_NODE_TYPE, personIdToNodeId } from '../index';
 import { getChildY, getParentY, PreNode, ReingoldTilfordLayout } from './reingoldTilford';
 import { getNodeChildren, getNodeParents, TreeBuilder } from './treeBuilder';
 
@@ -238,7 +231,7 @@ export class ReingoldTilford {
             return this.buildNodesInternal();
         }
 
-        const [id, marriage] = personIdToNodeId(personId, this.family);
+        const [, marriage] = personIdToNodeId(personId, this.family);
         let side: MarriageNodeSide = NONE_SIDE;
 
         if (marriage) {
