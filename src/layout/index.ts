@@ -1,6 +1,6 @@
 import { Edge, Node } from '@xyflow/react';
 
-import { Index } from '../model';
+import { Index, Marriage } from '../model';
 import { BrandesKopfLayout } from './fullGraph';
 import { ReingoldTilford } from './tree';
 
@@ -78,6 +78,34 @@ export function nodeWidth(id: Id): number {
         return NODE_WIDTH;
     } else {
         return MARRIAGE_WIDTH;
+    }
+}
+
+/**
+ * Converts a person ID to a node ID.
+ *
+ * @param {string} personId - The ID of the person to convert.
+ * @returns {[Id, Marriage | null]} - The node ID and associated marriage, if any.
+ */
+export function personIdToNodeId(personId: string, family: Index): [Id, Marriage | null] {
+    const marriages = family.personMarriages.get(personId) ?? [];
+    const marriage = marriages[0];
+
+    if (marriage) {
+        const id: Id = {
+            type: MARRIAGE_NODE_TYPE,
+            id: marriage.id,
+        };
+
+        return [id, marriage];
+    } else {
+        return [
+            {
+                type: PERSON_NODE_TYPE,
+                id: personId,
+            },
+            null,
+        ];
     }
 }
 

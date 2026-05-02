@@ -120,7 +120,7 @@ export function PersonNode({ data }: { data: { id: string; side: MarriageNodeSid
                 cursor: 'default',
             }}
         >
-            {hasParents ? (
+            {hasParents && person?.isParentsCollapsible ? (
                 <button
                     onClick={collapseParents}
                     style={{
