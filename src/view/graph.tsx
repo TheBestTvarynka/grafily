@@ -233,6 +233,8 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
     };
 
     const handleSaveGraph = async (name: string) => {
+        console.log('handleSaveGraph');
+
         if (!plugin) {
             console.error('Plugin instance not available');
             throw new Error('Plugin instance not available');
@@ -254,6 +256,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                 ...existingStates,
                 graphs,
             };
+            JSON.stringify(updatedStates);
 
             await plugin.saveData(updatedStates);
             setLoadedGraphName(name);
