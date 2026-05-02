@@ -1,8 +1,8 @@
 import { Edge, Node } from '@xyflow/react';
 
 import { Index, Marriage } from '../model';
-import { BrandesKopfLayout } from './fullGraph';
-import { ReingoldTilford } from './tree';
+import { BrandesKopfLayout, fromSerializableObject as deserializeFullGraph } from './fullGraph';
+import { ReingoldTilford, fromSerializableObject as deserializeTree } from './tree';
 
 /**
  * Node width.
@@ -136,14 +136,22 @@ export class GenericLayout {
      * @param {LayoutName} layoutName - The layout algorithm to use for building the graph. Currently supports {@link BRANDES_KORF} and {@link REINGOLD_TILFORD}.
      * @param {Index} family - The family index containing all the information about persons and marriages.
      */
-    constructor(layoutName: LayoutName, family: Index) {
-        switch (layoutName) {
-            case BRANDES_KORF:
-                this.layout = new BrandesKopfLayout(family);
-                break;
-            case REINGOLD_TILFORD:
-                this.layout = new ReingoldTilford(family);
-                break;
+    constructor(
+        layoutName: LayoutName,
+        family: Index,
+        layout?: BrandesKopfLayout | ReingoldTilford,
+    ) {
+        if (layout) {
+            this.layout = layout;
+        } else {
+            switch (layoutName) {
+                case BRANDES_KORF:
+                    this.layout = new BrandesKopfLayout(family);
+                    break;
+                case REINGOLD_TILFORD:
+                    this.layout = new ReingoldTilford(family);
+                    break;
+            }
         }
     }
 
@@ -196,4 +204,30 @@ export class GenericLayout {
     expandParents(personId: string): [Node[], Edge[]] {
         return this.layout.expandParents(personId);
     }
+
+    toSerializableObject(): SerializableLayout {
+        return this.layout.toSerializableObject();
+    }
+}
+
+export interface SerializableLayout {
+    name: LayoutName;
+    data: any;
+}
+
+export function fromSerializableObject(
+    layoutData: SerializableLayout,
+    family: Index,
+): GenericLayout {
+    let layout: BrandesKopfLayout | ReingoldTilford;
+
+    if (layoutData.name === BRANDES_KORF) {
+        layout = deserializeFullGraph(layoutData, family);
+    } else if (layoutData.name === REINGOLD_TILFORD) {
+        layout = deserializeTree(layoutData, family);
+    } else {
+        throw new Error(`Invalid layout type: ${layoutData.name}`);
+    }
+
+    return new GenericLayout(layoutData.name, family, layout);
 }

@@ -19,7 +19,13 @@ import { buildIndex, emptyIndex, familyFromPersons, Index } from '../model';
 import { useApp } from '../hooks';
 import { extractPageMeta } from '../parsing';
 import { PersonNode, MarriageNode } from './node';
-import { BRANDES_KORF, GenericLayout, LayoutName } from 'layout';
+import {
+    BRANDES_KORF,
+    GenericLayout,
+    LayoutName,
+    SerializableLayout,
+    fromSerializableObject,
+} from 'layout';
 import { StartupMenu } from './StartupMenu';
 import { SidePanel } from './SidePanel';
 import { Plugin } from 'obsidian';
@@ -41,6 +47,11 @@ const nodeTypes = {
     marriageNode: MarriageNode,
 };
 
+export type GraphDto = {
+    data: [Node[], Edge[]];
+    layout: SerializableLayout;
+};
+
 function FamilyGraph({ plugin }: { plugin: Plugin }) {
     const [layout, setLayout] = useState<GenericLayout>(
         new GenericLayout(BRANDES_KORF, emptyIndex()),
@@ -49,9 +60,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
 
     const [graph, setGraph] = useState<[Node[], Edge[]]>([[], []]);
     const [isInitialized, setIsInitialized] = useState(false);
-    const [savedGraphs, setSavedGraphs] = useState<
-        Record<string, { nodes: Node[]; edges: Edge[] }>
-    >({});
+    const [savedGraphs, setSavedGraphs] = useState<Record<string, GraphDto>>({});
     const [loadedGraphName, setLoadedGraphName] = useState<string | null>(null);
 
     const shiftGraphByAnchorNode = (
@@ -139,24 +148,12 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                     return;
                 }
 
-                const validGraphs: Record<string, { nodes: Node[]; edges: Edge[] }> = {};
+                const graphs: Record<string, GraphDto> = {};
                 for (const [key, value] of Object.entries(graphsData)) {
-                    if (
-                        value &&
-                        typeof value === 'object' &&
-                        'nodes' in value &&
-                        'edges' in value &&
-                        Array.isArray((value as any).nodes) &&
-                        Array.isArray((value as any).edges)
-                    ) {
-                        validGraphs[key] = {
-                            nodes: (value as any).nodes,
-                            edges: (value as any).edges,
-                        };
-                    }
+                    graphs[key] = value as GraphDto;
                 }
 
-                setSavedGraphs(validGraphs);
+                setSavedGraphs(graphs);
             } catch (err) {
                 console.error('Failed to load saved graphs:', err);
 
@@ -222,13 +219,20 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
         setIsInitialized(true);
     };
 
-    const handleLoadSavedGraph = (graphName: string, nodes: Node[], edges: Edge[]) => {
-        setGraph([nodes, edges]);
+    const handleLoadSavedGraph = (graphName: string) => {
+        const loadedGraph = savedGraphs[graphName];
+        if (!loadedGraph) {
+            console.error(`Graph ${graphName} is not found in the loaded graphs`);
+            return;
+        }
+
+        setLayout(fromSerializableObject(loadedGraph.layout, index));
+        setGraph(loadedGraph.data);
         setLoadedGraphName(graphName);
         setIsInitialized(true);
     };
 
-    const handleSaveGraph = async (name: string, data: { nodes: Node[]; edges: Edge[] }) => {
+    const handleSaveGraph = async (name: string) => {
         if (!plugin) {
             console.error('Plugin instance not available');
             throw new Error('Plugin instance not available');
@@ -237,11 +241,16 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
         try {
             const existingStates = (await plugin.loadData()) || {};
 
+            const graphDto: GraphDto = {
+                data: graph,
+                layout: layout.toSerializableObject(),
+            };
+
             const updatedStates = {
                 ...existingStates,
                 graphs: {
                     ...existingStates?.graphs,
-                    [name]: data,
+                    [name]: graphDto,
                 },
             };
 
@@ -250,7 +259,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
 
             setSavedGraphs((prevSavedGraphs) => ({
                 ...prevSavedGraphs,
-                [name]: data,
+                [name]: graphDto,
             }));
 
             console.debug(`Graph state "${name}" saved successfully`);
@@ -319,8 +328,6 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                 </ReactFlow>
                 {isInitialized && (
                     <SidePanel
-                        nodes={graph[0]}
-                        edges={graph[1]}
                         loadedGraphName={loadedGraphName}
                         onSave={handleSaveGraph}
                         onDelete={handleDeleteGraph}

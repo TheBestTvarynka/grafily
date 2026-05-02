@@ -22,7 +22,7 @@ import { Index, LEFT_SIDE, MarriageNodeSide } from 'model';
  * @property {Id} root - The starting node for trees building.
  */
 export interface FamilyTree {
-    children: Map<string, Id[]>;
+    children: Record<string, Id[]>;
     root: Id;
 }
 
@@ -45,9 +45,18 @@ export class TreeBuilder {
      * For parents (ancestors) tree, this function returns parent nodes for each person in the marriage.
      * For children (descendants) tree, it returns marriage node children ids.
      */
-    constructor(family: Index, getChildNodes: (nodeId: Id, family: Index) => Id[]) {
+    constructor(
+        family: Index,
+        getChildNodes: (nodeId: Id, family: Index) => Id[],
+        tree?: FamilyTree,
+    ) {
         this.family = family;
         this.getChildNodes = getChildNodes;
+
+        if (tree) {
+            this.children = new Map(Object.entries(tree.children));
+            this.root = tree.root;
+        }
     }
 
     /**
@@ -97,7 +106,7 @@ export class TreeBuilder {
         }
 
         return {
-            children: this.children,
+            children: Object.fromEntries(this.children),
             root: this.root,
         };
     }

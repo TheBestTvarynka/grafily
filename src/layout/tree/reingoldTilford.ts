@@ -42,7 +42,7 @@ export class ReingoldTilfordLayout {
     private isChildrenCollapsible: boolean;
 
     getRightmostChildren(id: Id): Id | null {
-        const children = this.tree.children.get(id.id);
+        const children = this.tree.children[id.id];
 
         if (!children || children.length === 0) {
             return null;
@@ -53,7 +53,7 @@ export class ReingoldTilfordLayout {
     }
 
     getLeftmostChildren(id: Id): Id | null {
-        const children = this.tree.children.get(id.id);
+        const children = this.tree.children[id.id];
 
         if (!children || children.length === 0) {
             return null;
@@ -64,7 +64,7 @@ export class ReingoldTilfordLayout {
     }
 
     getChildNodesIds(currentNode: Id): Id[] {
-        return this.tree.children.get(currentNode.id) ?? [];
+        return this.tree.children[currentNode.id] ?? [];
     }
 
     /**
@@ -283,7 +283,7 @@ export class ReingoldTilfordLayout {
             }
 
             // Create a marriage node first.
-            const children = this.tree.children.get(marriage.id) ?? [];
+            const children = this.tree.children[marriage.id] ?? [];
             const isChildrenCollapsible =
                 this.isChildrenCollapsible && marriage.childrenIds.length > 0;
             const isChildrenCollapsed = this.isChildrenCollapsible ? children.length === 0 : false;
@@ -323,7 +323,7 @@ export class ReingoldTilfordLayout {
                 const parentsId = this.family.personParents.get(parent1NodeId);
                 let isParentsCollapsed = false;
                 if (parentsId && this.isParentsCollapsible) {
-                    const nodeParents = this.tree.children.get(marriage.id) ?? [];
+                    const nodeParents = this.tree.children[marriage.id] ?? [];
                     if (nodeParents.find((id) => id.id === parentsId)) {
                         isParentsCollapsed = false;
                     } else {
@@ -364,7 +364,7 @@ export class ReingoldTilfordLayout {
                 const parentsId = this.family.personParents.get(parent2NodeId);
                 let isParentsCollapsed = false;
                 if (parentsId && this.isParentsCollapsible) {
-                    const nodeParents = this.tree.children.get(marriage.id) ?? [];
+                    const nodeParents = this.tree.children[marriage.id] ?? [];
                     if (nodeParents.find((id) => id.id === parentsId)) {
                         isParentsCollapsed = false;
                     } else {
@@ -411,7 +411,7 @@ export class ReingoldTilfordLayout {
             const parentsId = this.family.personParents.get(nodeId.id);
             let isParentsCollapsed = false;
             if (parentsId && this.isParentsCollapsible) {
-                const nodeParents = this.tree.children.get(nodeId.id) ?? [];
+                const nodeParents = this.tree.children[nodeId.id] ?? [];
                 if (nodeParents.find((id) => id.id === parentsId)) {
                     isParentsCollapsed = false;
                 } else {

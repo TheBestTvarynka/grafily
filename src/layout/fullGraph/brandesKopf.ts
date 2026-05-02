@@ -253,9 +253,7 @@ export function positionX(
 
             // Choose predecessor/successor depending on sweep direction
             const neighborFn =
-                vert === 'u'
-                    ? (v: string) => parents.get(v) ?? []
-                    : (v: string) => children.get(v) ?? [];
+                vert === 'u' ? (v: string) => parents[v] ?? [] : (v: string) => children[v] ?? [];
 
             const { root, align } = verticalAlignment(adjLayering, neighborFn);
 
