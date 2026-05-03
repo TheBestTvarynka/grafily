@@ -329,21 +329,13 @@ function getName(person: Person): string {
 function getBirthYear(person: Person): string {
     const year = person.birth?.year;
 
-    if (!year) {
-        return '????';
-    }
-
-    return `${year}`;
+    return year ? `${year}` : '';
 }
 
 function getDeathYear(person: Person): string {
     const year = person.death?.year;
 
-    if (!year) {
-        return '????';
-    }
-
-    return `${year}`;
+    return year ? `${year}` : '';
 }
 
 function getNodeClass(gender: Gender): string {
