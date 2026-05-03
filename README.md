@@ -1,3 +1,16 @@
+
+### Table of contents:
+
+- [Grafily](#grafily)
+  - [Showcase](#showcase)
+  - [Visualization algorithms](#visualization-algorithms)
+  - [How it works](#how-it-works)
+  - [Motivation](#motivation)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Metadata](#metadata)
+  - [BDFL](#bdfl)
+
 # Grafily
 
 Grafily is an Obsidian plugin for rendering family graph (family trees).
@@ -5,10 +18,27 @@ It uses the [reactflow](https://reactflow.dev/) library for rendering and custom
 
 This plugin is useful for family history/genealogy research, tracking family members, etc.
 
+## Showcase
+
+
+
+## Visualization algorithms
+
+| name | description | example |
+|-|-|-|
+| Reingold-Tilford | A *tree-based* visualization algorithm. It will show only direct ancestors and\or descendants of the selected person (e.g. children's children or parent's parents). | |
+| Brandes-Köpf | A *graph-based* visualization algorithm. It's a universal rendering algorithm for any family graphs of any complexity. The only disadvantage is not-perfect centering: some children or parents nodes are not perfectly centered. | |
+
+## How it works
+
+The Grafily expects that your vault has one page per person.
+The Grafily scans all pages in the directory (the directory is configurable), extracts persons' metadata (see the [Usage](#usage) section for the metadata format), builds an internal relationship graph, and then renders a pretty graph that you can easily navigate and view family members.
+The interactive UI allows you to collapse or expand family relationships with other persons (collapse/expand children/parent nodes).
+
 ## Motivation
 
-I started my family research in 2025. I did not want to store all information in some third-party side (aka [myheritage.com](https://myheritage.com)).
-I wanted to own all private information, photos, stories, interview recordings with my relatives, and much more.
+I started my family research in 2025. I did not want to store all information in some third-party side (for instance, [myheritage.com](https://myheritage.com)).
+I wanted me to be the owner of the private information, photos, stories, interview recordings with my relatives, and much more.
 
 So, I decided to use [Obsidian](https://obsidian.md/). There are plenty of reasons why Obsidian:
 
@@ -16,40 +46,39 @@ So, I decided to use [Obsidian](https://obsidian.md/). There are plenty of reaso
 2. Easy to use.
 3. Obsidian has a powerful plugin API.
 
-But there was a problem: I did not find any suitable plugin to render a pretty graph of family relationships. So, I decided to write my own plugin.
-The Grafily has one concrete purpose:it is _**a tree-like viewer for family members' relationships**_.
+But there was a problem: I did not find any suitable plugin to render a pretty graph of family relationships.
+So, I decided to write my own plugin.
+The Grafily has one concrete purpose: it is _**a viewer for family members' relationships**_.
 **The Grafily never modifies your vault content.**
-
-### How it works
-
-The overall idea is simple. The Grafily expects that your vault has one page per person.
-The Grafily scans all pages in the directory (the directory is configurable), extracts persons' metadata (see the [Usage](#usage) section for the metadata format), builds an internal relationship graph, and then renders a pretty tree-like graph that you can easily navigate and view family members.
 
 ## Installation
 
 > [!NOTE]  
-> Currently, the plugin has not been submitted to the [official list of plugins](https://github.com/obsidianmd/obsidian-releases/blob/master/community-plugins.json) because it is still in active development and not ready for widespread use.
+> Currently, the plugin has not been submitted to the [official list of plugins](https://github.com/obsidianmd/obsidian-releases/blob/master/community-plugins.json) because I am the only one who uses it.
+> If you considered using it and want to see it in the official list of plugins, create an issue.
 
 You can try this plugin by cloning the repo and enabling it in the Obsidian vault settings.
 
-1. Clone the repo into the `plugins/` directory:
+1. Go to the [Releases](https://github.com/TheBestTvarynka/grafily/releases) page and download release assets.
+   The archive should contain three files: `main.js`, `manifest.json`, and `styles.css`.
+2. Please these files at the vault plugin directory:
    ```bash
-   mkdir -p {vault}/.obsidian/plugins/
-   cd {vault}/.obsidian/plugins/
-   git clone https://github.com/TheBestTvarynka/grafily.git
+   mkdir -p {vault}/.obsidian/plugins/grafily
+   cd {vault}/.obsidian/plugins/grafily
+   # Place `main.js`, `manifest.json`, and `styles.css` here. 
    ```
-2. Enable the Grafily plugin in Obsidian settings (`Community Plugins` section).
+2. Enable the Grafily plugin in the Obsidian settings (`Community Plugins` section).
 
 ## Usage
 
 As I said above, Grafily expects that your vault has one page per person. But it does not mean that all pages in the vault must be dedicated only to persons.
 
-- First of all, Grafily will scan only pages in the specified directory in the plugin settings.
-- Secondly, Grafily will accept only pages that include all required metadata.
+- Grafily will scan only pages in the specified directory in the plugin settings.
+- Grafily will accept only pages that include all required metadata.
 
 ### Metadata
 
-Grafily expects some predefined information at the start of each page. Here is a metadata template:
+Grafily expects predefined information at the start of each page. Here is a metadata template:
 
 ```md
 # <surname> <name>
@@ -62,7 +91,7 @@ Grafily expects some predefined information at the start of each page. Here is a
 
 ---
 
-Person's page.
+Person's page content.
 ```
 
 Example:
@@ -80,16 +109,11 @@ Example:
 Hi there 👋
 ```
 
-You can out any information you want after the `---`. The `# <surname> <name>` data is required. All other key-value pairs are optional.
+You can type any information you want after the `---`. The `# <surname> <name>` line is required. All other key-value pairs are optional.
 You can add any other key-value pairs to the metadata you want.
 
 Moreover, you do not need to specify the spouse link for both - only one link is enough.
 For example, if you specified in the metadata that Bob's spouse is Emma, then it is not required to specify Bob in Emma's metadata.
-
-But pay attention: if the person is not connected to the graph in any way, it will not be rendered.
-All persons in the graph must be part of the one graph.
-
-## Showcase
 
 ## BDFL
 
