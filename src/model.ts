@@ -17,12 +17,18 @@ export const RIGHT_SIDE = 'right_side';
 export const NONE_SIDE = 'none';
 export type MarriageNodeSide = typeof NONE_SIDE | typeof LEFT_SIDE | typeof RIGHT_SIDE;
 
+export const MALE = 'male';
+export const FEMALE = 'female';
+export const UNDEFINED_GENDER = 'UNDEFINED';
+export type Gender = typeof MALE | typeof FEMALE | typeof UNDEFINED_GENDER;
+
 export type Person = {
     // Person MD file name without the extension.
     id: string;
     name: Name;
     birth?: Date;
     death?: Date;
+    gender: Gender;
     // Parents IDs.
     parents?: string[];
     // Children IDs.

@@ -1,6 +1,6 @@
 import { TFile } from 'obsidian';
 
-import { Person, Date, Name } from 'model';
+import { Person, Date, Name, Gender, MALE, FEMALE, UNDEFINED_GENDER } from 'model';
 
 export function extractPageMeta(page: string, fileName: string, file: TFile): Person {
     const lines = page.split('\n').map((line) => line.trim());
@@ -50,6 +50,7 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
             ?.split(':')[1]
             ?.trim(),
     );
+
     let image = lines
         .find((line) => line.startsWith('**Image**'))
         ?.split(':')[1]
@@ -57,6 +58,14 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
     if (image) {
         image = removeSquarePrentness(image);
     }
+
+    let gender = parseGender(
+        lines
+            .find((line) => line.startsWith('**Gender**'))
+            ?.split(':')[1]
+            ?.trim() ?? '',
+    );
+
     const parents = lines
         .find((line) => line.startsWith('**Parents**'))
         ?.split(':')[1]
@@ -83,7 +92,18 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         spouses,
         file,
         image,
+        gender,
     };
+}
+
+function parseGender(gender: string): Gender {
+    if (gender === 'male') {
+        return MALE;
+    } else if (gender === 'female') {
+        return FEMALE;
+    } else {
+        return UNDEFINED_GENDER;
+    }
 }
 
 function parseName(name: string): Name {

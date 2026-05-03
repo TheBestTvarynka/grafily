@@ -2,7 +2,16 @@ import { Handle, Position } from '@xyflow/react';
 import { useApp, useGraph } from 'hooks';
 import { MINUS_ICON, PLUS_ICON, PROFILE_IMAGE_PLACEHOLDER } from 'images';
 import { MARRIAGE_NODE_SIZE, NODE_HEIGHT, NODE_WIDTH } from '../layout';
-import { LEFT_SIDE, MarriageNodeSide, Person, RIGHT_SIDE } from 'model';
+import {
+    FEMALE,
+    Gender,
+    LEFT_SIDE,
+    MALE,
+    MarriageNodeSide,
+    Person,
+    RIGHT_SIDE,
+    UNDEFINED_GENDER,
+} from 'model';
 import { TFile } from 'obsidian';
 import { useEffect, useState } from 'react';
 
@@ -111,9 +120,9 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
 
     return (
         <div
+            className={getNodeClass(person?.gender ?? UNDEFINED_GENDER)}
             style={{
                 padding: '0.2em',
-                border: '2px solid #e3dfc1',
                 borderRadius: '10px',
                 background: '#403735',
                 width: `${NODE_WIDTH}px`,
@@ -335,4 +344,14 @@ function getDeathYear(person: Person): string {
     }
 
     return `${year}`;
+}
+
+function getNodeClass(gender: Gender): string {
+    if (gender === MALE) {
+        return 'grafily-male-node';
+    } else if (gender === FEMALE) {
+        return 'grafily-female-node';
+    } else {
+        return 'grafily-undefined-gender-node';
+    }
 }
