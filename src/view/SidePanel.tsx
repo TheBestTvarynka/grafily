@@ -2,13 +2,20 @@ import { useState, KeyboardEvent } from 'react';
 import { getIcon } from 'obsidian';
 
 export type SidePanelProps = {
-    loadedGraphName?: string | null;
+    loadedGraphName: string | null;
+    selectedPersonId: string | null;
     onSave: (name: string) => Promise<void>;
-    onDelete?: (graphName: string) => Promise<void>;
+    onDelete: (graphName: string) => Promise<void>;
     onHome: () => void;
 };
 
-export function SidePanel({ loadedGraphName, onSave, onDelete, onHome }: SidePanelProps) {
+export function SidePanel({
+    loadedGraphName,
+    selectedPersonId,
+    onSave,
+    onDelete,
+    onHome,
+}: SidePanelProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -81,6 +88,30 @@ export function SidePanel({ loadedGraphName, onSave, onDelete, onHome }: SidePan
     return (
         <>
             <div className="grafily-save-panel">
+                {selectedPersonId && (
+                    <div className="grafily-direction-buttons">
+                        <button
+                            className="grafily-direction-button"
+                            onClick={() => {
+                                /* TODO: implement move left */
+                            }}
+                            title="Move node left"
+                            dangerouslySetInnerHTML={{
+                                __html: getIcon('move-left')?.outerHTML || '',
+                            }}
+                        />
+                        <button
+                            className="grafily-direction-button"
+                            onClick={() => {
+                                /* TODO: implement move right */
+                            }}
+                            title="Move node right"
+                            dangerouslySetInnerHTML={{
+                                __html: getIcon('move-right')?.outerHTML || '',
+                            }}
+                        />
+                    </div>
+                )}
                 <button
                     className="grafily-home-button"
                     onClick={onHome}
@@ -97,7 +128,7 @@ export function SidePanel({ loadedGraphName, onSave, onDelete, onHome }: SidePan
                         __html: getIcon('save')?.outerHTML || '',
                     }}
                 />
-                {loadedGraphName && onDelete && (
+                {loadedGraphName && (
                     <button
                         className="grafily-delete-button"
                         onClick={handleDeleteClick}

@@ -39,6 +39,9 @@ export type GraphContextValue = {
 
     expandChildren: (nodeId: string) => void;
     expandParents: (personId: string) => void;
+
+    selectedPersonId: string | null;
+    selectPerson: (personId: string | null) => void;
 };
 export const GraphContext = createContext<GraphContextValue | null>(null);
 
@@ -62,6 +65,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
     const [isInitialized, setIsInitialized] = useState(false);
     const [savedGraphs, setSavedGraphs] = useState<Record<string, GraphDto>>({});
     const [loadedGraphName, setLoadedGraphName] = useState<string | null>(null);
+    const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
 
     const shiftGraphByAnchorNode = (
         oldNodes: Node[],
@@ -318,6 +322,8 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                 expandChildren,
                 expandParents,
                 index,
+                selectedPersonId,
+                selectPerson: setSelectedPersonId,
             }}
         >
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -328,6 +334,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                 {isInitialized && (
                     <SidePanel
                         loadedGraphName={loadedGraphName}
+                        selectedPersonId={selectedPersonId}
                         onSave={handleSaveGraph}
                         onDelete={handleDeleteGraph}
                         onHome={handleHome}

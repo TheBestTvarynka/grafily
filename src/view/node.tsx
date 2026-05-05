@@ -12,8 +12,8 @@ import {
     RIGHT_SIDE,
     UNDEFINED_GENDER,
 } from 'model';
-import { TFile } from 'obsidian';
-import { useEffect, useState } from 'react';
+import { TFile, getIcon } from 'obsidian';
+import { useEffect, useState, MouseEvent } from 'react';
 
 export type PersonNodeData = {
     id: string;
@@ -58,7 +58,7 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
         }
     }, [graph]);
 
-    const onClick = () => {
+    const openPersonPage = () => {
         if (!app) {
             return;
         }
@@ -77,6 +77,18 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
             .getLeaf('tab')
             .openFile(file, { active: true })
             .catch((err) => console.error(err));
+    };
+
+    const onNodeClick = (e: MouseEvent) => {
+        if (e.ctrlKey || e.metaKey) {
+            if (!graph) {
+                return;
+            }
+
+            graph.selectPerson(data.id);
+        } else {
+            openPersonPage();
+        }
     };
 
     const getImageSrc = (): string => {
@@ -164,6 +176,15 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
             ) : (
                 <></>
             )}
+            {graph?.selectedPersonId === data.id ? (
+                <button
+                    onClick={() => graph?.selectPerson(null)}
+                    className="grafily-node-deselect-button"
+                    dangerouslySetInnerHTML={{ __html: getIcon('target')?.outerHTML || '' }}
+                />
+            ) : (
+                <></>
+            )}
             <img src={getImageSrc()} style={{ height: '90%', borderRadius: '50%' }} />
             <div
                 style={{
@@ -172,7 +193,7 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
                     justifyContent: 'center',
                     cursor: 'pointer',
                 }}
-                onClick={onClick}
+                onClick={onNodeClick}
             >
                 <span>{person ? getSurname(person) : ''}</span>
                 <span>{person ? getName(person) : ''}</span>
