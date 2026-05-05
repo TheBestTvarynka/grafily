@@ -132,46 +132,15 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
 
     return (
         <div
-            className={getNodeClass(person?.gender ?? UNDEFINED_GENDER)}
+            className={`${getNodeClass(person?.gender ?? UNDEFINED_GENDER)} grafily-person-node`}
             style={{
-                padding: '0.2em',
-                borderRadius: '10px',
-                background: '#403735',
                 width: `${NODE_WIDTH}px`,
                 height: `${NODE_HEIGHT}px`,
-                display: 'flex',
-                justifyContent: 'space-around',
-                alignItems: 'center',
-                color: '#e3dfc1',
-                position: 'relative',
-                cursor: 'default',
             }}
         >
             {hasParents && data.isParentsCollapsible ? (
-                <button
-                    onClick={collapseParents}
-                    style={{
-                        outline: 'revert',
-                        position: 'absolute',
-                        top: '-7px',
-                        left: 'calc(50% - 7px)',
-                        padding: 0,
-                        cursor: 'pointer',
-                        zIndex: 99,
-                        backgroundColor: 'transparent',
-                        height: '14px',
-                        width: '14px',
-                    }}
-                >
-                    <img
-                        src={getHideChildNodesIcon()}
-                        style={{
-                            height: '100%',
-                            width: '100%',
-                            backgroundColor: 'rgb(64, 55, 53)',
-                            borderRadius: '3px',
-                        }}
-                    />
+                <button onClick={collapseParents} className="grafily-collapse-parents-button">
+                    <img src={getHideChildNodesIcon()} />
                 </button>
             ) : (
                 <></>

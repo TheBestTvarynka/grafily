@@ -162,6 +162,38 @@ If your plugin does not need CSS, delete this file.
     background-color: transparent;
 }
 
+.grafily-person-node {
+    padding: 0.2em;
+    border-radius: 10px;
+    background: #403735;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    color: #e3dfc1;
+    position: relative;
+    cursor: default;
+}
+
+.grafily-collapse-parents-button {
+    outline: revert;
+    position: absolute;
+    top: -7px;
+    left: calc(50% - 7px);
+    padding: 0;
+    cursor: pointer;
+    z-index: 99;
+    background-color: transparent;
+    height: 14px;
+    width: 14px;
+}
+
+.grafily-collapse-parents-button img {
+    height: 100%;
+    width: 100%;
+    background-color: rgb(64, 55, 53);
+    border-radius: 3px;
+}
+
 .grafily-startup-menu-saved-list .grafily-delete-button {
     width: 24px;
     height: 24px;
