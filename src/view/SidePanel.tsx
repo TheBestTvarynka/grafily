@@ -110,6 +110,26 @@ export function SidePanel({
                                 __html: getIcon('move-right')?.outerHTML || '',
                             }}
                         />
+                        <button
+                            className="grafily-direction-button"
+                            onClick={() => {
+                                /* TODO: implement swap */
+                            }}
+                            title="Swap position with spouse"
+                            dangerouslySetInnerHTML={{
+                                __html: getIcon('arrow-right-left')?.outerHTML || '',
+                            }}
+                        />
+                        <button
+                            className="grafily-direction-button"
+                            onClick={() => {
+                                /* TODO: implement node reveal */
+                            }}
+                            title="Reveal the node"
+                            dangerouslySetInnerHTML={{
+                                __html: getIcon('eye')?.outerHTML || '',
+                            }}
+                        />
                     </div>
                 )}
                 <button
