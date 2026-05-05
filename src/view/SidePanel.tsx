@@ -1,20 +1,28 @@
 import { useState, KeyboardEvent } from 'react';
 import { getIcon } from 'obsidian';
 
+export type SelectedNode = {
+    id: string;
+    x: number;
+    y: number;
+};
+
 export type SidePanelProps = {
     loadedGraphName: string | null;
-    selectedPersonId: string | null;
+    selectedNode: SelectedNode | null;
     onSave: (name: string) => Promise<void>;
     onDelete: (graphName: string) => Promise<void>;
     onHome: () => void;
+    onRevealNode: (x: number, y: number) => void;
 };
 
 export function SidePanel({
     loadedGraphName,
-    selectedPersonId,
+    selectedNode,
     onSave,
     onDelete,
     onHome,
+    onRevealNode,
 }: SidePanelProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
@@ -88,7 +96,7 @@ export function SidePanel({
     return (
         <>
             <div className="grafily-save-panel">
-                {selectedPersonId && (
+                {selectedNode && (
                     <div className="grafily-direction-buttons">
                         <button
                             className="grafily-direction-button"
@@ -123,7 +131,7 @@ export function SidePanel({
                         <button
                             className="grafily-direction-button"
                             onClick={() => {
-                                /* TODO: implement node reveal */
+                                onRevealNode(selectedNode.x, selectedNode.y);
                             }}
                             title="Reveal the node"
                             dangerouslySetInnerHTML={{

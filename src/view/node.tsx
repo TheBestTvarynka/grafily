@@ -22,7 +22,15 @@ export type PersonNodeData = {
     side: MarriageNodeSide;
 };
 
-export function PersonNode({ data }: { data: PersonNodeData }) {
+export function PersonNode({
+    data,
+    positionAbsoluteX,
+    positionAbsoluteY,
+}: {
+    data: PersonNodeData;
+    positionAbsoluteX: number;
+    positionAbsoluteY: number;
+}) {
     const app = useApp();
     const graph = useGraph();
 
@@ -85,7 +93,11 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
                 return;
             }
 
-            graph.selectPerson(data.id);
+            graph.selectNode({
+                id: data.id,
+                x: positionAbsoluteX,
+                y: positionAbsoluteY,
+            });
         } else {
             openPersonPage();
         }
@@ -145,9 +157,9 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
             ) : (
                 <></>
             )}
-            {graph?.selectedPersonId === data.id ? (
+            {graph?.selectedNode?.id === data.id ? (
                 <button
-                    onClick={() => graph?.selectPerson(null)}
+                    onClick={() => graph?.selectNode(null)}
                     className="grafily-node-deselect-button"
                     dangerouslySetInnerHTML={{ __html: getIcon('target')?.outerHTML || '' }}
                 />
