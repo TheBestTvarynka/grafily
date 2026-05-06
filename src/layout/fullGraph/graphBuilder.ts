@@ -9,7 +9,17 @@
  */
 
 import { FamilyGraph } from './';
-import { Id, NodeType, MARRIAGE_NODE_TYPE, PERSON_NODE_TYPE, personIdToNodeId } from '../';
+import {
+    Id,
+    NodeType,
+    MARRIAGE_NODE_TYPE,
+    PERSON_NODE_TYPE,
+    personIdToNodeId,
+    RearrangeAction,
+    SWAP_MARRIAGE_SPOUSES,
+    MOVE_PERSON_LEFT,
+    MOVE_PERSON_RIGHT,
+} from '../';
 import { Index, LEFT_SIDE, RIGHT_SIDE, Marriage } from '../../model';
 
 const MIDDLE_SIDE = 'middle_side';
@@ -1172,7 +1182,12 @@ export class GraphBuilder {
         }
     }
 
-    moveNodeLeft(nodeId: Id) {
+    rearrange(nodeId: Id, action: RearrangeAction) {
+        if (action === SWAP_MARRIAGE_SPOUSES) {
+            console.warn('unimplemented');
+            return;
+        }
+
         if ((this.children.get(nodeId.id) ?? []).length > 0) {
             console.warn(`${nodeId.id} has children nodes.`);
             return;
@@ -1208,24 +1223,35 @@ export class GraphBuilder {
 
         const nodeSiblingIndex = siblings.indexOf(nodeId.id);
         if (nodeSiblingIndex === -1) {
-            throw new Error(`${nodeId.id} must present in siblings array ${siblings}`);
-        }
-
-        if (nodeSiblingIndex === 0) {
-            console.debug(`${nodeId.id} is the leftmost node. Nothing to do.`);
-            return;
+            throw new Error(`${nodeId.id} must present in siblings array ${siblings.join(',')}`);
         }
 
         // SAFE: checked above.
-        const leftSibling = siblings[nodeSiblingIndex - 1]!;
+        let neighborSiblingIndex: number;
+        if (action === MOVE_PERSON_LEFT) {
+            if (nodeSiblingIndex === 0) {
+                console.debug(`${nodeId.id} is the leftmost node. Nothing to do.`);
+                return;
+            }
 
-        if ((this.children.get(leftSibling) ?? []).length > 0) {
-            console.warn(`${leftSibling} has children nodes.`);
+            neighborSiblingIndex = nodeSiblingIndex - 1;
+        } else {
+            if (nodeSiblingIndex === siblings.length - 1) {
+                console.debug(`${nodeId.id} is the rightmost node. Nothing to do.`);
+                return;
+            }
+
+            neighborSiblingIndex = nodeSiblingIndex + 1;
+        }
+        const neighborSibling = siblings[neighborSiblingIndex]!;
+
+        if ((this.children.get(neighborSibling) ?? []).length > 0) {
+            console.warn(`${neighborSibling} has children nodes.`);
             return;
         }
 
-        if ((this.parents.get(leftSibling) ?? []).length > 1) {
-            console.warn(`${leftSibling} must have only one parent.`);
+        if ((this.parents.get(neighborSibling) ?? []).length > 1) {
+            console.warn(`${neighborSibling} must have only one parent.`);
             return;
         }
 
@@ -1242,18 +1268,27 @@ export class GraphBuilder {
                 `invalid ${nodeId.id} node index in the ${graphNode.layerNumber} layer: ${nodeIndex}`,
             );
         }
-        const leftSiblingIndex = layer.indexOf(leftSibling);
-        if (leftSiblingIndex === -1) {
+        if (
+            (action === MOVE_PERSON_LEFT && nodeIndex === 0) ||
+            (action === MOVE_PERSON_RIGHT && nodeIndex === layer.length - 1)
+        ) {
             throw new Error(
-                `invalid ${leftSibling} node index in the ${graphNode.layerNumber} layer: ${leftSiblingIndex}`,
+                `invalid ${nodeId.id} node index in the ${graphNode.layerNumber} layer: ${nodeIndex}`,
+            );
+        }
+
+        const layerSiblingIndex = layer.indexOf(neighborSibling);
+        if (layerSiblingIndex === -1) {
+            throw new Error(
+                `invalid ${neighborSibling} node index in the ${graphNode.layerNumber} layer: ${layerSiblingIndex}`,
             );
         }
 
         // Swap nodes.
-        layer[leftSiblingIndex] = nodeId.id;
-        layer[nodeIndex] = leftSibling;
+        layer[layerSiblingIndex] = nodeId.id;
+        layer[nodeIndex] = neighborSibling;
 
-        siblings[nodeSiblingIndex - 1] = nodeId.id;
-        siblings[nodeSiblingIndex] = leftSibling;
+        siblings[neighborSiblingIndex] = nodeId.id;
+        siblings[nodeSiblingIndex] = neighborSibling;
     }
 }

@@ -10,6 +10,7 @@ import {
     NODE_HEIGHT,
     NODE_WIDTH,
     PERSON_NODE_TYPE,
+    RearrangeAction,
     SerializableLayout,
     personIdToNodeId,
 } from '../';
@@ -307,10 +308,10 @@ export class BrandesKopfLayout {
         return this.buildNodesInternal();
     }
 
-    moveNodeLeft(personId: string): [Node[], Edge[]] {
+    rearrange(personId: string, action: RearrangeAction): [Node[], Edge[]] {
         const [id] = personIdToNodeId(personId, this.family);
 
-        this.graph.moveNodeLeft(id);
+        this.graph.rearrange(id, action);
 
         return this.buildNodesInternal();
     }

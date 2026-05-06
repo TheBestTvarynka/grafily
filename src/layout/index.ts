@@ -109,6 +109,14 @@ export function personIdToNodeId(personId: string, family: Index): [Id, Marriage
     }
 }
 
+export const MOVE_PERSON_LEFT = 'move_left';
+export const MOVE_PERSON_RIGHT = 'move_right';
+export const SWAP_MARRIAGE_SPOUSES = 'move_spouses';
+export type RearrangeAction =
+    | typeof MOVE_PERSON_LEFT
+    | typeof MOVE_PERSON_RIGHT
+    | typeof SWAP_MARRIAGE_SPOUSES;
+
 /**
  * The layout algorithm based on the Brandes-Kopf algorithm. This layout is designed to handle general directed acyclic graphs (DAGs) and is not limited to tree structures.
  */
@@ -205,8 +213,8 @@ export class GenericLayout {
         return this.layout.expandParents(personId);
     }
 
-    moveNodeLeft(personId: string): [Node[], Edge[]] {
-        return this.layout.moveNodeLeft(personId);
+    rearrange(personId: string, action: RearrangeAction): [Node[], Edge[]] {
+        return this.layout.rearrange(personId, action);
     }
 
     toSerializableObject(): SerializableLayout {

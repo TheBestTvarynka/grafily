@@ -17,6 +17,7 @@ import { Index, LEFT_SIDE, MarriageNodeSide, NONE_SIDE, RIGHT_SIDE } from '../..
 import {
     MARRIAGE_NODE_TYPE,
     personIdToNodeId,
+    RearrangeAction,
     REINGOLD_TILFORD,
     SerializableLayout,
 } from '../index';
@@ -273,7 +274,7 @@ export class ReingoldTilford {
         return this.buildNodesInternal();
     }
 
-    moveNodeLeft(personId: string): [Node[], Edge[]] {
+    rearrange(personId: string, action: RearrangeAction): [Node[], Edge[]] {
         throw new Error('Unimplemented');
     }
 

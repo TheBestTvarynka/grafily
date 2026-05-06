@@ -26,6 +26,7 @@ import {
     LayoutName,
     NODE_HEIGHT,
     NODE_WIDTH,
+    RearrangeAction,
     SerializableLayout,
     fromSerializableObject,
     personIdToNodeId,
@@ -44,7 +45,7 @@ export type GraphContextValue = {
     expandChildren: (nodeId: string) => void;
     expandParents: (personId: string) => void;
 
-    moveNodeLeft: (personId: string) => void;
+    rearrange: (personId: string, action: RearrangeAction) => void;
 
     selectedNode: SelectedNode | null;
     selectNode: (node: SelectedNode | null) => void;
@@ -212,8 +213,8 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
         setGraph(newGraph);
     };
 
-    const moveNodeLeft = (personId: string) => {
-        const newGraph = layout.moveNodeLeft(personId);
+    const rearrange = (personId: string, action: RearrangeAction) => {
+        const newGraph = layout.rearrange(personId, action);
 
         const [id] = personIdToNodeId(personId, index);
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], id.id);
@@ -352,7 +353,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                 collapseParents,
                 expandChildren,
                 expandParents,
-                moveNodeLeft,
+                rearrange,
                 index,
                 selectedNode,
                 selectNode: setSelectedNode,
