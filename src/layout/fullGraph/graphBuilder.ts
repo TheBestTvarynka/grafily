@@ -1183,8 +1183,33 @@ export class GraphBuilder {
     }
 
     rearrange(nodeId: Id, action: RearrangeAction) {
+        const parentNodes = this.parents.get(nodeId.id);
+
+        const graphNode = this.nodes.get(nodeId.id);
+        if (!graphNode) {
+            throw new Error(`${nodeId.id} must present in graph nodes`);
+        }
+
         if (action === SWAP_MARRIAGE_SPOUSES) {
-            console.warn('unimplemented');
+            if (nodeId.type === PERSON_NODE_TYPE) {
+                return;
+            }
+
+            if (parentNodes && parentNodes.length > 1) {
+                console.warn(`${nodeId.id} node has more than one parent but should not.`);
+                return;
+            }
+
+            if (!graphNode.persons.person1 || !graphNode.persons.person2) {
+                console.warn(`both persons of the ${nodeId.id} node must be defined`);
+                return;
+            }
+
+            [graphNode.persons.person1, graphNode.persons.person2] = [
+                graphNode.persons.person2,
+                graphNode.persons.person1,
+            ];
+
             return;
         }
 
@@ -1193,7 +1218,6 @@ export class GraphBuilder {
             return;
         }
 
-        const parentNodes = this.parents.get(nodeId.id);
         if (!parentNodes || parentNodes.length === 0) {
             console.debug(`${nodeId.id} does not have parent nodes. Nothing to do`);
             return;
@@ -1202,11 +1226,6 @@ export class GraphBuilder {
         if (parentNodes.length > 1) {
             console.warn(`${nodeId.id} has more that one parent node.`);
             return;
-        }
-
-        const graphNode = this.nodes.get(nodeId.id);
-        if (!graphNode) {
-            throw new Error(`${nodeId.id} must present in graph nodes`);
         }
 
         // SAFE: checked above.
