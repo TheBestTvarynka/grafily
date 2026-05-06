@@ -13,6 +13,7 @@ import {
     BackgroundVariant,
     Node,
     Edge,
+    useReactFlow,
 } from '@xyflow/react';
 
 import { buildIndex, emptyIndex, familyFromPersons, Index } from '../model';
@@ -23,11 +24,13 @@ import {
     BRANDES_KORF,
     GenericLayout,
     LayoutName,
+    NODE_HEIGHT,
+    NODE_WIDTH,
     SerializableLayout,
     fromSerializableObject,
 } from 'layout';
 import { StartupMenu } from './StartupMenu';
-import { SidePanel } from './SidePanel';
+import { SelectedNode, SidePanel } from './SidePanel';
 import { Plugin } from 'obsidian';
 
 export type GraphContextValue = {
@@ -39,6 +42,9 @@ export type GraphContextValue = {
 
     expandChildren: (nodeId: string) => void;
     expandParents: (personId: string) => void;
+
+    selectedNode: SelectedNode | null;
+    selectNode: (node: SelectedNode | null) => void;
 };
 export const GraphContext = createContext<GraphContextValue | null>(null);
 
@@ -62,6 +68,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
     const [isInitialized, setIsInitialized] = useState(false);
     const [savedGraphs, setSavedGraphs] = useState<Record<string, GraphDto>>({});
     const [loadedGraphName, setLoadedGraphName] = useState<string | null>(null);
+    const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
 
     const shiftGraphByAnchorNode = (
         oldNodes: Node[],
@@ -309,6 +316,30 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
         setIsInitialized(false);
     };
 
+    const { getViewport, setViewport } = useReactFlow();
+
+    const handleRevealNode = (nodeX: number, nodeY: number) => {
+        const container = document.querySelector('.react-flow');
+        if (!container) {
+            return;
+        }
+
+        const viewport = getViewport();
+
+        const screenCenterX = container.clientWidth / 2;
+        const screenCenterY = container.clientHeight / 2;
+
+        const nodeCenterX = nodeX + NODE_WIDTH / 2;
+        const nodeCenterY = nodeY + NODE_HEIGHT / 2;
+
+        const newX = screenCenterX - nodeCenterX * viewport.zoom;
+        const newY = screenCenterY - nodeCenterY * viewport.zoom;
+
+        setViewport({ x: newX, y: newY, zoom: viewport.zoom }, { duration: 300 }).catch((err) =>
+            console.error(err),
+        );
+    };
+
     return (
         <GraphContext.Provider
             value={{
@@ -318,6 +349,8 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                 expandChildren,
                 expandParents,
                 index,
+                selectedNode,
+                selectNode: setSelectedNode,
             }}
         >
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -328,9 +361,11 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                 {isInitialized && (
                     <SidePanel
                         loadedGraphName={loadedGraphName}
+                        selectedNode={selectedNode}
                         onSave={handleSaveGraph}
                         onDelete={handleDeleteGraph}
                         onHome={handleHome}
+                        onRevealNode={handleRevealNode}
                     />
                 )}
                 {!isInitialized && index.personById.size > 0 && (

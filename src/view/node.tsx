@@ -2,9 +2,18 @@ import { Handle, Position } from '@xyflow/react';
 import { useApp, useGraph } from 'hooks';
 import { MINUS_ICON, PLUS_ICON, PROFILE_IMAGE_PLACEHOLDER } from 'images';
 import { MARRIAGE_NODE_SIZE, NODE_HEIGHT, NODE_WIDTH } from '../layout';
-import { LEFT_SIDE, MarriageNodeSide, Person, RIGHT_SIDE } from 'model';
-import { TFile } from 'obsidian';
-import { useEffect, useState } from 'react';
+import {
+    FEMALE,
+    Gender,
+    LEFT_SIDE,
+    MALE,
+    MarriageNodeSide,
+    Person,
+    RIGHT_SIDE,
+    UNDEFINED_GENDER,
+} from 'model';
+import { TFile, getIcon } from 'obsidian';
+import { useEffect, useState, MouseEvent } from 'react';
 
 export type PersonNodeData = {
     id: string;
@@ -13,7 +22,15 @@ export type PersonNodeData = {
     side: MarriageNodeSide;
 };
 
-export function PersonNode({ data }: { data: PersonNodeData }) {
+export function PersonNode({
+    data,
+    positionAbsoluteX,
+    positionAbsoluteY,
+}: {
+    data: PersonNodeData;
+    positionAbsoluteX: number;
+    positionAbsoluteY: number;
+}) {
     const app = useApp();
     const graph = useGraph();
 
@@ -49,7 +66,7 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
         }
     }, [graph]);
 
-    const onClick = () => {
+    const openPersonPage = () => {
         if (!app) {
             return;
         }
@@ -68,6 +85,22 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
             .getLeaf('tab')
             .openFile(file, { active: true })
             .catch((err) => console.error(err));
+    };
+
+    const onNodeClick = (e: MouseEvent) => {
+        if (e.ctrlKey || e.metaKey) {
+            if (!graph) {
+                return;
+            }
+
+            graph.selectNode({
+                id: data.id,
+                x: positionAbsoluteX,
+                y: positionAbsoluteY,
+            });
+        } else {
+            openPersonPage();
+        }
     };
 
     const getImageSrc = (): string => {
@@ -111,47 +144,25 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
 
     return (
         <div
+            className={`${getNodeClass(person?.gender ?? UNDEFINED_GENDER)} grafily-person-node`}
             style={{
-                padding: '0.2em',
-                border: '2px solid #e3dfc1',
-                borderRadius: '10px',
-                background: '#403735',
                 width: `${NODE_WIDTH}px`,
                 height: `${NODE_HEIGHT}px`,
-                display: 'flex',
-                justifyContent: 'space-around',
-                alignItems: 'center',
-                color: '#e3dfc1',
-                position: 'relative',
-                cursor: 'default',
             }}
         >
             {hasParents && data.isParentsCollapsible ? (
-                <button
-                    onClick={collapseParents}
-                    style={{
-                        outline: 'revert',
-                        position: 'absolute',
-                        top: '-7px',
-                        left: 'calc(50% - 7px)',
-                        padding: 0,
-                        cursor: 'pointer',
-                        zIndex: 99,
-                        backgroundColor: 'transparent',
-                        height: '14px',
-                        width: '14px',
-                    }}
-                >
-                    <img
-                        src={getHideChildNodesIcon()}
-                        style={{
-                            height: '100%',
-                            width: '100%',
-                            backgroundColor: 'rgb(64, 55, 53)',
-                            borderRadius: '3px',
-                        }}
-                    />
+                <button onClick={collapseParents} className="grafily-collapse-parents-button">
+                    <img src={getHideChildNodesIcon()} />
                 </button>
+            ) : (
+                <></>
+            )}
+            {graph?.selectedNode?.id === data.id ? (
+                <button
+                    onClick={() => graph?.selectNode(null)}
+                    className="grafily-node-deselect-button"
+                    dangerouslySetInnerHTML={{ __html: getIcon('target')?.outerHTML || '' }}
+                />
             ) : (
                 <></>
             )}
@@ -163,7 +174,7 @@ export function PersonNode({ data }: { data: PersonNodeData }) {
                     justifyContent: 'center',
                     cursor: 'pointer',
                 }}
-                onClick={onClick}
+                onClick={onNodeClick}
             >
                 <span>{person ? getSurname(person) : ''}</span>
                 <span>{person ? getName(person) : ''}</span>
@@ -320,19 +331,21 @@ function getName(person: Person): string {
 function getBirthYear(person: Person): string {
     const year = person.birth?.year;
 
-    if (!year) {
-        return '????';
-    }
-
-    return `${year}`;
+    return year ? `${year}` : '';
 }
 
 function getDeathYear(person: Person): string {
     const year = person.death?.year;
 
-    if (!year) {
-        return '????';
-    }
+    return year ? `${year}` : '';
+}
 
-    return `${year}`;
+function getNodeClass(gender: Gender): string {
+    if (gender === MALE) {
+        return 'grafily-male-node';
+    } else if (gender === FEMALE) {
+        return 'grafily-female-node';
+    } else {
+        return 'grafily-undefined-gender-node';
+    }
 }

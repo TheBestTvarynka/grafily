@@ -1,14 +1,29 @@
 import { useState, KeyboardEvent } from 'react';
 import { getIcon } from 'obsidian';
 
-export type SidePanelProps = {
-    loadedGraphName?: string | null;
-    onSave: (name: string) => Promise<void>;
-    onDelete?: (graphName: string) => Promise<void>;
-    onHome: () => void;
+export type SelectedNode = {
+    id: string;
+    x: number;
+    y: number;
 };
 
-export function SidePanel({ loadedGraphName, onSave, onDelete, onHome }: SidePanelProps) {
+export type SidePanelProps = {
+    loadedGraphName: string | null;
+    selectedNode: SelectedNode | null;
+    onSave: (name: string) => Promise<void>;
+    onDelete: (graphName: string) => Promise<void>;
+    onHome: () => void;
+    onRevealNode: (x: number, y: number) => void;
+};
+
+export function SidePanel({
+    loadedGraphName,
+    selectedNode,
+    onSave,
+    onDelete,
+    onHome,
+    onRevealNode,
+}: SidePanelProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -81,6 +96,50 @@ export function SidePanel({ loadedGraphName, onSave, onDelete, onHome }: SidePan
     return (
         <>
             <div className="grafily-save-panel">
+                {selectedNode && (
+                    <div className="grafily-direction-buttons">
+                        <button
+                            className="grafily-direction-button"
+                            onClick={() => {
+                                /* TODO: implement move left */
+                            }}
+                            title="Move node left"
+                            dangerouslySetInnerHTML={{
+                                __html: getIcon('move-left')?.outerHTML || '',
+                            }}
+                        />
+                        <button
+                            className="grafily-direction-button"
+                            onClick={() => {
+                                /* TODO: implement move right */
+                            }}
+                            title="Move node right"
+                            dangerouslySetInnerHTML={{
+                                __html: getIcon('move-right')?.outerHTML || '',
+                            }}
+                        />
+                        <button
+                            className="grafily-direction-button"
+                            onClick={() => {
+                                /* TODO: implement swap */
+                            }}
+                            title="Swap position with spouse"
+                            dangerouslySetInnerHTML={{
+                                __html: getIcon('arrow-right-left')?.outerHTML || '',
+                            }}
+                        />
+                        <button
+                            className="grafily-direction-button"
+                            onClick={() => {
+                                onRevealNode(selectedNode.x, selectedNode.y);
+                            }}
+                            title="Reveal the node"
+                            dangerouslySetInnerHTML={{
+                                __html: getIcon('eye')?.outerHTML || '',
+                            }}
+                        />
+                    </div>
+                )}
                 <button
                     className="grafily-home-button"
                     onClick={onHome}
@@ -97,7 +156,7 @@ export function SidePanel({ loadedGraphName, onSave, onDelete, onHome }: SidePan
                         __html: getIcon('save')?.outerHTML || '',
                     }}
                 />
-                {loadedGraphName && onDelete && (
+                {loadedGraphName && (
                     <button
                         className="grafily-delete-button"
                         onClick={handleDeleteClick}
