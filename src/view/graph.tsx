@@ -28,6 +28,7 @@ import {
     NODE_WIDTH,
     SerializableLayout,
     fromSerializableObject,
+    personIdToNodeId,
 } from 'layout';
 import { StartupMenu } from './StartupMenu';
 import { SelectedNode, SidePanel } from './SidePanel';
@@ -42,6 +43,8 @@ export type GraphContextValue = {
 
     expandChildren: (nodeId: string) => void;
     expandParents: (personId: string) => void;
+
+    moveNodeLeft: (personId: string) => void;
 
     selectedNode: SelectedNode | null;
     selectNode: (node: SelectedNode | null) => void;
@@ -203,16 +206,17 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
     const expandParents = (personId: string) => {
         const newGraph = layout.expandParents(personId);
 
-        const personMarriage = (index.personMarriages.get(personId) ?? []).first();
+        const [id] = personIdToNodeId(personId, index);
+        newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], id.id);
 
-        let nodeId: string;
-        if (personMarriage) {
-            nodeId = personMarriage.id;
-        } else {
-            nodeId = personId;
-        }
+        setGraph(newGraph);
+    };
 
-        newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], nodeId);
+    const moveNodeLeft = (personId: string) => {
+        const newGraph = layout.moveNodeLeft(personId);
+
+        const [id] = personIdToNodeId(personId, index);
+        newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], id.id);
 
         setGraph(newGraph);
     };
@@ -348,6 +352,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                 collapseParents,
                 expandChildren,
                 expandParents,
+                moveNodeLeft,
                 index,
                 selectedNode,
                 selectNode: setSelectedNode,

@@ -273,6 +273,10 @@ export class ReingoldTilford {
         return this.buildNodesInternal();
     }
 
+    moveNodeLeft(personId: string): [Node[], Edge[]] {
+        throw new Error('Unimplemented');
+    }
+
     toSerializableObject(): SerializableLayout {
         return {
             name: REINGOLD_TILFORD,

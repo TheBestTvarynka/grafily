@@ -307,6 +307,14 @@ export class BrandesKopfLayout {
         return this.buildNodesInternal();
     }
 
+    moveNodeLeft(personId: string): [Node[], Edge[]] {
+        const [id] = personIdToNodeId(personId, this.family);
+
+        this.graph.moveNodeLeft(id);
+
+        return this.buildNodesInternal();
+    }
+
     toSerializableObject(): SerializableLayout {
         const nodes: Record<string, GraphNode> = Object.fromEntries(this.graph.getNodes());
 

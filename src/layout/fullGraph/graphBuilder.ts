@@ -1171,4 +1171,89 @@ export class GraphBuilder {
             this.parents.delete(nodeId);
         }
     }
+
+    moveNodeLeft(nodeId: Id) {
+        if ((this.children.get(nodeId.id) ?? []).length > 0) {
+            console.warn(`${nodeId.id} has children nodes.`);
+            return;
+        }
+
+        const parentNodes = this.parents.get(nodeId.id);
+        if (!parentNodes || parentNodes.length === 0) {
+            console.debug(`${nodeId.id} does not have parent nodes. Nothing to do`);
+            return;
+        }
+
+        if (parentNodes.length > 1) {
+            console.warn(`${nodeId.id} has more that one parent node.`);
+            return;
+        }
+
+        const graphNode = this.nodes.get(nodeId.id);
+        if (!graphNode) {
+            throw new Error(`${nodeId.id} must present in graph nodes`);
+        }
+
+        // SAFE: checked above.
+        const parentNode = parentNodes[0]!;
+        const siblings = this.children.get(parentNode);
+        if (!siblings) {
+            throw new Error(`${parentNode} must have a least one children`);
+        }
+
+        if (siblings.length < 2) {
+            console.debug(`${nodeId.id} is the only child in the family. Nothing to do.`);
+            return;
+        }
+
+        const nodeSiblingIndex = siblings.indexOf(nodeId.id);
+        if (nodeSiblingIndex === -1) {
+            throw new Error(`${nodeId.id} must present in siblings array ${siblings}`);
+        }
+
+        if (nodeSiblingIndex === 0) {
+            console.debug(`${nodeId.id} is the leftmost node. Nothing to do.`);
+            return;
+        }
+
+        // SAFE: checked above.
+        const leftSibling = siblings[nodeSiblingIndex - 1]!;
+
+        if ((this.children.get(leftSibling) ?? []).length > 0) {
+            console.warn(`${leftSibling} has children nodes.`);
+            return;
+        }
+
+        if ((this.parents.get(leftSibling) ?? []).length > 1) {
+            console.warn(`${leftSibling} must have only one parent.`);
+            return;
+        }
+
+        const layer = this.layers.get(graphNode.layerNumber);
+        if (!layer || layer.length < 2) {
+            throw new Error(
+                `${graphNode.layerNumber} layer number must be initialized and have at least two nodes`,
+            );
+        }
+
+        const nodeIndex = layer.indexOf(nodeId.id);
+        if (nodeIndex === -1 || nodeIndex === 0) {
+            throw new Error(
+                `invalid ${nodeId.id} node index in the ${graphNode.layerNumber} layer: ${nodeIndex}`,
+            );
+        }
+        const leftSiblingIndex = layer.indexOf(leftSibling);
+        if (leftSiblingIndex === -1) {
+            throw new Error(
+                `invalid ${leftSibling} node index in the ${graphNode.layerNumber} layer: ${leftSiblingIndex}`,
+            );
+        }
+
+        // Swap nodes.
+        layer[leftSiblingIndex] = nodeId.id;
+        layer[nodeIndex] = leftSibling;
+
+        siblings[nodeSiblingIndex - 1] = nodeId.id;
+        siblings[nodeSiblingIndex] = leftSibling;
+    }
 }

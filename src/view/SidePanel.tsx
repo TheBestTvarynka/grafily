@@ -1,5 +1,6 @@
 import { useState, KeyboardEvent } from 'react';
 import { getIcon } from 'obsidian';
+import { useGraph } from 'hooks';
 
 export type SelectedNode = {
     id: string;
@@ -27,6 +28,8 @@ export function SidePanel({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+
+    const graph = useGraph();
 
     const handleSaveClick = () => {
         // If graph name is known, save directly without modal
@@ -93,6 +96,14 @@ export function SidePanel({
         }
     };
 
+    const moveNodeLeft = () => {
+        if (!graph || !selectedNode) {
+            return;
+        }
+
+        graph.moveNodeLeft(selectedNode.id);
+    };
+
     return (
         <>
             <div className="grafily-save-panel">
@@ -100,9 +111,7 @@ export function SidePanel({
                     <div className="grafily-direction-buttons">
                         <button
                             className="grafily-direction-button"
-                            onClick={() => {
-                                /* TODO: implement move left */
-                            }}
+                            onClick={moveNodeLeft}
                             title="Move node left"
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('move-left')?.outerHTML || '',

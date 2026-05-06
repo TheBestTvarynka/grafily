@@ -205,6 +205,10 @@ export class GenericLayout {
         return this.layout.expandParents(personId);
     }
 
+    moveNodeLeft(personId: string): [Node[], Edge[]] {
+        return this.layout.moveNodeLeft(personId);
+    }
+
     toSerializableObject(): SerializableLayout {
         return this.layout.toSerializableObject();
     }
