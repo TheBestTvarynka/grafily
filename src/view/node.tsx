@@ -221,7 +221,6 @@ export function MarriageNode({ data }: { data: MarriageNodeData }) {
     const graph = useGraph();
 
     const [hasChildren, setHasChildren] = useState<boolean>(true);
-    const [isChildrenCollapsible, setIsChildNodesFoldable] = useState<boolean>(false);
 
     useEffect(() => {
         if (!graph) {
@@ -238,12 +237,6 @@ export function MarriageNode({ data }: { data: MarriageNodeData }) {
             setHasChildren(true);
         } else {
             setHasChildren(false);
-        }
-
-        if (data.isChildrenCollapsible) {
-            setIsChildNodesFoldable(true);
-        } else {
-            setIsChildNodesFoldable(false);
         }
     }, [graph]);
 
@@ -278,7 +271,7 @@ export function MarriageNode({ data }: { data: MarriageNodeData }) {
                 position: 'relative',
             }}
         >
-            {isChildrenCollapsible ? (
+            {data.isChildrenCollapsible ? (
                 <button
                     onClick={collapseChildren}
                     style={{

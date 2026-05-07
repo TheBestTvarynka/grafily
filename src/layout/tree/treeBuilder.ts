@@ -12,6 +12,7 @@ import {
     Id,
     MARRIAGE_NODE_TYPE,
     MOVE_PERSON_LEFT,
+    NodeType,
     PERSON_NODE_TYPE,
     personIdToNodeId,
     RearrangeAction,
@@ -234,7 +235,14 @@ export class TreeBuilder {
      * @param {string} nodeId - A node id.
      */
     addChildrenOf(nodeId: string) {
-        let currentNodes: TreeNode[] = [personIdToTreeNode(nodeId, this.family)];
+        let type: NodeType;
+        if (this.family.marriageById.has(nodeId)) {
+            type = MARRIAGE_NODE_TYPE;
+        } else {
+            type = PERSON_NODE_TYPE;
+        }
+
+        let currentNodes: TreeNode[] = [nodeIdToTreeNode({ id: nodeId, type }, this.family)];
 
         while (currentNodes.length > 0) {
             const newNodes: TreeNode[] = [];
