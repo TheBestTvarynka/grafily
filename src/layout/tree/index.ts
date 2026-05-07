@@ -156,7 +156,7 @@ export class ReingoldTilford {
 
                             const nodeParents =
                                 this.parentsTreeBuilder.getChildren().get(id.id) ?? [];
-                            if (nodeParents.find((id) => id.id === parentsId)) {
+                            if (nodeParents.find((id) => id.id.id === parentsId)) {
                                 isParentsCollapsed = false;
                             } else {
                                 isParentsCollapsed = true;

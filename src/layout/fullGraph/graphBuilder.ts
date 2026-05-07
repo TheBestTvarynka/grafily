@@ -36,7 +36,7 @@ interface CallerChild {
     childId: string;
 }
 
-interface NodePersons {
+export interface NodePersons {
     person1?: string;
     person2?: string;
 }

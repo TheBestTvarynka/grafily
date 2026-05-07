@@ -17,21 +17,73 @@ import {
     RearrangeAction,
     SWAP_MARRIAGE_SPOUSES,
 } from 'layout';
+import { NodePersons } from 'layout/fullGraph/graphBuilder';
 import { Index, LEFT_SIDE, MarriageNodeSide } from 'model';
+
+/**
+ * Just an additional information about graph node. It is used for easier graph building and modifying.
+ *
+ * @property {string} id - node id.
+ * @property {NodeType} type - node type.
+ * @property {NodePersons} persons - persons associated with the node. For the person node, only `person1` is filled. For the marriage node, both `person1` and `person2` are filled.
+ * @property {number} layerNumber - the layer number where the node is located.
+ */
+export interface TreeNode {
+    id: Id;
+    persons: NodePersons;
+}
+
+function personIdToTreeNode(personId: string, family: Index): TreeNode {
+    const [id, marriage] = personIdToNodeId(personId, family);
+
+    let persons: NodePersons = {};
+    if (id.type === PERSON_NODE_TYPE) {
+        persons.person1 = id.id;
+    } else {
+        persons.person1 = marriage?.parent1Id;
+        persons.person2 = marriage?.parent2Id;
+    }
+
+    return { id, persons };
+}
+
+function nodeIdToTreeNode(nodeId: Id, family: Index): TreeNode {
+    if (nodeId.type === PERSON_NODE_TYPE) {
+        return {
+            id: nodeId,
+            persons: {
+                person1: nodeId.id,
+            },
+        };
+    } else {
+        const marriage = family.marriageById.get(nodeId.id);
+        if (!marriage) {
+            throw new Error(`${nodeId.id} marriage should exist`);
+        }
+
+        return {
+            id: nodeId,
+            persons: {
+                person1: marriage.parent1Id,
+                person2: marriage.parent2Id,
+            },
+        };
+    }
+}
 
 /**
  * The already prepared family tree for nodes coordinates calculation.
  * This tree builder can be used for parents (ancestors) and children (descendants)
  * trees generations. The implemented behaviour is abstract enough.
  *
- * @property {Map<string, Id[]>} children - The abstract node children. For ancestors
+ * @property {Map<string, TreeNode[]>} children - The abstract node children. For ancestors
  * tree, it will return parent nodes for each person in the marriage. For descendants
  * tree, it will return marriage node children ids.
  * @property {Id} root - The starting node for trees building.
  */
 export interface FamilyTree {
-    children: Record<string, Id[]>;
-    root: Id;
+    children: Record<string, TreeNode[]>;
+    root: TreeNode;
 }
 
 /**
@@ -41,9 +93,9 @@ export interface FamilyTree {
  */
 export class TreeBuilder {
     private family: Index;
-    private children: Map<string, Id[]> = new Map();
-    private root: Id | null = null;
-    private getChildNodes: (nodeId: Id, family: Index) => Id[];
+    private children: Map<string, TreeNode[]> = new Map();
+    private root: TreeNode | null = null;
+    private getChildNodes: (nodeId: TreeNode, family: Index) => TreeNode[];
 
     /**
      * Constructs a new tree builder instance.
@@ -55,7 +107,7 @@ export class TreeBuilder {
      */
     constructor(
         family: Index,
-        getChildNodes: (nodeId: Id, family: Index) => Id[],
+        getChildNodes: (nodeId: TreeNode, family: Index) => TreeNode[],
         tree?: FamilyTree,
     ) {
         this.family = family;
@@ -72,7 +124,7 @@ export class TreeBuilder {
      *
      * @returns {Map<string, Id[]} - Connections between nodes.
      */
-    getChildren(): Map<string, Id[]> {
+    getChildren(): Map<string, TreeNode[]> {
         return this.children;
     }
 
@@ -83,16 +135,16 @@ export class TreeBuilder {
      * @param {string} root - The root node ID of the tree.
      */
     buildInitialTree(root: string) {
-        const [id] = personIdToNodeId(root, this.family);
+        const id = personIdToTreeNode(root, this.family);
         this.root = id;
 
         let currentNodes = [id];
 
         while (currentNodes.length > 0) {
-            const newNodes: Id[] = [];
+            const newNodes: TreeNode[] = [];
             for (const currentNode of currentNodes) {
                 const children = this.getChildNodes(currentNode, this.family);
-                this.children.set(currentNode.id, children);
+                this.children.set(currentNode.id.id, children);
 
                 newNodes.push(...children);
             }
@@ -136,7 +188,7 @@ export class TreeBuilder {
 
         this.children.set(
             parentNodeId,
-            children.filter((id) => id.id != nodeId),
+            children.filter((id) => id.id.id != nodeId),
         );
     }
 
@@ -148,7 +200,7 @@ export class TreeBuilder {
     removeChildrenOf(nodeId: string) {
         let children = [nodeId];
         while (children.length > 0) {
-            const newChildren: Id[] = [];
+            const newChildren: TreeNode[] = [];
 
             for (const child of children) {
                 newChildren.push(...(this.children.get(child) ?? []));
@@ -156,7 +208,7 @@ export class TreeBuilder {
                 this.children.delete(child);
             }
 
-            children = newChildren.map((id) => id.id);
+            children = newChildren.map((id) => id.id.id);
         }
     }
 
@@ -168,13 +220,13 @@ export class TreeBuilder {
      * @param {string} nodeId - A node id.
      */
     addChildrenOf(nodeId: string) {
-        let currentNodes: Id[] = [{ id: nodeId, type: MARRIAGE_NODE_TYPE }];
+        let currentNodes: TreeNode[] = [personIdToTreeNode(nodeId, this.family)];
 
         while (currentNodes.length > 0) {
-            const newNodes: Id[] = [];
+            const newNodes: TreeNode[] = [];
             for (const currentNode of currentNodes) {
                 const children = this.getChildNodes(currentNode, this.family);
-                this.children.set(currentNode.id, children);
+                this.children.set(currentNode.id.id, children);
 
                 newNodes.push(...children);
             }
@@ -196,12 +248,14 @@ export class TreeBuilder {
     addChildren(nodeId: Id, parentId: string, side: MarriageNodeSide) {
         this.addChildrenOf(nodeId.id);
 
+        let node = nodeIdToTreeNode(nodeId, this.family);
+
         const children = this.children.get(parentId) ?? [];
 
         if (side === LEFT_SIDE) {
-            children.splice(0, 0, nodeId);
+            children.splice(0, 0, node);
         } else {
-            children.push(nodeId);
+            children.push(node);
         }
 
         this.children.set(parentId, children);
@@ -214,16 +268,13 @@ export class TreeBuilder {
         }
 
         let nodeIndex: number = 0;
-        let siblings: Id[] | null = null;
-
-        console.log(nodeId);
+        let siblings: TreeNode[] | null = null;
 
         // Yes, we can optimize it by storing parent node id in each node.
         // Usually, direct family trees are small, so it should be fast enough
         // even with such dumb approach.
         for (const [, children] of this.children.entries()) {
-            console.log(children);
-            const index = children.findIndex((node) => node.id === nodeId.id);
+            const index = children.findIndex((node) => node.id.id === nodeId.id);
             if (index !== -1) {
                 nodeIndex = index;
                 siblings = children;
@@ -253,7 +304,7 @@ export class TreeBuilder {
         }
         const neighborSibling = siblings[neighborSiblingIndex]!;
 
-        siblings[neighborSiblingIndex] = nodeId;
+        siblings[neighborSiblingIndex] = nodeIdToTreeNode(nodeId, this.family);
         siblings[nodeIndex] = neighborSibling;
     }
 }
@@ -267,46 +318,74 @@ export class TreeBuilder {
  * @param {Index} family - The family index containing all the people and their relationships.
  * @returns {Id[]} - A list of node parents ids.
  */
-export function getNodeParents(nodeId: Id, family: Index): Id[] {
-    if (nodeId.type === PERSON_NODE_TYPE) {
-        const parentsMarriageId = family.personParents.get(nodeId.id);
+export function getNodeParents(nodeId: TreeNode, family: Index): TreeNode[] {
+    if (nodeId.id.type === PERSON_NODE_TYPE) {
+        const parentsMarriageId = family.personParents.get(nodeId.id.id);
 
         if (!parentsMarriageId) {
             return [];
         }
 
+        const marriage = family.marriageById.get(parentsMarriageId);
+        if (!marriage) {
+            throw new Error(`${parentsMarriageId} marriage should exist`);
+        }
+
         return [
             {
-                id: parentsMarriageId,
-                type: MARRIAGE_NODE_TYPE,
+                id: {
+                    id: parentsMarriageId,
+                    type: MARRIAGE_NODE_TYPE,
+                },
+                persons: {
+                    person1: marriage.parent1Id,
+                    person2: marriage.parent2Id,
+                },
             },
         ];
     } else {
-        let parentNodes: Id[] = [];
+        let parentNodes: TreeNode[] = [];
 
-        const marriage = family.marriageById.get(nodeId.id);
-        if (!marriage) {
-            return [];
-        }
-
-        if (marriage.parent1Id) {
-            const parentsMarriageId = family.personParents.get(marriage.parent1Id);
+        if (nodeId.persons.person1) {
+            const parentsMarriageId = family.personParents.get(nodeId.persons.person1);
 
             if (parentsMarriageId) {
+                const parentsMarriage = family.marriageById.get(parentsMarriageId);
+                if (!parentsMarriage) {
+                    throw new Error(`${parentsMarriageId} marriage should exist`);
+                }
+
                 parentNodes.push({
-                    id: parentsMarriageId,
-                    type: MARRIAGE_NODE_TYPE,
+                    id: {
+                        id: parentsMarriageId,
+                        type: MARRIAGE_NODE_TYPE,
+                    },
+                    persons: {
+                        person1: parentsMarriage.parent1Id,
+                        person2: parentsMarriage.parent2Id,
+                    },
                 });
             }
         }
 
-        if (marriage.parent2Id) {
-            const parentsMarriageId = family.personParents.get(marriage.parent2Id);
+        if (nodeId.persons.person2) {
+            const parentsMarriageId = family.personParents.get(nodeId.persons.person2);
 
             if (parentsMarriageId) {
+                const parentsMarriage = family.marriageById.get(parentsMarriageId);
+                if (!parentsMarriage) {
+                    throw new Error(`${parentsMarriageId} marriage should exist`);
+                }
+
                 parentNodes.push({
-                    id: parentsMarriageId,
-                    type: MARRIAGE_NODE_TYPE,
+                    id: {
+                        id: parentsMarriageId,
+                        type: MARRIAGE_NODE_TYPE,
+                    },
+                    persons: {
+                        person1: parentsMarriage.parent1Id,
+                        person2: parentsMarriage.parent2Id,
+                    },
                 });
             }
         }
@@ -324,19 +403,15 @@ export function getNodeParents(nodeId: Id, family: Index): Id[] {
  * @param {Index} family - The family index containing all the people and their relationships.
  * @returns {Id[]} - A list of marriage children ids.
  */
-export function getNodeChildren(nodeId: Id, family: Index): Id[] {
-    if (nodeId.type === PERSON_NODE_TYPE) {
+export function getNodeChildren(nodeId: TreeNode, family: Index): TreeNode[] {
+    if (nodeId.id.type === PERSON_NODE_TYPE) {
         return [];
     }
 
-    const marriage = family.marriageById.get(nodeId.id);
+    const marriage = family.marriageById.get(nodeId.id.id);
     if (!marriage) {
         throw new Error(`Marriage ${nodeId.id} should exist`);
     }
 
-    return marriage.childrenIds.map((childId) => {
-        const [id] = personIdToNodeId(childId, family);
-
-        return id;
-    });
+    return marriage.childrenIds.map((childId) => personIdToTreeNode(childId, family));
 }
