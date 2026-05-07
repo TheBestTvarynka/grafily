@@ -265,7 +265,7 @@ export class ReingoldTilfordLayout {
 
         const preNode = preNodes.get(nodeId.id.id);
         if (!preNode) {
-            throw new Error(`Expected pre-node to exist for id ${nodeId.id}`);
+            throw new Error(`Expected pre-node to exist for id ${nodeId.id.id}`);
         }
 
         for (const parent of parents) {
@@ -285,7 +285,7 @@ export class ReingoldTilfordLayout {
         if (nodeId.id.type === MARRIAGE_NODE_TYPE) {
             const marriage = this.family.marriageById.get(nodeId.id.id);
             if (!marriage) {
-                throw new Error(`Expected marriage to exist for id ${nodeId.id}`);
+                throw new Error(`Expected marriage to exist for id ${nodeId.id.id}`);
             }
 
             // Create a marriage node first.
@@ -356,9 +356,9 @@ export class ReingoldTilfordLayout {
                 });
 
                 edges.push({
-                    id: marriage.id + '-to-' + parent1NodeId,
+                    id: nodeId.id.id + '-to-' + parent1NodeId,
                     target: parent1NodeId,
-                    source: marriage.id,
+                    source: nodeId.id.id,
                     sourceHandle: 'left',
                     targetHandle: 'right',
                 });
@@ -411,8 +411,8 @@ export class ReingoldTilfordLayout {
 
             for (const childId of marriage.childrenIds) {
                 edges.push({
-                    id: marriage.id + '-to-' + childId,
-                    source: marriage.id,
+                    id: nodeId.id.id + '-to-' + childId,
+                    source: nodeId.id.id,
                     target: childId,
                     sourceHandle: 'bottom',
                     targetHandle: 'top',
@@ -421,7 +421,7 @@ export class ReingoldTilfordLayout {
         } else {
             const person = this.family.personById.get(nodeId.id.id);
             if (!person) {
-                throw new Error(`Expected person to exist for id ${nodeId.id}`);
+                throw new Error(`Expected person to exist for id ${nodeId.id.id}`);
             }
 
             const parentsId = this.family.personParents.get(nodeId.id.id);
@@ -454,7 +454,7 @@ export class ReingoldTilfordLayout {
 
             for (const childId of this.family.personChildren.get(nodeId.id.id) ?? []) {
                 edges.push({
-                    id: nodeId.id + '-to-' + childId,
+                    id: nodeId.id.id + '-to-' + childId,
                     source: nodeId.id.id,
                     target: childId,
                     sourceHandle: 'bottom',

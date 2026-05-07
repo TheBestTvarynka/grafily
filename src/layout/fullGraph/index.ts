@@ -308,6 +308,22 @@ export class BrandesKopfLayout {
         return this.buildNodesInternal();
     }
 
+    /**
+     * This method is used to changes nodes positions within the layout. This method never deletes or
+     * add nodes. Only changes they arrangement: position among siblings or person's position relative
+     * to the spouse within the node. See also the {@link RearrangeAction} type documentation.
+     * The {@link MOVE_PERSON_LEFT} and {@link MOVE_PERSON_RIGHT} actions have limitations:
+     * - The selected node and the neighbor node in the move direction must not have children nodes
+     *   (children nodes must be collapsed).4
+     * - The selected node and the neighbor node in the move direction must have only one parent
+     *   connection: the common parent node. Spouses parents must be collapsed.
+     * The {@link SWAP_MARRIAGE_SPOUSES} action has limitations:
+     * - Maximum one parent node of the selected node can be present.
+     *
+     * @param {string} personId - A person id which user has selected.
+     * @param {RearrangeAction} action - An action to be performed.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
     rearrange(personId: string, action: RearrangeAction): [Node[], Edge[]] {
         const [id] = personIdToNodeId(personId, this.family);
 
@@ -316,6 +332,13 @@ export class BrandesKopfLayout {
         return this.buildNodesInternal();
     }
 
+    /**
+     * Returns the layout state ready for serialization. Is it safe to stringify it to the JSON
+     * and parse back again.
+     * For the `BrandesKopfLayout`, the `data` field has `{ graph: FamilyGraph, nodes: Record<string, GraphNode> }` type.
+     *
+     * @returns {SerializableLayout} - A object ready to be serialized.
+     */
     toSerializableObject(): SerializableLayout {
         const nodes: Record<string, GraphNode> = Object.fromEntries(this.graph.getNodes());
 
@@ -329,6 +352,16 @@ export class BrandesKopfLayout {
     }
 }
 
+/**
+ * Then the user wants to save the layout into a file or somewhere else, it generates
+ * the {@link SerializableLayout} object using the `toSerializableObject` method on the
+ * {@link BrandesKopfLayout} class. Later, the user can use this method to construct and use
+ * the {@link BrandesKopfLayout} object back again.
+ *
+ * @param {SerializableLayout} layout - Layout data.
+ * @param {Index} family - The family index containing all the people and their relationships.
+ * @returns {BrandesKopfLayout} - {@link BrandesKopfLayout} instance.
+ */
 export function fromSerializableObject(
     layout: SerializableLayout,
     family: Index,

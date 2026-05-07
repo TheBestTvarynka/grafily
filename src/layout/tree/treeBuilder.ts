@@ -33,6 +33,13 @@ export interface TreeNode {
     persons: NodePersons;
 }
 
+/**
+ * Builds a {@link TreeNode} object from the person id.
+ *
+ * @param {string} personId - A person id.
+ * @param {Index} family - The family index containing all the people and their relationships.
+ * @returns {TreeNode}
+ */
 function personIdToTreeNode(personId: string, family: Index): TreeNode {
     const [id, marriage] = personIdToNodeId(personId, family);
 
@@ -47,6 +54,13 @@ function personIdToTreeNode(personId: string, family: Index): TreeNode {
     return { id, persons };
 }
 
+/**
+ * Builds a {@link TreeNode} object from the node id {@link Id}.
+ *
+ * @param {Id} nodeId - A node id.
+ * @param {Index} family - The family index containing all the people and their relationships.
+ * @returns {TreeNode}
+ */
 function nodeIdToTreeNode(nodeId: Id, family: Index): TreeNode {
     if (nodeId.type === PERSON_NODE_TYPE) {
         return {
@@ -261,7 +275,22 @@ export class TreeBuilder {
         this.children.set(parentId, children);
     }
 
-    rearrange(nodeId: Id, action: RearrangeAction) {
+    /**
+     * This method is used to changes nodes positions within the layout. This method never deletes or
+     * add nodes. Only changes they arrangement: position among siblings or person's position relative
+     * to the spouse within the node. See also the {@link RearrangeAction} type documentation.
+     * - The {@link MOVE_PERSON_LEFT} and {@link MOVE_PERSON_RIGHT} actions have limitations: they can
+     *   be applied only to children nodes starting from the root node (e.g. children of the root node,
+     *   children of the children of the root node, etc).
+     * - The {@link SWAP_MARRIAGE_SPOUSES} action can be applied to any node in the tree.
+     *
+     * @param {Id} nodeId - A node id to which action will be applied.
+     * @param {boolean} swapChildren - This flag is needed only for the {@link SWAP_MARRIAGE_SPOUSES} action.
+     * When this flag is `true`, then the method will swap first and second children of the selected node.
+     * This is needed when we swap spouses of the parent's tree.
+     * @param {RearrangeAction} action - An action to be performed.
+     */
+    rearrange(nodeId: Id, action: RearrangeAction, swapChildren?: boolean) {
         if (action === SWAP_MARRIAGE_SPOUSES) {
             let node: TreeNode | null = null;
 
@@ -271,7 +300,7 @@ export class TreeBuilder {
                 // Yes, we can optimize it by storing parent node id in each node.
                 // Usually, direct family trees are small, so it should be fast enough
                 // even with such dumb approach.
-                for (const [id, children] of this.children.entries()) {
+                for (const [, children] of this.children.entries()) {
                     const treeNode = children.find((node) => node.id.id === nodeId.id);
                     if (treeNode) {
                         node = treeNode;
@@ -290,7 +319,7 @@ export class TreeBuilder {
             ];
 
             const children = this.children.get(node.id.id);
-            if (children && children.length > 1) {
+            if (children && children.length > 1 && swapChildren) {
                 if (children.length > 2) {
                     throw new Error(
                         `${nodeId.id} has more than two children. this should not be possible. swap action swaps person's in the marriage, and so its children nodes (spouses parents).`,
@@ -447,7 +476,7 @@ export function getNodeChildren(nodeId: TreeNode, family: Index): TreeNode[] {
 
     const marriage = family.marriageById.get(nodeId.id.id);
     if (!marriage) {
-        throw new Error(`Marriage ${nodeId.id} should exist`);
+        throw new Error(`Marriage ${nodeId.id.id} should exist`);
     }
 
     return marriage.childrenIds.map((childId) => personIdToTreeNode(childId, family));
