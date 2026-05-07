@@ -20,6 +20,7 @@ import {
     RearrangeAction,
     REINGOLD_TILFORD,
     SerializableLayout,
+    SWAP_MARRIAGE_SPOUSES,
 } from '../index';
 import { getChildY, getParentY, PreNode, ReingoldTilfordLayout } from './reingoldTilford';
 import { FamilyTree, getNodeChildren, getNodeParents, TreeBuilder } from './treeBuilder';
@@ -275,7 +276,15 @@ export class ReingoldTilford {
     }
 
     rearrange(personId: string, action: RearrangeAction): [Node[], Edge[]] {
-        throw new Error('Unimplemented');
+        const [id] = personIdToNodeId(personId, this.family);
+
+        if (action === SWAP_MARRIAGE_SPOUSES) {
+            this.parentsTreeBuilder.rearrange(id, action);
+        } else {
+            this.childrenTreeBuilder.rearrange(id, action);
+        }
+
+        return this.buildNodesInternal();
     }
 
     toSerializableObject(): SerializableLayout {

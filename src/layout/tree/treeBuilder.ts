@@ -8,7 +8,15 @@
  * @module treeBuilder
  */
 
-import { Id, MARRIAGE_NODE_TYPE, PERSON_NODE_TYPE, personIdToNodeId } from 'layout';
+import {
+    Id,
+    MARRIAGE_NODE_TYPE,
+    MOVE_PERSON_LEFT,
+    PERSON_NODE_TYPE,
+    personIdToNodeId,
+    RearrangeAction,
+    SWAP_MARRIAGE_SPOUSES,
+} from 'layout';
 import { Index, LEFT_SIDE, MarriageNodeSide } from 'model';
 
 /**
@@ -197,6 +205,56 @@ export class TreeBuilder {
         }
 
         this.children.set(parentId, children);
+    }
+
+    rearrange(nodeId: Id, action: RearrangeAction) {
+        if (action === SWAP_MARRIAGE_SPOUSES) {
+            console.warn('unimplemented');
+            return;
+        }
+
+        let nodeIndex: number = 0;
+        let siblings: Id[] | null = null;
+
+        console.log(nodeId);
+
+        // Yes, we can optimize it by storing parent node id in each node.
+        // Usually, direct family trees are small, so it should be fast enough
+        // even with such dumb approach.
+        for (const [, children] of this.children.entries()) {
+            console.log(children);
+            const index = children.findIndex((node) => node.id === nodeId.id);
+            if (index !== -1) {
+                nodeIndex = index;
+                siblings = children;
+            }
+        }
+
+        if (!siblings) {
+            console.warn(`${nodeId.id} does not have a parent node.`);
+            return;
+        }
+
+        let neighborSiblingIndex: number;
+        if (action === MOVE_PERSON_LEFT) {
+            if (nodeIndex === 0) {
+                console.debug(`${nodeId.id} is the leftmost node. Nothing to do.`);
+                return;
+            }
+
+            neighborSiblingIndex = nodeIndex - 1;
+        } else {
+            if (nodeIndex === siblings.length - 1) {
+                console.debug(`${nodeId.id} is the rightmost node. Nothing to do.`);
+                return;
+            }
+
+            neighborSiblingIndex = nodeIndex + 1;
+        }
+        const neighborSibling = siblings[neighborSiblingIndex]!;
+
+        siblings[neighborSiblingIndex] = nodeId;
+        siblings[nodeIndex] = neighborSibling;
     }
 }
 
