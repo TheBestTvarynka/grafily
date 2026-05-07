@@ -263,7 +263,40 @@ export class TreeBuilder {
 
     rearrange(nodeId: Id, action: RearrangeAction) {
         if (action === SWAP_MARRIAGE_SPOUSES) {
-            console.warn('unimplemented');
+            let node: TreeNode | null = null;
+
+            // Yes, we can optimize it by storing parent node id in each node.
+            // Usually, direct family trees are small, so it should be fast enough
+            // even with such dumb approach.
+            for (const [, children] of this.children.entries()) {
+                const treeNode = children.find((node) => node.id.id === nodeId.id);
+                if (treeNode) {
+                    node = treeNode;
+                }
+            }
+
+            if (!node) {
+                console.warn(`${nodeId.id} does not exist`);
+                return;
+            }
+
+            [node.persons.person1, node.persons.person2] = [
+                node.persons.person2,
+                node.persons.person1,
+            ];
+
+            const children = this.children.get(node.id.id);
+            if (children && children.length > 1) {
+                if (children.length > 2) {
+                    throw new Error(
+                        `${nodeId.id} has more than two children. this should not be possible. swap action swaps person's in the marriage, and so its children nodes (spouses parents).`,
+                    );
+                }
+
+                // SAFE: checked above.
+                [children[0], children[1]] = [children[1]!, children[0]!];
+            }
+
             return;
         }
 
