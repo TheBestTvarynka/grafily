@@ -265,13 +265,17 @@ export class TreeBuilder {
         if (action === SWAP_MARRIAGE_SPOUSES) {
             let node: TreeNode | null = null;
 
-            // Yes, we can optimize it by storing parent node id in each node.
-            // Usually, direct family trees are small, so it should be fast enough
-            // even with such dumb approach.
-            for (const [, children] of this.children.entries()) {
-                const treeNode = children.find((node) => node.id.id === nodeId.id);
-                if (treeNode) {
-                    node = treeNode;
+            if (this.root?.id.id === nodeId.id) {
+                node = this.root;
+            } else {
+                // Yes, we can optimize it by storing parent node id in each node.
+                // Usually, direct family trees are small, so it should be fast enough
+                // even with such dumb approach.
+                for (const [id, children] of this.children.entries()) {
+                    const treeNode = children.find((node) => node.id.id === nodeId.id);
+                    if (treeNode) {
+                        node = treeNode;
+                    }
                 }
             }
 
