@@ -109,6 +109,21 @@ export function personIdToNodeId(personId: string, family: Index): [Id, Marriage
     }
 }
 
+export const MOVE_PERSON_LEFT = 'move_left';
+export const MOVE_PERSON_RIGHT = 'move_right';
+export const SWAP_MARRIAGE_SPOUSES = 'move_spouses';
+/**
+ * Currently, we support only three actions for changing node position:
+ * - {@link MOVE_PERSON_LEFT} and {@link MOVE_PERSON_RIGHT}. This action moves the selected node to the left or right
+ *   among its siblings. These actions may have additional requirements depending on the layout type.
+ * - {@link SWAP_MARRIAGE_SPOUSES}. This action swaps spouses within the marriage.
+ *   This action may have additional requirements depending on the layout type.
+ */
+export type RearrangeAction =
+    | typeof MOVE_PERSON_LEFT
+    | typeof MOVE_PERSON_RIGHT
+    | typeof SWAP_MARRIAGE_SPOUSES;
+
 /**
  * The layout algorithm based on the Brandes-Kopf algorithm. This layout is designed to handle general directed acyclic graphs (DAGs) and is not limited to tree structures.
  */
@@ -123,6 +138,12 @@ export const REINGOLD_TILFORD = 'reingoldTilford';
  * The available layout algorithms for the family graph. Currently supports {@link BRANDES_KORF} and {@link REINGOLD_TILFORD}.
  */
 export type LayoutName = typeof BRANDES_KORF | typeof REINGOLD_TILFORD;
+
+export type NodeCapabilities = {
+    movableLeft: boolean;
+    movableRight: boolean;
+    spousesSwappable: boolean;
+};
 
 /**
  * Represents a generic layout for the family graph. This class serves as a wrapper around specific layout implementations, allowing for flexibility in choosing different layout algorithms in the future.
@@ -205,17 +226,60 @@ export class GenericLayout {
         return this.layout.expandParents(personId);
     }
 
+    capabilities(personId: string): NodeCapabilities {
+        return this.layout.capabilities(personId);
+    }
+
+    /**
+     * This method is used to changes nodes positions within the layout. This method never deletes or
+     * add nodes. Only changes they arrangement: position among siblings or person's position relative
+     * to the spouse within the node. See also the {@link RearrangeAction} type documentation.
+     *
+     * @param {string} personId - A person id which user has selected.
+     * @param {RearrangeAction} action - An action to be performed.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
+    rearrange(personId: string, action: RearrangeAction): [Node[], Edge[]] {
+        return this.layout.rearrange(personId, action);
+    }
+
+    /**
+     * Returns the layout state ready for serialization. Is it safe to stringify it to the JSON
+     * and parse back again.
+     *
+     * @returns {SerializableLayout} - A object ready to be serialized.
+     */
     toSerializableObject(): SerializableLayout {
         return this.layout.toSerializableObject();
     }
 }
 
+/**
+ * A special type for serialized layout instance.
+ * The actual data is different for different layout types. But, all layout
+ * implementations must follow this requirement:
+ * - The `SerializableLayout` object must a _plain_ JS object. In other words,
+ *   the following condition must be met:
+ *   `JSON.parse(JSON.stringify(obj))` must be the same as `obj`.
+ *
+ * So, instead of `Map`, use `Record`. Do not use functions/closures, etc.
+ */
 export interface SerializableLayout {
     name: LayoutName;
     /* eslint-disable @typescript-eslint/no-explicit-any */
     data: any;
 }
 
+/**
+ * Then the user wants to save the layout into a file or somewhere else, it generates
+ * the {@link SerializableLayout} object using the `toSerializableObject` method on the
+ * {@link GenericLayout} class. Later, the user can use this method to construct and use
+ * the layout object back again.
+ *
+ * @param {SerializableLayout} layoutData  - Layout data.
+ * @param {Index} family - The family index containing all the people and their relationships.
+ * @returns {GenericLayout} - The {@link GenericLayout} instance ready to be used.
+ */
 export function fromSerializableObject(
     layoutData: SerializableLayout,
     family: Index,

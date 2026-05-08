@@ -1,10 +1,18 @@
 import { useState, KeyboardEvent } from 'react';
 import { getIcon } from 'obsidian';
+import { useGraph } from 'hooks';
+import {
+    MOVE_PERSON_LEFT,
+    MOVE_PERSON_RIGHT,
+    NodeCapabilities,
+    SWAP_MARRIAGE_SPOUSES,
+} from 'layout';
 
 export type SelectedNode = {
     id: string;
     x: number;
     y: number;
+    capabilities: NodeCapabilities;
 };
 
 export type SidePanelProps = {
@@ -27,6 +35,8 @@ export function SidePanel({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+
+    const graph = useGraph();
 
     const handleSaveClick = () => {
         // If graph name is known, save directly without modal
@@ -93,6 +103,30 @@ export function SidePanel({
         }
     };
 
+    const moveNodeLeft = () => {
+        if (!graph || !selectedNode) {
+            return;
+        }
+
+        graph.rearrange(selectedNode.id, MOVE_PERSON_LEFT);
+    };
+
+    const moveNodeRight = () => {
+        if (!graph || !selectedNode) {
+            return;
+        }
+
+        graph.rearrange(selectedNode.id, MOVE_PERSON_RIGHT);
+    };
+
+    const swapSpouses = () => {
+        if (!graph || !selectedNode) {
+            return;
+        }
+
+        graph.rearrange(selectedNode.id, SWAP_MARRIAGE_SPOUSES);
+    };
+
     return (
         <>
             <div className="grafily-save-panel">
@@ -100,33 +134,30 @@ export function SidePanel({
                     <div className="grafily-direction-buttons">
                         <button
                             className="grafily-direction-button"
-                            onClick={() => {
-                                /* TODO: implement move left */
-                            }}
+                            onClick={moveNodeLeft}
                             title="Move node left"
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('move-left')?.outerHTML || '',
                             }}
+                            disabled={!selectedNode.capabilities.movableLeft}
                         />
                         <button
                             className="grafily-direction-button"
-                            onClick={() => {
-                                /* TODO: implement move right */
-                            }}
+                            onClick={moveNodeRight}
                             title="Move node right"
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('move-right')?.outerHTML || '',
                             }}
+                            disabled={!selectedNode.capabilities.movableRight}
                         />
                         <button
                             className="grafily-direction-button"
-                            onClick={() => {
-                                /* TODO: implement swap */
-                            }}
+                            onClick={swapSpouses}
                             title="Swap position with spouse"
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('arrow-right-left')?.outerHTML || '',
                             }}
+                            disabled={!selectedNode.capabilities.spousesSwappable}
                         />
                         <button
                             className="grafily-direction-button"

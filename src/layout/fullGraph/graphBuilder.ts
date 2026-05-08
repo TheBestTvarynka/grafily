@@ -9,7 +9,18 @@
  */
 
 import { FamilyGraph } from './';
-import { Id, NodeType, MARRIAGE_NODE_TYPE, PERSON_NODE_TYPE, personIdToNodeId } from '../';
+import {
+    Id,
+    NodeType,
+    MARRIAGE_NODE_TYPE,
+    PERSON_NODE_TYPE,
+    personIdToNodeId,
+    RearrangeAction,
+    SWAP_MARRIAGE_SPOUSES,
+    MOVE_PERSON_LEFT,
+    MOVE_PERSON_RIGHT,
+    NodeCapabilities,
+} from '../';
 import { Index, LEFT_SIDE, RIGHT_SIDE, Marriage } from '../../model';
 
 const MIDDLE_SIDE = 'middle_side';
@@ -26,7 +37,7 @@ interface CallerChild {
     childId: string;
 }
 
-interface NodePersons {
+export interface NodePersons {
     person1?: string;
     person2?: string;
 }
@@ -786,7 +797,7 @@ export class GraphBuilder {
      * @param {string} personId - The ID of the person whose parents we want to add to the graph.
      */
     addParentsOf(personId: string) {
-        const [nodeId, marriage] = personIdToNodeId(personId, this.family);
+        const [nodeId] = personIdToNodeId(personId, this.family);
 
         let left: string | null = null;
         let right: string | null = null;
@@ -798,6 +809,11 @@ export class GraphBuilder {
             throw new Error(`Layer ${layer} should exist`);
         }
 
+        const node = this.nodes.get(nodeId.id);
+        if (!node) {
+            throw new Error(`${nodeId.id} does not exist in graph nodes`);
+        }
+
         const nodeParents = this.parents.get(nodeId.id);
         if (nodeParents && nodeParents.length > 0) {
             // The `nodeId` node already has at least one parent. We must calculate left and right boundaries including the existing parents nodes.
@@ -807,59 +823,59 @@ export class GraphBuilder {
                     `Something weird happens here: trying to expand parents of a person node ${nodeId.id}, but it already has parents.`,
                 );
                 return;
-            } else {
-                // One of the marriage parents (parents of wife or parents of husband) are already expanded.
-                if (marriage?.parent1Id === personId) {
-                    // Parents of `marriage.parent2Id` are already expanded. So, the right boundary is the position of the current node, and the left boundary is the position of the left neighbor of the current node (if exists).
-                    right = nodeId.id;
+            }
 
-                    let leftPosition = position - 1;
+            // One of the marriage parents (parents of wife or parents of husband) are already expanded.
+            if (node.persons.person1 === personId) {
+                // Parents of `marriage.parent2Id` are already expanded. So, the right boundary is the position of the current node, and the left boundary is the position of the left neighbor of the current node (if exists).
+                right = nodeId.id;
 
-                    while (leftPosition >= 0) {
-                        const leftCandidate = currentLayer[leftPosition];
-                        if (!leftCandidate) {
-                            throw new Error(
-                                `Node at layer ${layer} and position ${leftPosition} should exist`,
-                            );
-                        }
+                let leftPosition = position - 1;
 
-                        const leftCandidateParents = this.parents.get(leftCandidate) ?? [];
-
-                        if (leftCandidateParents.length > 0) {
-                            left = leftCandidate;
-                            break;
-                        } else {
-                            leftPosition -= 1;
-                        }
+                while (leftPosition >= 0) {
+                    const leftCandidate = currentLayer[leftPosition];
+                    if (!leftCandidate) {
+                        throw new Error(
+                            `Node at layer ${layer} and position ${leftPosition} should exist`,
+                        );
                     }
-                } else if (marriage?.parent2Id === personId) {
-                    // Parents of `marriage.parent1Id` are already expanded. So, the left boundary is the position of the current node, and the right boundary is the position of the right neighbor of the current node (if exists).
-                    left = nodeId.id;
 
-                    let rightPosition = position + 1;
+                    const leftCandidateParents = this.parents.get(leftCandidate) ?? [];
 
-                    while (rightPosition < currentLayer.length) {
-                        const rightCandidate = currentLayer[rightPosition];
-                        if (!rightCandidate) {
-                            throw new Error(
-                                `Node at layer ${layer} and position ${rightPosition} should exist`,
-                            );
-                        }
-
-                        const rightCandidateParents = this.parents.get(rightCandidate) ?? [];
-
-                        if (rightCandidateParents.length > 0) {
-                            right = rightCandidate;
-                            break;
-                        } else {
-                            rightPosition += 1;
-                        }
+                    if (leftCandidateParents.length > 0) {
+                        left = leftCandidate;
+                        break;
+                    } else {
+                        leftPosition -= 1;
                     }
-                } else {
-                    throw new Error(
-                        'This should not happen: the person should be either parent1 or parent2 of the marriage node',
-                    );
                 }
+            } else if (node.persons.person2 === personId) {
+                // Parents of `marriage.parent1Id` are already expanded. So, the left boundary is the position of the current node, and the right boundary is the position of the right neighbor of the current node (if exists).
+                left = nodeId.id;
+
+                let rightPosition = position + 1;
+
+                while (rightPosition < currentLayer.length) {
+                    const rightCandidate = currentLayer[rightPosition];
+                    if (!rightCandidate) {
+                        throw new Error(
+                            `Node at layer ${layer} and position ${rightPosition} should exist`,
+                        );
+                    }
+
+                    const rightCandidateParents = this.parents.get(rightCandidate) ?? [];
+
+                    if (rightCandidateParents.length > 0) {
+                        right = rightCandidate;
+                        break;
+                    } else {
+                        rightPosition += 1;
+                    }
+                }
+            } else {
+                throw new Error(
+                    'This should not happen: the person should be either person1 or person2 in the node',
+                );
             }
         } else {
             if (nodeId.type === MARRIAGE_NODE_TYPE) {
@@ -867,17 +883,17 @@ export class GraphBuilder {
                 // Here we determine what node to skip during expansion.
                 let nodeToSkipId: string | undefined = undefined;
 
-                if (marriage?.parent1Id === personId) {
-                    nodeToSkipId = marriage.parent2Id
-                        ? this.family.personParents.get(marriage.parent2Id)
+                if (node.persons.person1 === personId) {
+                    nodeToSkipId = node.persons.person2
+                        ? this.family.personParents.get(node.persons.person2)
                         : undefined;
-                } else if (marriage?.parent2Id === personId) {
-                    nodeToSkipId = marriage.parent1Id
-                        ? this.family.personParents.get(marriage.parent1Id)
+                } else if (node.persons.person2 === personId) {
+                    nodeToSkipId = node.persons.person1
+                        ? this.family.personParents.get(node.persons.person1)
                         : undefined;
                 } else {
                     console.warn(
-                        `Warn: corrupted data: the ${personId} should be either parent1 or parent2 of the marriage node(${marriage?.id})`,
+                        `Warn: corrupted data: the ${personId} should be either person1 or person2 of the marriage node(${nodeId.id})`,
                     );
                 }
 
@@ -1170,5 +1186,203 @@ export class GraphBuilder {
         } else {
             this.parents.delete(nodeId);
         }
+    }
+
+    capabilities(nodeId: Id): NodeCapabilities {
+        const parentNodes = this.parents.get(nodeId.id);
+
+        const capabilities: NodeCapabilities = {
+            movableLeft: false,
+            movableRight: false,
+            spousesSwappable: false,
+        };
+
+        if (nodeId.type === MARRIAGE_NODE_TYPE) {
+            if (!parentNodes || parentNodes.length <= 1) {
+                capabilities.spousesSwappable = true;
+            }
+        }
+
+        if ((this.children.get(nodeId.id) ?? []).length > 0) {
+            return capabilities;
+        }
+
+        if (!parentNodes || parentNodes.length === 0 || parentNodes.length > 1) {
+            return capabilities;
+        }
+
+        // SAFE: checked above: the current node has exactly one parent node.
+        const parentNode = parentNodes[0]!;
+        const siblings = this.children.get(parentNode);
+        if (!siblings) {
+            throw new Error(`${parentNode} must have a least one children`);
+        }
+
+        if (siblings.length < 2) {
+            return capabilities;
+        }
+
+        const nodeIndex = siblings.indexOf(nodeId.id);
+        if (nodeIndex === -1) {
+            throw new Error(`${nodeId.id} must present in siblings array ${siblings.join(',')}`);
+        }
+
+        if (nodeIndex > 0) {
+            let neighborIndex = nodeIndex - 1;
+
+            // SAFE: checked above.
+            const neighbor = siblings[neighborIndex]!;
+
+            if (
+                (this.children.get(neighbor) ?? []).length === 0 &&
+                (this.parents.get(neighbor) ?? []).length === 1
+            ) {
+                capabilities.movableLeft = true;
+            }
+        }
+
+        if (nodeIndex < siblings.length - 1) {
+            let neighborIndex = nodeIndex + 1;
+
+            // SAFE: checked above.
+            const neighbor = siblings[neighborIndex]!;
+
+            if (
+                (this.children.get(neighbor) ?? []).length === 0 &&
+                (this.parents.get(neighbor) ?? []).length === 1
+            ) {
+                capabilities.movableRight = true;
+            }
+        }
+
+        return capabilities;
+    }
+
+    rearrange(nodeId: Id, action: RearrangeAction) {
+        const parentNodes = this.parents.get(nodeId.id);
+
+        const graphNode = this.nodes.get(nodeId.id);
+        if (!graphNode) {
+            throw new Error(`${nodeId.id} must present in graph nodes`);
+        }
+
+        if (action === SWAP_MARRIAGE_SPOUSES) {
+            if (nodeId.type === PERSON_NODE_TYPE) {
+                return;
+            }
+
+            if (parentNodes && parentNodes.length > 1) {
+                console.warn(`${nodeId.id} node has more than one parent but should not.`);
+                return;
+            }
+
+            if (!graphNode.persons.person1 || !graphNode.persons.person2) {
+                console.warn(`both persons of the ${nodeId.id} node must be defined`);
+                return;
+            }
+
+            [graphNode.persons.person1, graphNode.persons.person2] = [
+                graphNode.persons.person2,
+                graphNode.persons.person1,
+            ];
+
+            return;
+        }
+
+        if ((this.children.get(nodeId.id) ?? []).length > 0) {
+            console.warn(`${nodeId.id} has children nodes.`);
+            return;
+        }
+
+        if (!parentNodes || parentNodes.length === 0) {
+            console.debug(`${nodeId.id} does not have parent nodes. Nothing to do`);
+            return;
+        }
+
+        if (parentNodes.length > 1) {
+            console.warn(`${nodeId.id} has more that one parent node.`);
+            return;
+        }
+
+        // SAFE: checked above.
+        const parentNode = parentNodes[0]!;
+        const siblings = this.children.get(parentNode);
+        if (!siblings) {
+            throw new Error(`${parentNode} must have a least one children`);
+        }
+
+        if (siblings.length < 2) {
+            console.debug(`${nodeId.id} is the only child in the family. Nothing to do.`);
+            return;
+        }
+
+        const nodeSiblingIndex = siblings.indexOf(nodeId.id);
+        if (nodeSiblingIndex === -1) {
+            throw new Error(`${nodeId.id} must present in siblings array ${siblings.join(',')}`);
+        }
+
+        // SAFE: checked above.
+        let neighborSiblingIndex: number;
+        if (action === MOVE_PERSON_LEFT) {
+            if (nodeSiblingIndex === 0) {
+                console.debug(`${nodeId.id} is the leftmost node. Nothing to do.`);
+                return;
+            }
+
+            neighborSiblingIndex = nodeSiblingIndex - 1;
+        } else {
+            if (nodeSiblingIndex === siblings.length - 1) {
+                console.debug(`${nodeId.id} is the rightmost node. Nothing to do.`);
+                return;
+            }
+
+            neighborSiblingIndex = nodeSiblingIndex + 1;
+        }
+        const neighborSibling = siblings[neighborSiblingIndex]!;
+
+        if ((this.children.get(neighborSibling) ?? []).length > 0) {
+            console.warn(`${neighborSibling} has children nodes.`);
+            return;
+        }
+
+        if ((this.parents.get(neighborSibling) ?? []).length > 1) {
+            console.warn(`${neighborSibling} must have only one parent.`);
+            return;
+        }
+
+        const layer = this.layers.get(graphNode.layerNumber);
+        if (!layer || layer.length < 2) {
+            throw new Error(
+                `${graphNode.layerNumber} layer number must be initialized and have at least two nodes`,
+            );
+        }
+
+        const nodeIndex = layer.indexOf(nodeId.id);
+        if (nodeIndex === -1) {
+            throw new Error(`${nodeId.id} does not exist on ${graphNode.layerNumber} layer`);
+        }
+
+        if (
+            (action === MOVE_PERSON_LEFT && nodeIndex === 0) ||
+            (action === MOVE_PERSON_RIGHT && nodeIndex === layer.length - 1)
+        ) {
+            throw new Error(
+                `invalid ${nodeId.id} node index (${nodeIndex}) in the ${graphNode.layerNumber} layer`,
+            );
+        }
+
+        const layerSiblingIndex = layer.indexOf(neighborSibling);
+        if (layerSiblingIndex === -1) {
+            throw new Error(
+                `invalid ${neighborSibling} node index (${layerSiblingIndex}) in the ${graphNode.layerNumber} layer`,
+            );
+        }
+
+        // Swap nodes.
+        layer[layerSiblingIndex] = nodeId.id;
+        layer[nodeIndex] = neighborSibling;
+
+        siblings[neighborSiblingIndex] = nodeId.id;
+        siblings[nodeSiblingIndex] = neighborSibling;
     }
 }

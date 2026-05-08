@@ -11,21 +11,20 @@ import {
     PERSON_NODE_TYPE,
 } from 'layout';
 import { Index, LEFT_SIDE, NONE_SIDE, RIGHT_SIDE } from 'model';
-import { v4 as uuidv4 } from 'uuid';
 import { Edge, Node } from '@xyflow/react';
-import { FamilyTree } from './treeBuilder';
+import { FamilyTree, TreeNode } from './treeBuilder';
 import { MarriageNodeData, PersonNodeData } from 'view/node';
 
 /**
  * Represents a preliminary tree node used during the layout computation.
  *
- * @property {Id} id - The node id.
+ * @property {TreeNode} id - The node id.
  * @property {number} x - The x coordinate of the node. This is not the final x coordinate, but before applying modifiers.
  * @property {number} mod - The mod modifier for the x coordinate. It shifts the node subtree to the right.
  * @property {number} shift - The shift modifier for the x coordinate. It shifts node and its subtree to the right.
  */
 export type PreNode = {
-    id: Id;
+    id: TreeNode;
     x: number;
     mod: number;
     shift: number;
@@ -42,7 +41,7 @@ export class ReingoldTilfordLayout {
     private isParentsCollapsible: boolean;
     private isChildrenCollapsible: boolean;
 
-    getRightmostChildren(id: Id): Id | null {
+    getRightmostChildren(id: Id): TreeNode | null {
         const children = this.tree.children[id.id];
 
         if (!children || children.length === 0) {
@@ -53,7 +52,7 @@ export class ReingoldTilfordLayout {
         return children.last()!;
     }
 
-    getLeftmostChildren(id: Id): Id | null {
+    getLeftmostChildren(id: Id): TreeNode | null {
         const children = this.tree.children[id.id];
 
         if (!children || children.length === 0) {
@@ -64,7 +63,7 @@ export class ReingoldTilfordLayout {
         return children.first()!;
     }
 
-    getChildNodesIds(currentNode: Id): Id[] {
+    getChildNodesIds(currentNode: Id): TreeNode[] {
         return this.tree.children[currentNode.id] ?? [];
     }
 
@@ -140,7 +139,13 @@ export class ReingoldTilfordLayout {
 
         return Math.max(
             shift,
-            this.calculateShift(nextLeftSibling, leftShift, nextRightSibling, rightShift, preNodes),
+            this.calculateShift(
+                nextLeftSibling.id,
+                leftShift,
+                nextRightSibling.id,
+                rightShift,
+                preNodes,
+            ),
         );
     }
 
@@ -154,12 +159,12 @@ export class ReingoldTilfordLayout {
      * @returns The preliminary node for the current perspectiveId.
      */
     buildPreNodes(
-        perspectiveId: Id,
+        perspectiveId: TreeNode,
         preNodes: Map<string, PreNode>,
         preX: number,
-        siblings: Id[],
+        siblings: TreeNode[],
     ): PreNode {
-        const childIds = this.getChildNodesIds(perspectiveId);
+        const childIds = this.getChildNodesIds(perspectiveId.id);
 
         if (childIds.length === 0) {
             const preNode: PreNode = {
@@ -169,14 +174,14 @@ export class ReingoldTilfordLayout {
                 shift: 0,
             };
 
-            preNodes.set(perspectiveId.id, preNode);
+            preNodes.set(perspectiveId.id.id, preNode);
 
             for (const sibling of siblings) {
                 if (perspectiveId === sibling) {
                     break;
                 }
 
-                const shift = this.calculateShift(sibling, 0, perspectiveId, 0, preNodes);
+                const shift = this.calculateShift(sibling.id, 0, perspectiveId.id, 0, preNodes);
                 preNode.shift += shift;
             }
 
@@ -188,7 +193,7 @@ export class ReingoldTilfordLayout {
         for (const childId of childIds) {
             childPreNodes.push(this.buildPreNodes(childId, preNodes, deltaX, childIds));
 
-            if (childId.type === PERSON_NODE_TYPE) {
+            if (childId.id.type === PERSON_NODE_TYPE) {
                 deltaX += NODE_WIDTH + NODES_GAP;
             } else {
                 deltaX += MARRIAGE_WIDTH + NODES_GAP;
@@ -224,14 +229,14 @@ export class ReingoldTilfordLayout {
             shift: 0,
         };
 
-        preNodes.set(perspectiveId.id, preNode);
+        preNodes.set(perspectiveId.id.id, preNode);
 
         for (const sibling of siblings) {
             if (perspectiveId === sibling) {
                 break;
             }
 
-            const shift = this.calculateShift(sibling, 0, perspectiveId, 0, preNodes);
+            const shift = this.calculateShift(sibling.id, 0, perspectiveId.id, 0, preNodes);
             preNode.shift += shift;
         }
 
@@ -241,7 +246,7 @@ export class ReingoldTilfordLayout {
     /**
      * Calculates the final layout of the nodes, creates nodes and edges.
      *
-     * @param {Id} nodeId Current node to calculate the layout for.
+     * @param {TreeNode} nodeId Current node to calculate the layout for.
      * @param {Map<string, PreNode>} preNodes The map of preliminary nodes that are already built.
      * @param {Node[]} nodes Final nodes array with calculated positions that will be rendered.
      * @param {Edge[]} edges Final edges array that will be rendered.
@@ -249,18 +254,18 @@ export class ReingoldTilfordLayout {
      * @param {number} mod The accumulated modifier value that is passed down from the root nodes.
      */
     finalizeNodesLayout(
-        nodeId: Id,
+        nodeId: TreeNode,
         preNodes: Map<string, PreNode>,
         nodes: Node[],
         edges: Edge[],
         level: number,
         mod: number,
     ) {
-        const parents = this.getChildNodesIds(nodeId);
+        const parents = this.getChildNodesIds(nodeId.id);
 
-        const preNode = preNodes.get(nodeId.id);
+        const preNode = preNodes.get(nodeId.id.id);
         if (!preNode) {
-            throw new Error(`Expected pre-node to exist for id ${nodeId.id}`);
+            throw new Error(`Expected pre-node to exist for id ${nodeId.id.id}`);
         }
 
         for (const parent of parents) {
@@ -277,26 +282,26 @@ export class ReingoldTilfordLayout {
         const x = preNode.x + mod + preNode.shift;
         const y = this.getY(level);
 
-        if (nodeId.type === MARRIAGE_NODE_TYPE) {
-            const marriage = this.family.marriageById.get(nodeId.id);
+        if (nodeId.id.type === MARRIAGE_NODE_TYPE) {
+            const marriage = this.family.marriageById.get(nodeId.id.id);
             if (!marriage) {
-                throw new Error(`Expected marriage to exist for id ${nodeId.id}`);
+                throw new Error(`Expected marriage to exist for id ${nodeId.id.id}`);
             }
 
             // Create a marriage node first.
-            const children = this.tree.children[marriage.id] ?? [];
+            const children = this.tree.children[nodeId.id.id] ?? [];
             const isChildrenCollapsible =
                 this.isChildrenCollapsible && marriage.childrenIds.length > 0;
             const isChildrenCollapsed = this.isChildrenCollapsible ? children.length === 0 : false;
 
             const nodeData: MarriageNodeData = {
-                id: marriage.id,
+                id: nodeId.id.id,
                 isChildrenCollapsible,
                 isChildrenCollapsed,
             };
 
             nodes.push({
-                id: marriage.id,
+                id: nodeId.id.id,
                 data: nodeData,
                 type: MARRIAGE_NODE_TYPE,
                 position: {
@@ -314,18 +319,19 @@ export class ReingoldTilfordLayout {
                 },
             });
 
-            const parent1NodeId = marriage.parent1Id ?? uuidv4();
-            if (marriage.parent1Id) {
-                const person = this.family.personById.get(marriage.parent1Id);
+            if (nodeId.persons.person1) {
+                const parent1NodeId = nodeId.persons.person1;
+
+                const person = this.family.personById.get(nodeId.persons.person1);
                 if (!person) {
-                    throw new Error(`Expected person to exist for id ${marriage.parent1Id}`);
+                    throw new Error(`Expected person to exist for id ${nodeId.persons.person1}`);
                 }
 
                 const parentsId = this.family.personParents.get(parent1NodeId);
                 let isParentsCollapsed = false;
                 if (parentsId && this.isParentsCollapsible) {
-                    const nodeParents = this.tree.children[marriage.id] ?? [];
-                    if (nodeParents.find((id) => id.id === parentsId)) {
+                    const nodeParents = this.tree.children[nodeId.id.id] ?? [];
+                    if (nodeParents.find((id) => id.id.id === parentsId)) {
                         isParentsCollapsed = false;
                     } else {
                         isParentsCollapsed = true;
@@ -350,26 +356,27 @@ export class ReingoldTilfordLayout {
                 });
 
                 edges.push({
-                    id: marriage.id + '-to-' + parent1NodeId,
+                    id: nodeId.id.id + '-to-' + parent1NodeId,
                     target: parent1NodeId,
-                    source: marriage.id,
+                    source: nodeId.id.id,
                     sourceHandle: 'left',
                     targetHandle: 'right',
                 });
             }
 
-            const parent2NodeId = marriage.parent2Id ?? uuidv4();
-            if (marriage.parent2Id) {
-                const person = this.family.personById.get(marriage.parent2Id);
+            if (nodeId.persons.person2) {
+                const parent2NodeId = nodeId.persons.person2;
+
+                const person = this.family.personById.get(nodeId.persons.person2);
                 if (!person) {
-                    throw new Error(`Expected person to exist for id ${marriage.parent2Id}`);
+                    throw new Error(`Expected person to exist for id ${nodeId.persons.person2}`);
                 }
 
                 const parentsId = this.family.personParents.get(parent2NodeId);
                 let isParentsCollapsed = false;
                 if (parentsId && this.isParentsCollapsible) {
-                    const nodeParents = this.tree.children[marriage.id] ?? [];
-                    if (nodeParents.find((id) => id.id === parentsId)) {
+                    const nodeParents = this.tree.children[nodeId.id.id] ?? [];
+                    if (nodeParents.find((id) => id.id.id === parentsId)) {
                         isParentsCollapsed = false;
                     } else {
                         isParentsCollapsed = true;
@@ -404,24 +411,24 @@ export class ReingoldTilfordLayout {
 
             for (const childId of marriage.childrenIds) {
                 edges.push({
-                    id: marriage.id + '-to-' + childId,
-                    source: marriage.id,
+                    id: nodeId.id.id + '-to-' + childId,
+                    source: nodeId.id.id,
                     target: childId,
                     sourceHandle: 'bottom',
                     targetHandle: 'top',
                 });
             }
         } else {
-            const person = this.family.personById.get(nodeId.id);
+            const person = this.family.personById.get(nodeId.id.id);
             if (!person) {
-                throw new Error(`Expected person to exist for id ${nodeId.id}`);
+                throw new Error(`Expected person to exist for id ${nodeId.id.id}`);
             }
 
-            const parentsId = this.family.personParents.get(nodeId.id);
+            const parentsId = this.family.personParents.get(nodeId.id.id);
             let isParentsCollapsed = false;
             if (parentsId && this.isParentsCollapsible) {
-                const nodeParents = this.tree.children[nodeId.id] ?? [];
-                if (nodeParents.find((id) => id.id === parentsId)) {
+                const nodeParents = this.tree.children[nodeId.id.id] ?? [];
+                if (nodeParents.find((id) => id.id.id === parentsId)) {
                     isParentsCollapsed = false;
                 } else {
                     isParentsCollapsed = true;
@@ -436,7 +443,7 @@ export class ReingoldTilfordLayout {
             };
 
             nodes.push({
-                id: nodeId.id,
+                id: nodeId.id.id,
                 data: nodeData,
                 position: { x, y },
                 type: PERSON_NODE_TYPE,
@@ -445,10 +452,10 @@ export class ReingoldTilfordLayout {
                 },
             });
 
-            for (const childId of this.family.personChildren.get(nodeId.id) ?? []) {
+            for (const childId of this.family.personChildren.get(nodeId.id.id) ?? []) {
                 edges.push({
-                    id: nodeId.id + '-to-' + childId,
-                    source: nodeId.id,
+                    id: nodeId.id.id + '-to-' + childId,
+                    source: nodeId.id.id,
                     target: childId,
                     sourceHandle: 'bottom',
                     targetHandle: 'top',

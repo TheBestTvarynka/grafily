@@ -16,13 +16,16 @@ import { Edge, Node } from '@xyflow/react';
 import { Index, LEFT_SIDE, MarriageNodeSide, NONE_SIDE, RIGHT_SIDE } from '../../model';
 import {
     MARRIAGE_NODE_TYPE,
+    NodeCapabilities,
     personIdToNodeId,
+    RearrangeAction,
     REINGOLD_TILFORD,
     SerializableLayout,
+    SWAP_MARRIAGE_SPOUSES,
 } from '../index';
 import { getChildY, getParentY, PreNode, ReingoldTilfordLayout } from './reingoldTilford';
 import { FamilyTree, getNodeChildren, getNodeParents, TreeBuilder } from './treeBuilder';
-import { PersonNodeData } from 'view/node';
+import { MarriageNodeData, PersonNodeData } from 'view/node';
 
 export class ReingoldTilford {
     private family: Index;
@@ -142,11 +145,11 @@ export class ReingoldTilford {
                     // Is not used yet.
                     rootIds.set(node.id, true);
 
-                    const nodeData: PersonNodeData = node.data as PersonNodeData;
-                    nodeData.isParentsCollapsible = true;
-
                     const person = this.family.personById.get(node.id);
                     if (person) {
+                        const nodeData: PersonNodeData = node.data as PersonNodeData;
+                        nodeData.isParentsCollapsible = true;
+
                         const parentsId = this.family.personParents.get(node.id);
                         if (parentsId) {
                             const [id] = personIdToNodeId(node.id, this.family);
@@ -154,7 +157,7 @@ export class ReingoldTilford {
 
                             const nodeParents =
                                 this.parentsTreeBuilder.getChildren().get(id.id) ?? [];
-                            if (nodeParents.find((id) => id.id === parentsId)) {
+                            if (nodeParents.find((id) => id.id.id === parentsId)) {
                                 isParentsCollapsed = false;
                             } else {
                                 isParentsCollapsed = true;
@@ -162,6 +165,20 @@ export class ReingoldTilford {
 
                             nodeData.isParentsCollapsed = isParentsCollapsed;
                         }
+                    } else {
+                        const marriage = this.family.marriageById.get(node.id);
+                        if (!marriage) {
+                            console.warn(
+                                `${node.id} node id is not person a person id and not a marriage id. that's weird.`,
+                            );
+                            return true;
+                        }
+
+                        const nodeData: MarriageNodeData = node.data as MarriageNodeData;
+                        nodeData.isChildrenCollapsible = true;
+                        nodeData.isChildrenCollapsed =
+                            (this.childrenTreeBuilder.getChildren().get(node.id) ?? []).length ===
+                            0;
                     }
 
                     return true;
@@ -273,6 +290,54 @@ export class ReingoldTilford {
         return this.buildNodesInternal();
     }
 
+    /**
+     * This method is used to changes nodes positions within the layout. This method never deletes or
+     * add nodes. Only changes they arrangement: position among siblings or person's position relative
+     * to the spouse within the node.
+     * to the spouse within the node. See also the {@link RearrangeAction} type documentation.
+     * - The {@link MOVE_PERSON_LEFT} and {@link MOVE_PERSON_RIGHT} actions have limitations: they can
+     *   be applied only to children nodes starting from the root node (e.g. children of the root node,
+     *   children of the children of the root node, etc).
+     * - The {@link SWAP_MARRIAGE_SPOUSES} action can be applied to any node in the tree.
+     *
+     * @param {string} personId - A person id which user has selected.
+     * @param {RearrangeAction} action - An action to be performed.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
+    rearrange(personId: string, action: RearrangeAction): [Node[], Edge[]] {
+        const [id] = personIdToNodeId(personId, this.family);
+
+        if (action === SWAP_MARRIAGE_SPOUSES) {
+            this.parentsTreeBuilder.rearrange(id, action, true);
+            this.childrenTreeBuilder.rearrange(id, action, false);
+        } else {
+            this.childrenTreeBuilder.rearrange(id, action);
+        }
+
+        return this.buildNodesInternal();
+    }
+
+    capabilities(personId: string): NodeCapabilities {
+        const [id] = personIdToNodeId(personId, this.family);
+
+        const c1 = this.parentsTreeBuilder.capabilities(id);
+        const c2 = this.childrenTreeBuilder.capabilities(id);
+
+        return {
+            // MOVE_PERSON_LEFT and MOVE_PERSON_RIGHT actions is available only for the children tree.
+            movableLeft: c2.movableLeft,
+            movableRight: c2.movableRight,
+            spousesSwappable: c1.spousesSwappable || c2.spousesSwappable,
+        };
+    }
+
+    /**
+     * Returns the layout state ready for serialization. Is it safe to stringify it to the JSON
+     * and parse back again.
+     * For the `ReingoldTilford`, the `data` field has `{ parentsTreeBuilder: FamilyTree, childrenTreeBuilder: FamilyTree }` type.
+     *
+     * @returns {SerializableLayout} - A object ready to be serialized.
+     */
     toSerializableObject(): SerializableLayout {
         return {
             name: REINGOLD_TILFORD,
@@ -284,6 +349,16 @@ export class ReingoldTilford {
     }
 }
 
+/**
+ * Then the user wants to save the layout into a file or somewhere else, it generates
+ * the {@link SerializableLayout} object using the `toSerializableObject` method on the
+ * {@link ReingoldTilford} class. Later, the user can use this method to construct and use
+ * the {@link ReingoldTilford} object back again.
+ *
+ * @param {SerializableLayout} layout - Layout data.
+ * @param {Index} family - The family index containing all the people and their relationships.
+ * @returns {ReingoldTilford} - {@link ReingoldTilford} instance.
+ */
 export function fromSerializableObject(layout: SerializableLayout, family: Index): ReingoldTilford {
     // Trust me, I am Engineer!
     /* eslint-disable @typescript-eslint/no-unsafe-member-access */
