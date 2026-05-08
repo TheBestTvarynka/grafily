@@ -797,7 +797,7 @@ export class GraphBuilder {
      * @param {string} personId - The ID of the person whose parents we want to add to the graph.
      */
     addParentsOf(personId: string) {
-        const [nodeId, marriage] = personIdToNodeId(personId, this.family);
+        const [nodeId] = personIdToNodeId(personId, this.family);
 
         let left: string | null = null;
         let right: string | null = null;
@@ -809,6 +809,11 @@ export class GraphBuilder {
             throw new Error(`Layer ${layer} should exist`);
         }
 
+        const node = this.nodes.get(nodeId.id);
+        if (!node) {
+            throw new Error(`${nodeId.id} does not exist in graph nodes`);
+        }
+
         const nodeParents = this.parents.get(nodeId.id);
         if (nodeParents && nodeParents.length > 0) {
             // The `nodeId` node already has at least one parent. We must calculate left and right boundaries including the existing parents nodes.
@@ -818,59 +823,59 @@ export class GraphBuilder {
                     `Something weird happens here: trying to expand parents of a person node ${nodeId.id}, but it already has parents.`,
                 );
                 return;
-            } else {
-                // One of the marriage parents (parents of wife or parents of husband) are already expanded.
-                if (marriage?.parent1Id === personId) {
-                    // Parents of `marriage.parent2Id` are already expanded. So, the right boundary is the position of the current node, and the left boundary is the position of the left neighbor of the current node (if exists).
-                    right = nodeId.id;
+            }
 
-                    let leftPosition = position - 1;
+            // One of the marriage parents (parents of wife or parents of husband) are already expanded.
+            if (node.persons.person1 === personId) {
+                // Parents of `marriage.parent2Id` are already expanded. So, the right boundary is the position of the current node, and the left boundary is the position of the left neighbor of the current node (if exists).
+                right = nodeId.id;
 
-                    while (leftPosition >= 0) {
-                        const leftCandidate = currentLayer[leftPosition];
-                        if (!leftCandidate) {
-                            throw new Error(
-                                `Node at layer ${layer} and position ${leftPosition} should exist`,
-                            );
-                        }
+                let leftPosition = position - 1;
 
-                        const leftCandidateParents = this.parents.get(leftCandidate) ?? [];
-
-                        if (leftCandidateParents.length > 0) {
-                            left = leftCandidate;
-                            break;
-                        } else {
-                            leftPosition -= 1;
-                        }
+                while (leftPosition >= 0) {
+                    const leftCandidate = currentLayer[leftPosition];
+                    if (!leftCandidate) {
+                        throw new Error(
+                            `Node at layer ${layer} and position ${leftPosition} should exist`,
+                        );
                     }
-                } else if (marriage?.parent2Id === personId) {
-                    // Parents of `marriage.parent1Id` are already expanded. So, the left boundary is the position of the current node, and the right boundary is the position of the right neighbor of the current node (if exists).
-                    left = nodeId.id;
 
-                    let rightPosition = position + 1;
+                    const leftCandidateParents = this.parents.get(leftCandidate) ?? [];
 
-                    while (rightPosition < currentLayer.length) {
-                        const rightCandidate = currentLayer[rightPosition];
-                        if (!rightCandidate) {
-                            throw new Error(
-                                `Node at layer ${layer} and position ${rightPosition} should exist`,
-                            );
-                        }
-
-                        const rightCandidateParents = this.parents.get(rightCandidate) ?? [];
-
-                        if (rightCandidateParents.length > 0) {
-                            right = rightCandidate;
-                            break;
-                        } else {
-                            rightPosition += 1;
-                        }
+                    if (leftCandidateParents.length > 0) {
+                        left = leftCandidate;
+                        break;
+                    } else {
+                        leftPosition -= 1;
                     }
-                } else {
-                    throw new Error(
-                        'This should not happen: the person should be either parent1 or parent2 of the marriage node',
-                    );
                 }
+            } else if (node.persons.person2 === personId) {
+                // Parents of `marriage.parent1Id` are already expanded. So, the left boundary is the position of the current node, and the right boundary is the position of the right neighbor of the current node (if exists).
+                left = nodeId.id;
+
+                let rightPosition = position + 1;
+
+                while (rightPosition < currentLayer.length) {
+                    const rightCandidate = currentLayer[rightPosition];
+                    if (!rightCandidate) {
+                        throw new Error(
+                            `Node at layer ${layer} and position ${rightPosition} should exist`,
+                        );
+                    }
+
+                    const rightCandidateParents = this.parents.get(rightCandidate) ?? [];
+
+                    if (rightCandidateParents.length > 0) {
+                        right = rightCandidate;
+                        break;
+                    } else {
+                        rightPosition += 1;
+                    }
+                }
+            } else {
+                throw new Error(
+                    'This should not happen: the person should be either person1 or person2 in the node',
+                );
             }
         } else {
             if (nodeId.type === MARRIAGE_NODE_TYPE) {
@@ -878,17 +883,17 @@ export class GraphBuilder {
                 // Here we determine what node to skip during expansion.
                 let nodeToSkipId: string | undefined = undefined;
 
-                if (marriage?.parent1Id === personId) {
-                    nodeToSkipId = marriage.parent2Id
-                        ? this.family.personParents.get(marriage.parent2Id)
+                if (node.persons.person1 === personId) {
+                    nodeToSkipId = node.persons.person2
+                        ? this.family.personParents.get(node.persons.person2)
                         : undefined;
-                } else if (marriage?.parent2Id === personId) {
-                    nodeToSkipId = marriage.parent1Id
-                        ? this.family.personParents.get(marriage.parent1Id)
+                } else if (node.persons.person2 === personId) {
+                    nodeToSkipId = node.persons.person1
+                        ? this.family.personParents.get(node.persons.person1)
                         : undefined;
                 } else {
                     console.warn(
-                        `Warn: corrupted data: the ${personId} should be either parent1 or parent2 of the marriage node(${marriage?.id})`,
+                        `Warn: corrupted data: the ${personId} should be either person1 or person2 of the marriage node(${nodeId.id})`,
                     );
                 }
 
