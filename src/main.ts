@@ -1,9 +1,20 @@
 import { Plugin } from 'obsidian';
 
-import { GrafilySettings, GrafilySettingTab } from './settings';
+import { DEFAULT_SETTINGS, GrafilySettings, GrafilySettingTab } from './settings';
 import { GrafilyView, VIEW_TYPE } from './view/GrafilyView';
 
 import '@xyflow/react/dist/style.css';
+import { GraphDto } from 'view/graph';
+
+export type GrafilyState = {
+    settings: GrafilySettings;
+    graphs: Record<string, GraphDto>;
+};
+
+export const DEFAULT_STATE: GrafilyState = {
+    settings: DEFAULT_SETTINGS,
+    graphs: {},
+};
 
 export default class Grafily extends Plugin {
     settings: GrafilySettings;
@@ -15,7 +26,7 @@ export default class Grafily extends Plugin {
             this.activateView().catch((err) => console.error(err));
         });
 
-        this.registerView(VIEW_TYPE, (leaf) => new GrafilyView(leaf, this));
+        this.registerView(VIEW_TYPE, (leaf) => new GrafilyView(leaf, this.settings.dataDir, this));
 
         this.addSettingTab(new GrafilySettingTab(this.app, this));
     }
@@ -31,10 +42,16 @@ export default class Grafily extends Plugin {
     onunload() {}
 
     async loadSettings() {
-        //
+        /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+        const data: GrafilyState = (await this.loadData()) || DEFAULT_STATE;
+        this.settings = data.settings;
     }
 
     async saveSettings() {
-        //
+        /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+        const data: GrafilyState = (await this.loadData()) || DEFAULT_STATE;
+        data.settings = this.settings;
+
+        await this.saveData(data);
     }
 }

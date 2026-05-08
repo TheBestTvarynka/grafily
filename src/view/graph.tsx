@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { createContext, useEffect, useState } from 'react';
@@ -34,6 +33,7 @@ import {
 import { StartupMenu } from './StartupMenu';
 import { SelectedNode, SidePanel } from './SidePanel';
 import { Plugin } from 'obsidian';
+import { DEFAULT_STATE, GrafilyState } from 'main';
 
 export type GraphContextValue = {
     layout: GenericLayout;
@@ -41,10 +41,8 @@ export type GraphContextValue = {
 
     collapseChildren: (nodeId: string) => void;
     collapseParents: (personId: string) => void;
-
     expandChildren: (nodeId: string) => void;
     expandParents: (personId: string) => void;
-
     rearrange: (personId: string, action: RearrangeAction) => void;
 
     selectedNode: SelectedNode | null;
@@ -64,7 +62,7 @@ export type GraphDto = {
 
 const DEFAULT_EMPTY_LAYOUT: GenericLayout = new GenericLayout(BRANDES_KORF, emptyIndex());
 
-function FamilyGraph({ plugin }: { plugin: Plugin }) {
+function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
     const [layout, setLayout] = useState<GenericLayout>(DEFAULT_EMPTY_LAYOUT);
     const [index, setIndex] = useState<Index>(emptyIndex());
 
@@ -115,7 +113,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
 
             const persons = [];
             for (const file of files) {
-                if (file.path.startsWith('family/') && file.extension === 'md') {
+                if (file.path.startsWith(dataDir) && file.extension === 'md') {
                     const content = await vault.cachedRead(file);
                     try {
                         // Remove file `.md` extension.
@@ -149,22 +147,15 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
 
         (async () => {
             try {
-                const savedData = (await plugin.loadData()) || {};
-
-                // Extract graphs from the nested structure
-                const graphsData = savedData.graphs || {};
+                const savedData: GrafilyState = (await plugin.loadData()) || DEFAULT_STATE;
+                const graphsData = savedData.graphs;
 
                 if (!graphsData || Object.keys(graphsData).length === 0) {
                     setSavedGraphs({});
                     return;
                 }
 
-                const graphs: Record<string, GraphDto> = {};
-                for (const [key, value] of Object.entries(graphsData)) {
-                    graphs[key] = value as GraphDto;
-                }
-
-                setSavedGraphs(graphs);
+                setSavedGraphs({ ...savedData.graphs });
             } catch (err) {
                 console.error('Failed to load saved graphs:', err);
 
@@ -281,7 +272,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
         }
 
         try {
-            const existingStates = (await plugin.loadData()) || {};
+            const existingStates: GrafilyState = (await plugin.loadData()) || DEFAULT_STATE;
 
             const graphDto: GraphDto = {
                 data: graph,
@@ -292,8 +283,8 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
                 [name]: graphDto,
             };
 
-            const updatedStates = {
-                ...existingStates,
+            const updatedStates: GrafilyState = {
+                settings: existingStates.settings,
                 graphs,
             };
             JSON.stringify(updatedStates);
@@ -420,7 +411,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
     );
 }
 
-export function FamilyFlow({ plugin }: { plugin: any }) {
+export function FamilyFlow({ plugin, dataDir }: { plugin: any; dataDir: string }) {
     return (
         <div
             style={{
@@ -430,7 +421,7 @@ export function FamilyFlow({ plugin }: { plugin: any }) {
             }}
         >
             <ReactFlowProvider>
-                <FamilyGraph plugin={plugin} />
+                <FamilyGraph plugin={plugin} dataDir={dataDir} />
             </ReactFlowProvider>
         </div>
     );

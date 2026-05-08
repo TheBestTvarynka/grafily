@@ -6,10 +6,10 @@ import { FamilyFlow } from './graph';
 
 export const VIEW_TYPE = 'grafily-view';
 
-const ReactView = ({ plugin }: { plugin: Plugin }) => {
+const ReactView = ({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) => {
     return (
         <div style={{ width: '100%', height: '100%' }}>
-            <FamilyFlow plugin={plugin} />
+            <FamilyFlow plugin={plugin} dataDir={dataDir} />
         </div>
     );
 };
@@ -20,10 +20,12 @@ export const PluginContext = createContext<Plugin | undefined>(undefined);
 export class GrafilyView extends ItemView {
     root: Root | null = null;
     plugin: Plugin | null = null;
+    dataDir: string;
 
-    constructor(leaf: WorkspaceLeaf, plugin?: Plugin) {
+    constructor(leaf: WorkspaceLeaf, dataDir: string, plugin?: Plugin) {
         super(leaf);
         this.plugin = plugin || null;
+        this.dataDir = dataDir;
     }
 
     getViewType() {
@@ -40,7 +42,7 @@ export class GrafilyView extends ItemView {
             <AppContext.Provider value={this.app}>
                 <PluginContext.Provider value={this.plugin || undefined}>
                     <StrictMode>
-                        <ReactView plugin={this.plugin!} />
+                        <ReactView plugin={this.plugin!} dataDir={this.dataDir} />
                     </StrictMode>
                 </PluginContext.Provider>
             </AppContext.Provider>,
