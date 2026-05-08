@@ -1,12 +1,18 @@
 import { useState, KeyboardEvent } from 'react';
 import { getIcon } from 'obsidian';
 import { useGraph } from 'hooks';
-import { MOVE_PERSON_LEFT, MOVE_PERSON_RIGHT, SWAP_MARRIAGE_SPOUSES } from 'layout';
+import {
+    MOVE_PERSON_LEFT,
+    MOVE_PERSON_RIGHT,
+    NodeCapabilities,
+    SWAP_MARRIAGE_SPOUSES,
+} from 'layout';
 
 export type SelectedNode = {
     id: string;
     x: number;
     y: number;
+    capabilities: NodeCapabilities;
 };
 
 export type SidePanelProps = {
@@ -133,6 +139,7 @@ export function SidePanel({
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('move-left')?.outerHTML || '',
                             }}
+                            disabled={!selectedNode.capabilities.movableLeft}
                         />
                         <button
                             className="grafily-direction-button"
@@ -141,6 +148,7 @@ export function SidePanel({
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('move-right')?.outerHTML || '',
                             }}
+                            disabled={!selectedNode.capabilities.movableRight}
                         />
                         <button
                             className="grafily-direction-button"
@@ -149,6 +157,7 @@ export function SidePanel({
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('arrow-right-left')?.outerHTML || '',
                             }}
+                            disabled={!selectedNode.capabilities.spousesSwappable}
                         />
                         <button
                             className="grafily-direction-button"

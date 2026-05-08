@@ -16,6 +16,7 @@ import { Edge, Node } from '@xyflow/react';
 import { Index, LEFT_SIDE, MarriageNodeSide, NONE_SIDE, RIGHT_SIDE } from '../../model';
 import {
     MARRIAGE_NODE_TYPE,
+    NodeCapabilities,
     personIdToNodeId,
     RearrangeAction,
     REINGOLD_TILFORD,
@@ -314,6 +315,20 @@ export class ReingoldTilford {
         }
 
         return this.buildNodesInternal();
+    }
+
+    capabilities(personId: string): NodeCapabilities {
+        const [id] = personIdToNodeId(personId, this.family);
+
+        const c1 = this.parentsTreeBuilder.capabilities(id);
+        const c2 = this.childrenTreeBuilder.capabilities(id);
+
+        return {
+            // MOVE_PERSON_LEFT and MOVE_PERSON_RIGHT actions is available only for the children tree.
+            movableLeft: c2.movableLeft,
+            movableRight: c2.movableRight,
+            spousesSwappable: c1.spousesSwappable || c2.spousesSwappable,
+        };
     }
 
     /**

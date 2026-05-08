@@ -97,6 +97,7 @@ export function PersonNode({
                 id: data.id,
                 x: positionAbsoluteX,
                 y: positionAbsoluteY,
+                capabilities: graph.layout.capabilities(data.id),
             });
         } else {
             openPersonPage();

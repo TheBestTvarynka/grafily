@@ -12,6 +12,7 @@ import {
     Id,
     MARRIAGE_NODE_TYPE,
     MOVE_PERSON_LEFT,
+    NodeCapabilities,
     NodeType,
     PERSON_NODE_TYPE,
     personIdToNodeId,
@@ -283,6 +284,39 @@ export class TreeBuilder {
         this.children.set(parentId, children);
     }
 
+    private findNode(
+        nodeId: Id,
+    ): { node: TreeNode; nodeIndex: number; siblings: TreeNode[]; parentNodeId: string } | null {
+        if (this.root?.id.id === nodeId.id) {
+            return { node: this.root, siblings: [], nodeIndex: -1, parentNodeId: '' };
+        }
+
+        let node: TreeNode | null = null;
+        let siblings: TreeNode[] | null = null;
+        let parentNodeId: string | null = null;
+        let nodeIndex: number | null = null;
+
+        // Yes, we can optimize it by storing parent node id in each node.
+        // Usually, direct family trees are small, so it should be fast enough
+        // even with such dumb approach.
+        for (const [id, children] of this.children.entries()) {
+            const index = children.findIndex((node) => node.id.id === nodeId.id);
+            if (index !== -1) {
+                nodeIndex = index;
+                // SAFE: Index is not `-1`, so it is valid.
+                node = children[nodeIndex]!;
+                siblings = children;
+                parentNodeId = id;
+            }
+        }
+
+        if (!node || !siblings || !parentNodeId || nodeIndex === null) {
+            return null;
+        }
+
+        return { node, siblings, parentNodeId, nodeIndex };
+    }
+
     /**
      * This method is used to changes nodes positions within the layout. This method never deletes or
      * add nodes. Only changes they arrangement: position among siblings or person's position relative
@@ -300,26 +334,14 @@ export class TreeBuilder {
      */
     rearrange(nodeId: Id, action: RearrangeAction, swapChildren?: boolean) {
         if (action === SWAP_MARRIAGE_SPOUSES) {
-            let node: TreeNode | null = null;
+            const result = this.findNode(nodeId);
 
-            if (this.root?.id.id === nodeId.id) {
-                node = this.root;
-            } else {
-                // Yes, we can optimize it by storing parent node id in each node.
-                // Usually, direct family trees are small, so it should be fast enough
-                // even with such dumb approach.
-                for (const [, children] of this.children.entries()) {
-                    const treeNode = children.find((node) => node.id.id === nodeId.id);
-                    if (treeNode) {
-                        node = treeNode;
-                    }
-                }
-            }
-
-            if (!node) {
+            if (!result) {
                 console.warn(`${nodeId.id} does not exist`);
                 return;
             }
+
+            const { node } = result;
 
             [node.persons.person1, node.persons.person2] = [
                 node.persons.person2,
@@ -341,21 +363,15 @@ export class TreeBuilder {
             return;
         }
 
-        let nodeIndex: number = 0;
-        let siblings: TreeNode[] | null = null;
-
-        // Yes, we can optimize it by storing parent node id in each node.
-        // Usually, direct family trees are small, so it should be fast enough
-        // even with such dumb approach.
-        for (const [, children] of this.children.entries()) {
-            const index = children.findIndex((node) => node.id.id === nodeId.id);
-            if (index !== -1) {
-                nodeIndex = index;
-                siblings = children;
-            }
+        const result = this.findNode(nodeId);
+        if (!result) {
+            console.warn(`${nodeId.id} does not exist`);
+            return;
         }
 
-        if (!siblings) {
+        const { siblings, nodeIndex } = result;
+
+        if (siblings.length === 0 || nodeIndex === -1) {
             console.warn(`${nodeId.id} does not have a parent node.`);
             return;
         }
@@ -380,6 +396,41 @@ export class TreeBuilder {
 
         siblings[neighborSiblingIndex] = nodeIdToTreeNode(nodeId, this.family);
         siblings[nodeIndex] = neighborSibling;
+    }
+
+    capabilities(nodeId: Id): NodeCapabilities {
+        const capabilities: NodeCapabilities = {
+            movableLeft: false,
+            movableRight: false,
+            spousesSwappable: false,
+        };
+
+        const result = this.findNode(nodeId);
+        if (!result) {
+            console.warn(`${nodeId.id} node is not found`);
+            return capabilities;
+        }
+
+        if (nodeId.type === MARRIAGE_NODE_TYPE) {
+            capabilities.spousesSwappable = true;
+        }
+
+        const { nodeIndex, siblings } = result;
+
+        if (siblings.length === 0 || nodeIndex === -1) {
+            // The `nodeId` is a root node, so it cannot be moved left or right.
+            return capabilities;
+        }
+
+        if (nodeIndex !== 0) {
+            capabilities.movableLeft = true;
+        }
+
+        if (nodeIndex !== siblings.length - 1) {
+            capabilities.movableRight = true;
+        }
+
+        return capabilities;
     }
 }
 

@@ -139,6 +139,12 @@ export const REINGOLD_TILFORD = 'reingoldTilford';
  */
 export type LayoutName = typeof BRANDES_KORF | typeof REINGOLD_TILFORD;
 
+export type NodeCapabilities = {
+    movableLeft: boolean;
+    movableRight: boolean;
+    spousesSwappable: boolean;
+};
+
 /**
  * Represents a generic layout for the family graph. This class serves as a wrapper around specific layout implementations, allowing for flexibility in choosing different layout algorithms in the future.
  */
@@ -218,6 +224,10 @@ export class GenericLayout {
      */
     expandParents(personId: string): [Node[], Edge[]] {
         return this.layout.expandParents(personId);
+    }
+
+    capabilities(personId: string): NodeCapabilities {
+        return this.layout.capabilities(personId);
     }
 
     /**

@@ -9,6 +9,7 @@ import {
     NODES_GAP,
     NODE_HEIGHT,
     NODE_WIDTH,
+    NodeCapabilities,
     PERSON_NODE_TYPE,
     RearrangeAction,
     SerializableLayout,
@@ -330,6 +331,10 @@ export class BrandesKopfLayout {
         this.graph.rearrange(id, action);
 
         return this.buildNodesInternal();
+    }
+
+    capabilities(personId: string): NodeCapabilities {
+        throw new Error('unimplemented');
     }
 
     /**
