@@ -2,14 +2,20 @@ import { App, PluginSettingTab, Setting } from 'obsidian';
 
 import Grafily from './main';
 
-// Grafily plugin settings.
+/**
+ * Grafily plugin settings.
+ *
+ * @property {string} pages - Path to the directory that contains people's pages.
+ */
 export interface GrafilySettings {
-    // Path to the directory that contains people's pages.
-    pages: string;
+    dataDir: string;
 }
 
+/**
+ * Default settings.
+ */
 export const DEFAULT_SETTINGS: GrafilySettings = {
-    pages: 'family',
+    dataDir: 'family',
 };
 
 export class GrafilySettingTab extends PluginSettingTab {
@@ -31,9 +37,9 @@ export class GrafilySettingTab extends PluginSettingTab {
             .addText((text) =>
                 text
                     .setPlaceholder('Type directory path')
-                    .setValue(this.plugin.settings.pages)
+                    .setValue(this.plugin.settings.dataDir)
                     .onChange(async (value) => {
-                        this.plugin.settings.pages = value;
+                        this.plugin.settings.dataDir = value;
                         await this.plugin.saveSettings();
                     }),
             );
