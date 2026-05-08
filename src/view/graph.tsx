@@ -62,10 +62,10 @@ export type GraphDto = {
     layout: SerializableLayout;
 };
 
+const DEFAULT_EMPTY_LAYOUT: GenericLayout = new GenericLayout(BRANDES_KORF, emptyIndex());
+
 function FamilyGraph({ plugin }: { plugin: Plugin }) {
-    const [layout, setLayout] = useState<GenericLayout>(
-        new GenericLayout(BRANDES_KORF, emptyIndex()),
-    );
+    const [layout, setLayout] = useState<GenericLayout>(DEFAULT_EMPTY_LAYOUT);
     const [index, setIndex] = useState<Index>(emptyIndex());
 
     const [graph, setGraph] = useState<[Node[], Edge[]]>([[], []]);
@@ -178,6 +178,12 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], nodeId);
 
         setGraph(newGraph);
+        if (selectedNode) {
+            setSelectedNode({
+                ...selectedNode,
+                capabilities: layout.capabilities(selectedNode.id),
+            });
+        }
     };
 
     const collapseParents = (personId: string) => {
@@ -195,6 +201,12 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], nodeId);
 
         setGraph(newGraph);
+        if (selectedNode) {
+            setSelectedNode({
+                ...selectedNode,
+                capabilities: layout.capabilities(selectedNode.id),
+            });
+        }
     };
 
     const expandChildren = (nodeId: string) => {
@@ -202,6 +214,12 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], nodeId);
 
         setGraph(newGraph);
+        if (selectedNode) {
+            setSelectedNode({
+                ...selectedNode,
+                capabilities: layout.capabilities(selectedNode.id),
+            });
+        }
     };
 
     const expandParents = (personId: string) => {
@@ -211,6 +229,12 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], id.id);
 
         setGraph(newGraph);
+        if (selectedNode) {
+            setSelectedNode({
+                ...selectedNode,
+                capabilities: layout.capabilities(selectedNode.id),
+            });
+        }
     };
 
     const rearrange = (personId: string, action: RearrangeAction) => {
@@ -220,6 +244,12 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], id.id);
 
         setGraph(newGraph);
+        if (selectedNode) {
+            setSelectedNode({
+                ...selectedNode,
+                capabilities: layout.capabilities(selectedNode.id),
+            });
+        }
     };
 
     const handleStartupMenuSubmit = (layoutName: LayoutName, personId: string) => {
@@ -304,6 +334,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
             setLoadedGraphName(null);
             setGraph([[], []]);
             setIsInitialized(false);
+            setLayout(DEFAULT_EMPTY_LAYOUT);
 
             const saved = savedGraphs;
             delete saved[graphName];
@@ -319,6 +350,7 @@ function FamilyGraph({ plugin }: { plugin: Plugin }) {
         setLoadedGraphName(null);
         setGraph([[], []]);
         setIsInitialized(false);
+        setLayout(DEFAULT_EMPTY_LAYOUT);
     };
 
     const { getViewport, setViewport } = useReactFlow();

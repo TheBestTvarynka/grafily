@@ -19,6 +19,7 @@ import {
     SWAP_MARRIAGE_SPOUSES,
     MOVE_PERSON_LEFT,
     MOVE_PERSON_RIGHT,
+    NodeCapabilities,
 } from '../';
 import { Index, LEFT_SIDE, RIGHT_SIDE, Marriage } from '../../model';
 
@@ -1182,6 +1183,76 @@ export class GraphBuilder {
         }
     }
 
+    capabilities(nodeId: Id): NodeCapabilities {
+        const parentNodes = this.parents.get(nodeId.id);
+
+        const capabilities: NodeCapabilities = {
+            movableLeft: false,
+            movableRight: false,
+            spousesSwappable: false,
+        };
+
+        if (nodeId.type === MARRIAGE_NODE_TYPE) {
+            if (!parentNodes || parentNodes.length <= 1) {
+                capabilities.spousesSwappable = true;
+            }
+        }
+
+        if ((this.children.get(nodeId.id) ?? []).length > 0) {
+            return capabilities;
+        }
+
+        if (!parentNodes || parentNodes.length === 0 || parentNodes.length > 1) {
+            return capabilities;
+        }
+
+        // SAFE: checked above: the current node has exactly one parent node.
+        const parentNode = parentNodes[0]!;
+        const siblings = this.children.get(parentNode);
+        if (!siblings) {
+            throw new Error(`${parentNode} must have a least one children`);
+        }
+
+        if (siblings.length < 2) {
+            return capabilities;
+        }
+
+        const nodeIndex = siblings.indexOf(nodeId.id);
+        if (nodeIndex === -1) {
+            throw new Error(`${nodeId.id} must present in siblings array ${siblings.join(',')}`);
+        }
+
+        if (nodeIndex > 0) {
+            let neighborIndex = nodeIndex - 1;
+
+            // SAFE: checked above.
+            const neighbor = siblings[neighborIndex]!;
+
+            if (
+                (this.children.get(neighbor) ?? []).length === 0 &&
+                (this.parents.get(neighbor) ?? []).length === 1
+            ) {
+                capabilities.movableLeft = true;
+            }
+        }
+
+        if (nodeIndex < siblings.length - 1) {
+            let neighborIndex = nodeIndex + 1;
+
+            // SAFE: checked above.
+            const neighbor = siblings[neighborIndex]!;
+
+            if (
+                (this.children.get(neighbor) ?? []).length === 0 &&
+                (this.parents.get(neighbor) ?? []).length === 1
+            ) {
+                capabilities.movableRight = true;
+            }
+        }
+
+        return capabilities;
+    }
+
     rearrange(nodeId: Id, action: RearrangeAction) {
         const parentNodes = this.parents.get(nodeId.id);
 
@@ -1282,24 +1353,23 @@ export class GraphBuilder {
         }
 
         const nodeIndex = layer.indexOf(nodeId.id);
-        if (nodeIndex === -1 || nodeIndex === 0) {
-            throw new Error(
-                `invalid ${nodeId.id} node index in the ${graphNode.layerNumber} layer: ${nodeIndex}`,
-            );
+        if (nodeIndex === -1) {
+            throw new Error(`${nodeId.id} does not exist on ${graphNode.layerNumber} layer`);
         }
+
         if (
             (action === MOVE_PERSON_LEFT && nodeIndex === 0) ||
             (action === MOVE_PERSON_RIGHT && nodeIndex === layer.length - 1)
         ) {
             throw new Error(
-                `invalid ${nodeId.id} node index in the ${graphNode.layerNumber} layer: ${nodeIndex}`,
+                `invalid ${nodeId.id} node index (${nodeIndex}) in the ${graphNode.layerNumber} layer`,
             );
         }
 
         const layerSiblingIndex = layer.indexOf(neighborSibling);
         if (layerSiblingIndex === -1) {
             throw new Error(
-                `invalid ${neighborSibling} node index in the ${graphNode.layerNumber} layer: ${layerSiblingIndex}`,
+                `invalid ${neighborSibling} node index (${layerSiblingIndex}) in the ${graphNode.layerNumber} layer`,
             );
         }
 

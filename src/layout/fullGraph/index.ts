@@ -334,7 +334,9 @@ export class BrandesKopfLayout {
     }
 
     capabilities(personId: string): NodeCapabilities {
-        throw new Error('unimplemented');
+        const [id] = personIdToNodeId(personId, this.family);
+
+        return this.graph.capabilities(id);
     }
 
     /**
