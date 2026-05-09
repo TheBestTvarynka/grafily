@@ -32,7 +32,7 @@ import {
 } from 'layout';
 import { StartupMenu } from './StartupMenu';
 import { SelectedNode, SidePanel } from './SidePanel';
-import { Plugin } from 'obsidian';
+import { App, Plugin } from 'obsidian';
 import { DEFAULT_STATE, GrafilyState } from 'main';
 
 export type GraphContextValue = {
@@ -47,6 +47,8 @@ export type GraphContextValue = {
 
     selectedNode: SelectedNode | null;
     selectNode: (node: SelectedNode | null) => void;
+
+    refreshIndex: () => Promise<void>;
 };
 export const GraphContext = createContext<GraphContextValue | null>(null);
 
@@ -61,6 +63,30 @@ export type GraphDto = {
 };
 
 const DEFAULT_EMPTY_LAYOUT: GenericLayout = new GenericLayout(BRANDES_KORF, emptyIndex());
+
+async function scanVaultForPersons(app: App, dataDir: string): Promise<Index> {
+    const { vault } = app;
+    const files = vault.getFiles();
+
+    const persons = [];
+    for (const file of files) {
+        if (file.path.startsWith(dataDir) && file.extension === 'md') {
+            const content = await vault.cachedRead(file);
+            try {
+                // Remove file `.md` extension.
+                const name = file.name.substring(0, file.name.length - 3);
+
+                const person = extractPageMeta(content, name, file);
+                persons.push(person);
+            } catch (err) {
+                console.warn(err);
+            }
+        }
+    }
+
+    const family = familyFromPersons(persons);
+    return buildIndex(family);
+}
 
 function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
     const [layout, setLayout] = useState<GenericLayout>(DEFAULT_EMPTY_LAYOUT);
@@ -108,27 +134,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
                 return;
             }
 
-            const { vault } = app;
-            const files = vault.getFiles();
-
-            const persons = [];
-            for (const file of files) {
-                if (file.path.startsWith(dataDir) && file.extension === 'md') {
-                    const content = await vault.cachedRead(file);
-                    try {
-                        // Remove file `.md` extension.
-                        const name = file.name.substring(0, file.name.length - 3);
-
-                        const person = extractPageMeta(content, name, file);
-                        persons.push(person);
-                    } catch (err) {
-                        console.warn(err);
-                    }
-                }
-            }
-
-            const family = familyFromPersons(persons);
-            const familyIndex = buildIndex(family);
+            const familyIndex = await scanVaultForPersons(app, dataDir);
 
             if (!cancelled) {
                 setIndex(familyIndex);
@@ -368,6 +374,15 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         );
     };
 
+    const refreshIndex = async () => {
+        if (!app) {
+            return;
+        }
+
+        const familyIndex = await scanVaultForPersons(app, dataDir);
+        setIndex(familyIndex);
+    };
+
     return (
         <GraphContext.Provider
             value={{
@@ -380,6 +395,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
                 index,
                 selectedNode,
                 selectNode: setSelectedNode,
+                refreshIndex,
             }}
         >
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -395,6 +411,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
                         onDelete={handleDeleteGraph}
                         onHome={handleHome}
                         onRevealNode={handleRevealNode}
+                        onRefresh={refreshIndex}
                     />
                 )}
                 {!isInitialized && index.personById.size > 0 && (

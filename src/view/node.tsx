@@ -167,7 +167,10 @@ export function PersonNode({
             ) : (
                 <></>
             )}
-            <img src={getImageSrc()} style={{ height: '90%', borderRadius: '50%' }} />
+            <img
+                src={getImageSrc()}
+                style={{ height: '90%', borderRadius: '50%', aspectRatio: '1 / 1' }}
+            />
             <div
                 style={{
                     display: 'flex',

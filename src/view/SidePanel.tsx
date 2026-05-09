@@ -22,6 +22,7 @@ export type SidePanelProps = {
     onDelete: (graphName: string) => Promise<void>;
     onHome: () => void;
     onRevealNode: (x: number, y: number) => void;
+    onRefresh: () => Promise<void>;
 };
 
 export function SidePanel({
@@ -31,6 +32,7 @@ export function SidePanel({
     onDelete,
     onHome,
     onRevealNode,
+    onRefresh,
 }: SidePanelProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
@@ -86,8 +88,12 @@ export function SidePanel({
         }
     };
 
+    const handleRefresh = () => {
+        onRefresh().catch((err) => console.error(err));
+    };
+
     const handleSaveFromModal = () => {
-        handleSave(inputValue).catch((err) => console.error('Failed to save graph state:', err));
+        handleSave(inputValue).catch((err) => console.error(err));
     };
 
     const handleCancel = () => {
@@ -177,6 +183,14 @@ export function SidePanel({
                     title="Return to home menu"
                     dangerouslySetInnerHTML={{
                         __html: getIcon('house')?.outerHTML || '',
+                    }}
+                />
+                <button
+                    className="grafily-save-button"
+                    onClick={handleRefresh}
+                    title="Refresh graph (rescan vault)"
+                    dangerouslySetInnerHTML={{
+                        __html: getIcon('refresh-ccw')?.outerHTML || '',
                     }}
                 />
                 <button
