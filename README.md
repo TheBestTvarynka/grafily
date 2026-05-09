@@ -20,14 +20,17 @@ This plugin is useful for family history/genealogy research, tracking family mem
 
 ## Showcase
 
-
+| ![](./public//tree_demo.png) | ![](./public/graph_demo.png) |
+|-|-|
+| Reingold-Tilford | Brandes-Köpf |
+| A *tree-based* visualization algorithm. It will show only direct ancestors and/or descendants of the selected person (e.g., children's children or parents' parents). | A *graph-based* visualization algorithm. It's a universal rendering algorithm for any family graph of any complexity. The only disadvantage is not-perfect centering: some children's or parents' nodes are not perfectly centered. |
 
 ## Visualization algorithms
 
 | name | description | example |
 |-|-|-|
-| Reingold-Tilford | A *tree-based* visualization algorithm. It will show only direct ancestors and/or descendants of the selected person (e.g., children's children or parents' parents). | |
-| Brandes-Köpf | A *graph-based* visualization algorithm. It's a universal rendering algorithm for any family graph of any complexity. The only disadvantage is not-perfect centering: some children's or parents' nodes are not perfectly centered. | |
+| Reingold-Tilford | A *tree-based* visualization algorithm. It will show only direct ancestors and/or descendants of the selected person (e.g., children's children or parents' parents). | ![](./public/tree_demo.png) |
+| Brandes-Köpf | A *graph-based* visualization algorithm. It's a universal rendering algorithm for any family graph of any complexity. The only disadvantage is not-perfect centering: some children's or parents' nodes are not perfectly centered. | ![](./public/graph_demo.png) |
 
 ## How it works
 
@@ -35,7 +38,7 @@ This plugin is useful for family history/genealogy research, tracking family mem
 - The Grafily scans all pages in the directory (the directory is configurable), extracts persons' metadata (see the [Usage](#usage) section for the metadata format), builds an internal relationship graph, and then renders a pretty graph that you can easily navigate and view family members.
 - The interactive UI allows you to collapse or expand family relationships with other persons (collapse/expand children/parent nodes).
 
-Basically, Grafily is just a tool which creates a pretty graph from valut `.md` files:
+Basically, Grafily is just a tool which creates a pretty graph from vault `.md` files:
 
 ```mermaid
 flowchart LR
@@ -56,7 +59,6 @@ So, I decided to use [Obsidian](https://obsidian.md/). There are plenty of reaso
 But there was a problem: I couldn't find a suitable plugin to render a pretty graph of family relationships.
 So, I decided to write my own plugin.
 The Grafily has one concrete purpose: it is _**a viewer for family members' relationships**_.
-**The Grafily never modifies your vault content.**
 
 Actually, I found one very interesting plugin: https://github.com/banisterious/obsidian-charted-roots. It is super powerful. Too powerful for me. When I use such complex software, I do not have a feeling that I control the data or the process. I wanted _a simple_ plugin.
 
