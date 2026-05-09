@@ -19,7 +19,7 @@ This plugin is useful for family history/genealogy research, tracking family mem
 
 ## Visualization algorithms
 
-<sup><sub>All persons in the demo screenshots are generated using AI. If you find any coincidences with real people, please contact me, and I will fix them.</sub></sup>
+<sup><sub>All persons in demo screenshots below are generated using AI. If you find any coincidences with real people, please contact me, and I will fix them.</sub></sup>
 
 | Reingold-Tilford | Brandes-Köpf |
 |-|-|
