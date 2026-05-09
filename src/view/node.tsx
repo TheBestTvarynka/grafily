@@ -113,7 +113,7 @@ export function PersonNode({
             return PROFILE_IMAGE_PLACEHOLDER;
         }
 
-        const file = app.vault.getFileByPath(person.image);
+        const file = app.metadataCache.getFirstLinkpathDest(person.image, person.file.name);
 
         if (!file) {
             console.warn(`file "${person.image}" not found in vault`);
