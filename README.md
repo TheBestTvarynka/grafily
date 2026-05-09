@@ -2,7 +2,6 @@
 ### Table of contents:
 
 - [Grafily](#grafily)
-  - [Showcase](#showcase)
   - [Visualization algorithms](#visualization-algorithms)
   - [How it works](#how-it-works)
   - [Motivation](#motivation)
@@ -18,25 +17,20 @@ It uses the [reactflow](https://reactflow.dev/) library for rendering and a cust
 
 This plugin is useful for family history/genealogy research, tracking family members, etc.
 
-## Showcase
-
-| ![](./public//tree_demo.png) | ![](./public/graph_demo.png) |
-|-|-|
-| Reingold-Tilford | Brandes-Köpf |
-| A *tree-based* visualization algorithm. It will show only direct ancestors and/or descendants of the selected person (e.g., children's children or parents' parents). | A *graph-based* visualization algorithm. It's a universal rendering algorithm for any family graph of any complexity. The only disadvantage is not-perfect centering: some children's or parents' nodes are not perfectly centered. |
-
 ## Visualization algorithms
 
-| name | description | example |
-|-|-|-|
-| Reingold-Tilford | A *tree-based* visualization algorithm. It will show only direct ancestors and/or descendants of the selected person (e.g., children's children or parents' parents). | ![](./public/tree_demo.png) |
-| Brandes-Köpf | A *graph-based* visualization algorithm. It's a universal rendering algorithm for any family graph of any complexity. The only disadvantage is not-perfect centering: some children's or parents' nodes are not perfectly centered. | ![](./public/graph_demo.png) |
+<sup><sub>All persons in the demo screenshots are generated using AI. If you find any coincidences with real people, please contact me, and I will fix them.</sub></sup>
+
+| Reingold-Tilford | Brandes-Köpf |
+|-|-|
+| ![](./public//tree_demo.png) | ![](./public/graph_demo.png) |
+| A **_tree-based_** visualization algorithm. It will show **only direct ancestors and/or descendants** of the selected person (e.g., children's children or parents' parents). **The advantage of this method is perfect centering.** | A **_graph-based_** visualization algorithm. It's a universal rendering algorithm for any family graph of any complexity. The only disadvantage is **not-perfect centering: some children's or parents' nodes are not perfectly centered**. |
 
 ## How it works
 
 - The Grafily expects that your vault has one page per person.
-- The Grafily scans all pages in the directory (the directory is configurable), extracts persons' metadata (see the [Usage](#usage) section for the metadata format), builds an internal relationship graph, and then renders a pretty graph that you can easily navigate and view family members.
-- The interactive UI allows you to collapse or expand family relationships with other persons (collapse/expand children/parent nodes).
+- The Grafily scans all pages in the directory (the directory is configurable), extracts persons' metadata (see the [Usage](#usage) section for the metadata format), builds an internal relationship graph, and then renders a pretty **interactive** graph that you can easily navigate and view family members.
+- An interactive UI allows you to collapse or expand family relationships with other persons (collapse/expand children/parent nodes).
 
 Basically, Grafily is just a tool which creates a pretty graph from vault `.md` files:
 
@@ -60,7 +54,8 @@ But there was a problem: I couldn't find a suitable plugin to render a pretty gr
 So, I decided to write my own plugin.
 The Grafily has one concrete purpose: it is _**a viewer for family members' relationships**_.
 
-Actually, I found one very interesting plugin: https://github.com/banisterious/obsidian-charted-roots. It is super powerful. Too powerful for me. When I use such complex software, I do not have a feeling that I control the data or the process. I wanted _a simple_ plugin.
+Actually, I found one very interesting plugin: https://github.com/banisterious/obsidian-charted-roots. It is super powerful. Too powerful for me. When I use such complex software, I do not have a feeling that I control the the process. I wanted _a simple_ plugin.
+But do not get me wrong, [obsidian-charted-roots](https://github.com/banisterious/obsidian-charted-roots) is a great plugin but it's just not for me.
 
 ## Installation
 
