@@ -113,7 +113,7 @@ export function PersonNode({
             return PROFILE_IMAGE_PLACEHOLDER;
         }
 
-        const file = app.vault.getFileByPath(person.image);
+        const file = app.metadataCache.getFirstLinkpathDest(person.image, person.file.name);
 
         if (!file) {
             console.warn(`file "${person.image}" not found in vault`);
@@ -167,7 +167,10 @@ export function PersonNode({
             ) : (
                 <></>
             )}
-            <img src={getImageSrc()} style={{ height: '90%', borderRadius: '50%' }} />
+            <img
+                src={getImageSrc()}
+                style={{ height: '90%', borderRadius: '50%', aspectRatio: '1 / 1' }}
+            />
             <div
                 style={{
                     display: 'flex',
