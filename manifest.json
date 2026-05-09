@@ -1,9 +1,9 @@
 {
     "id": "grafily",
     "name": "Grafily",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "minAppVersion": "0.15.0",
-    "description": "Obsidian plugin for rendering family graph (family trees)",
+    "description": "Obsidian plugin for rendering family graphs (family trees)",
     "author": "TheBestTvarynka",
     "authorUrl": "https://tbt.qkation.com/about/",
     "isDesktopOnly": true
