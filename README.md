@@ -9,6 +9,9 @@
   - [Usage](#usage)
     - [Metadata](#metadata)
   - [BDFL](#bdfl)
+  - [App philosophy](#app-philosophy)
+    - [Do one thing and do it well](#do-one-thing-and-do-it-well)
+    - [The Worse Is Better](#the-worse-is-better)
 
 # Grafily
 
@@ -24,7 +27,7 @@ This plugin is useful for family history/genealogy research, tracking family mem
 | Reingold-Tilford | Brandes-Köpf |
 |-|-|
 | ![](./public//tree_demo.png) | ![](./public/graph_demo.png) |
-| A **_tree-based_** visualization algorithm. It will show **only direct ancestors and/or descendants** of the selected person (e.g., children's children or parents' parents). **The advantage of this method is perfect centering.** | A **_graph-based_** visualization algorithm. It's a universal rendering algorithm for any family graph of any complexity. The only disadvantage is **not-perfect centering: some children's or parents' nodes are not perfectly centered**. |
+| A **_tree-based_** visualization algorithm. It will show **only direct ancestors and/or descendants** of the selected person (e.g., children's children or parents' parents). **The advantage of this method is perfect centering.** [More...](https://tbt.qkation.com/posts/announcing-grafily-0-3/#reingold-tilford) | A **_graph-based_** visualization algorithm. It's a universal rendering algorithm for any family graph of any complexity. The only disadvantage is **not-perfect centering: some children's or parents' nodes are not perfectly centered**. [More...](https://tbt.qkation.com/posts/announcing-grafily-0-3/#brandes-kopf) |
 
 ## How it works
 
@@ -38,6 +41,8 @@ Basically, Grafily is just a tool which creates a pretty graph from vault `.md` 
 flowchart LR
     first["bunch of .md files"] -->|Grafily| second["Pretty graph ✨"]
 ```
+
+If you want to read more about how it works, please read my blog post: [Announcing Grafily v.0.3.0#how-it-works](https://tbt.qkation.com/posts/announcing-grafily-0-3/#how-it-works).
 
 ## Motivation
 
@@ -130,3 +135,35 @@ TL;DR:
 > **Benevolent dictator for life (BDFL)** is a title given to a small number of open-source software development leaders, typically project founders who retain the final say in disputes or arguments within the community.
 
 For the Grafily project, the BDFL is [@TheBestTvarynka (Pavlo Myroniuk)](https://github.com/TheBestTvarynka), original creator of Grafily.
+
+## App Philosophy
+
+### Do one thing and do it well
+
+The Grafily has one concrete goal: to render pretty family relationship graphs.
+It will never become an all-in-one genealogy research tool.
+It will never become a universal graph renderer. Or anything like that.
+The Grafily follows the [Unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy#Do_One_Thing_and_Do_It_Well):
+
+> Do one thing and do it well.
+
+The Grafily is good in building graph layouts.
+It does not even render them because the [`reactflow`](https://reactflow.dev/) library handles that.
+
+
+### The Worse Is Better
+
+Did you hear about [the _worse-is-better_ philosophy](https://www.dreamsongs.com/RiseOfWorseIsBetter.html)? If not, I encourage you to read [The Rise of Worse is Better](https://www.dreamsongs.com/RiseOfWorseIsBetter.html) article.
+
+TL;DR. This is a citation from the mentioned article above:
+
+> The worse-is-better philosophy:
+>   - Simplicity -- the design must be simple, both in implementation and interface. It is more important for the implementation to be simple than the interface.
+>   - Correctness -- the design must be correct in all observable aspects. It is slightly better to be simple than correct.
+>   - Consistency -- the design must not be overly inconsistent. Consistency can be sacrificed for simplicity in some cases, but it is better to drop those parts of the design that deal with less common circumstances than to introduce either implementational complexity or inconsistency.
+>   - Completeness -- the design must cover as many important situations as is practical. All reasonably expected cases should be covered. Completeness can be sacrificed in favor of any other quality. Consistency can be sacrificed to achieve completeness if simplicity is retained.
+
+:thinking: What does it mean for the app?
+It means that some features can be discarded in favor of app simplicity.
+The benefits of some features may not justify the complexity of their implementation.
+I would rather keep the app simple than unreasonably complex.
