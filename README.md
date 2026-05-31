@@ -9,6 +9,9 @@
   - [Usage](#usage)
     - [Metadata](#metadata)
   - [BDFL](#bdfl)
+  - [App philosophy](#app-philosophy)
+    - [Do one thing and do it well](#do-one-thing-and-do-it-well)
+    - [The Worse Is Better](#the-worse-is-better)
 
 # Grafily
 
