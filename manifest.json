@@ -3,7 +3,7 @@
     "name": "Grafily",
     "version": "0.3.0",
     "minAppVersion": "0.15.0",
-    "description": "Plugin for rendering pretty family graphs (family trees)",
+    "description": "Plugin for rendering pretty family graphs (family trees).",
     "author": "TheBestTvarynka",
     "authorUrl": "https://tbt.qkation.com/about/",
     "isDesktopOnly": true
