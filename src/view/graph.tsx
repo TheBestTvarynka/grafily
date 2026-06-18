@@ -414,7 +414,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
                         onRefresh={refreshIndex}
                     />
                 )}
-                {!isInitialized && index.personById.size > 0 && (
+                {!isInitialized && (
                     <StartupMenu
                         persons={Array.from(index.personById.keys())}
                         savedGraphs={savedGraphs}
