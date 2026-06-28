@@ -555,6 +555,35 @@ If your plugin does not need CSS, delete this file.
     gap: 6px;
 }
 
+.grafily-simple-node {
+    position: relative;
+}
+
+.grafily-simple-node > :first-child {
+    display: none;
+    z-index: 1;
+}
+
+.grafily-simple-node:hover > :first-child {
+    display: flex;
+}
+
+.grafily-simple-node-hover-overlay {
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.35);
+    border-radius: 10px;
+    pointer-events: none;
+}
+
+.grafily-simple-node-hover-overlay svg {
+    width: 24px;
+    height: 24px;
+    color: #fff;
+}
+
 .grafily-node-hidden {
     opacity: 0.8;
     filter: grayscale(0.6);

@@ -236,6 +236,7 @@ export function SidePanel({
                             <SimplePersonNode
                                 personId={child.personId}
                                 isVisible={child.isVisible}
+                                key={child.personId}
                             />
                         ))}
                     </div>

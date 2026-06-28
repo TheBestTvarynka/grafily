@@ -14,7 +14,7 @@ import {
     UNDEFINED_GENDER,
 } from 'model';
 import { TFile, getIcon } from 'obsidian';
-import { useEffect, useState, MouseEvent } from 'react';
+import { useEffect, useState, MouseEvent, KeyboardEvent } from 'react';
 
 export type PersonNodeData = {
     id: string;
@@ -70,7 +70,7 @@ export function PersonNode({
     }, [graph]);
 
     const openPersonPage = () => {
-        if (!app) {
+        if (!app || onClickDisabled) {
             return;
         }
 
@@ -235,8 +235,26 @@ export function SimplePersonNode({
     personId: string;
     isVisible: boolean;
 }) {
+    const onCtrlClick = (e: MouseEvent) => {
+        e.stopPropagation();
+    };
+
+    const classes = ['grafily-simple-node', !isVisible && 'grafily-node-hidden']
+        .filter(Boolean)
+        .join(' ');
+
     return (
-        <div className={isVisible ? undefined : 'grafily-node-hidden'} key={personId}>
+        <div
+            className={classes}
+            onClick={onCtrlClick}
+            title={isVisible ? 'Hide node' : 'Show node'}
+        >
+            <div
+                className="grafily-simple-node-hover-overlay"
+                dangerouslySetInnerHTML={{
+                    __html: getIcon(isVisible ? 'eye-off' : 'eye')?.outerHTML || '',
+                }}
+            />
             <PersonNode
                 positionAbsoluteX={0}
                 positionAbsoluteY={0}
