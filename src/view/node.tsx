@@ -8,6 +8,7 @@ import {
     LEFT_SIDE,
     MALE,
     MarriageNodeSide,
+    NONE_SIDE,
     Person,
     RIGHT_SIDE,
     UNDEFINED_GENDER,
@@ -26,10 +27,12 @@ export function PersonNode({
     data,
     positionAbsoluteX,
     positionAbsoluteY,
+    onClickDisabled = false,
 }: {
     data: PersonNodeData;
     positionAbsoluteX: number;
     positionAbsoluteY: number;
+    onClickDisabled?: boolean;
 }) {
     const app = useApp();
     const graph = useGraph();
@@ -88,7 +91,7 @@ export function PersonNode({
     };
 
     const onNodeClick = (e: MouseEvent) => {
-        if (e.ctrlKey || e.metaKey) {
+        if (onClickDisabled === false && (e.ctrlKey || e.metaKey)) {
             if (!graph) {
                 return;
             }
@@ -221,6 +224,30 @@ export function PersonNode({
             ) : (
                 <></>
             )}
+        </div>
+    );
+}
+
+export function SimplePersonNode({
+    personId,
+    isVisible,
+}: {
+    personId: string;
+    isVisible: boolean;
+}) {
+    return (
+        <div className={isVisible ? undefined : 'grafily-node-hidden'} key={personId}>
+            <PersonNode
+                positionAbsoluteX={0}
+                positionAbsoluteY={0}
+                data={{
+                    id: personId,
+                    isParentsCollapsible: false,
+                    isParentsCollapsed: false,
+                    side: NONE_SIDE,
+                }}
+                onClickDisabled={true}
+            />
         </div>
     );
 }
