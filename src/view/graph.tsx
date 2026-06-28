@@ -45,6 +45,7 @@ export type GraphContextValue = {
     expandParents: (personId: string) => void;
     rearrange: (personId: string, action: RearrangeAction) => void;
     contains: (personId: string) => boolean;
+    toggleSiblingVisibility: (personId: string) => void;
 
     selectedPerson: SelectedPerson | null;
     selectPerson: (node: SelectedPerson | null) => void;
@@ -254,6 +255,20 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         return layout.contains(personId);
     };
 
+    const toggleSiblingVisibility = (personId: string) => {
+        if (!selectedNode) {
+            return;
+        }
+
+        const [nodeId] = personIdToNodeId(selectedNode.id, index);
+        const newGraph = layout.toggleSiblingVisibility(personId, nodeId.id);
+
+        const [id] = personIdToNodeId(personId, index);
+        newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], id.id);
+
+        setGraph(newGraph);
+    };
+
     const handleStartupMenuSubmit = (layoutName: LayoutName, personId: string) => {
         const newLayout = new GenericLayout(layoutName, index);
         const newGraph = newLayout.buildNodes(personId);
@@ -402,6 +417,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
                 selectPerson: setSelectedNode,
                 refreshIndex,
                 contains,
+                toggleSiblingVisibility,
             }}
         >
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>

@@ -1082,19 +1082,19 @@ export class GraphBuilder {
     }
 
     /**
-     * Removes children of the node (marriage) with the given ID from the graph.
+     * Removes children of the marriage node with the given ID from the graph.
      *
      * @param {string} nodeId - The ID of the marriage whose children we want to remove from the graph.
      * @param {string} except - The ID of the child node to exclude from removal.
      */
-    removeChildrenOf(nodeId: string, except: string = '') {
+    removeChildrenOf(nodeId: string, except: string[] = []) {
         const children = this.children.get(nodeId);
         if (!children) {
             return;
         }
 
         for (const childId of children) {
-            if (childId === except) {
+            if (except.includes(childId)) {
                 continue;
             }
 
@@ -1124,15 +1124,16 @@ export class GraphBuilder {
             this.nodes.delete(childId);
         }
 
-        const exceptChildIndex = children.indexOf(except);
-        if (exceptChildIndex !== -1) {
-            this.children.set(
-                nodeId,
-                children.filter((childrenId) => childrenId === except),
-            );
-        } else {
-            this.children.delete(nodeId);
-        }
+        // const exceptChildIndex = children.indexOf(except);
+        // if (exceptChildIndex !== -1) {
+        this.children.set(
+            nodeId,
+            children.filter((childrenId) => except.includes(childrenId)),
+        );
+        // } else {
+        //     I do not remember why I added this line of code. I commented it for now, but I will keep it here in case I need it later.
+        //     this.children.delete(nodeId);
+        // }
     }
 
     /**
@@ -1161,7 +1162,7 @@ export class GraphBuilder {
 
             const parentChildren = this.children.get(parentId);
             if (parentChildren) {
-                this.removeChildrenOf(parentId, nodeId);
+                this.removeChildrenOf(parentId, [nodeId]);
             }
 
             // Remove parent from the layering matrix.
@@ -1389,5 +1390,50 @@ export class GraphBuilder {
 
     contains(nodeId: string): boolean {
         return this.nodes.has(nodeId);
+    }
+
+    toggleSiblingVisibility(nodeId: string, selectedParentNodeId: string) {
+        const isVisible = this.contains(nodeId);
+
+        const parentsMarriages = this.parents.get(nodeId);
+        if (!parentsMarriages) {
+            console.warn(`toggleSiblingVisibility: ${nodeId} does not have parents`);
+            return;
+        }
+
+        if (parentsMarriages.length > 2 || parentsMarriages.length === 0) {
+            console.warn(
+                `toggleSiblingVisibility: ${nodeId} has invalid number of parents: ${parentsMarriages.length}`,
+            );
+            return;
+        }
+
+        let parentsMarriage: string;
+        if (parentsMarriages.length === 2) {
+            if (parentsMarriages[0] === selectedParentNodeId) {
+                parentsMarriage = parentsMarriages[0]!;
+            } else if (parentsMarriages[1] === selectedParentNodeId) {
+                parentsMarriage = parentsMarriages[1]!;
+            } else {
+                console.warn(
+                    `toggleSiblingVisibility: ${nodeId} has two parents, but neither matches the selected parent ID: ${selectedParentNodeId}`,
+                );
+                return;
+            }
+        } else {
+            // SAFE: checked above.
+            parentsMarriage = parentsMarriages[0]!;
+        }
+
+        if (isVisible) {
+            const children = this.children.get(parentsMarriage) ?? [];
+            this.removeChildrenOf(
+                parentsMarriage,
+                children.filter((childId) => childId !== nodeId),
+            );
+        } else {
+            // this.addChildrenOf(parentsMarriage);
+            console.warn('Unimplemented');
+        }
     }
 }

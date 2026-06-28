@@ -235,8 +235,15 @@ export function SimplePersonNode({
     personId: string;
     isVisible: boolean;
 }) {
-    const onCtrlClick = (e: MouseEvent) => {
+    const graph = useGraph();
+
+    const onClick = (e: MouseEvent) => {
+        if (!graph) {
+            return;
+        }
+
         e.stopPropagation();
+        graph.toggleSiblingVisibility(personId);
     };
 
     const classes = ['grafily-simple-node', !isVisible && 'grafily-node-hidden']
@@ -244,11 +251,7 @@ export function SimplePersonNode({
         .join(' ');
 
     return (
-        <div
-            className={classes}
-            onClick={onCtrlClick}
-            title={isVisible ? 'Hide node' : 'Show node'}
-        >
+        <div className={classes} onClick={onClick} title={isVisible ? 'Hide node' : 'Show node'}>
             <div
                 className="grafily-simple-node-hover-overlay"
                 dangerouslySetInnerHTML={{

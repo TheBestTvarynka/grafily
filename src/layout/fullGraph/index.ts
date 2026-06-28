@@ -369,6 +369,14 @@ export class BrandesKopfLayout {
 
         return this.graph.contains(nodeId.id);
     }
+
+    toggleSiblingVisibility(personId: string, selectedParentNodeId: string): [Node[], Edge[]] {
+        const [nodeId] = personIdToNodeId(personId, this.family);
+
+        this.graph.toggleSiblingVisibility(nodeId.id, selectedParentNodeId);
+
+        return this.buildNodesInternal();
+    }
 }
 
 /**

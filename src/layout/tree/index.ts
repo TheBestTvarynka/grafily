@@ -358,6 +358,12 @@ export class ReingoldTilford {
         // TODO.
         return false;
     }
+
+    toggleSiblingVisibility(personId: string, selectedParentNodeId: string): [Node[], Edge[]] {
+        // TODO.
+
+        return this.buildNodesInternal();
+    }
 }
 
 /**
