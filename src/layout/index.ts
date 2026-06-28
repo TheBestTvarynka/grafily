@@ -252,6 +252,16 @@ export class GenericLayout {
     toSerializableObject(): SerializableLayout {
         return this.layout.toSerializableObject();
     }
+
+    /**
+     * Checks if the given person id is present in the current layout.
+     *
+     * @param {string} personId - A person id which user has selected.
+     * @returns Returns true when the given person id is present in the current layout. Otherwise, returns false.
+     */
+    contains(personId: string): boolean {
+        return this.layout.contains(personId);
+    }
 }
 
 /**

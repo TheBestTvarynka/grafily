@@ -93,11 +93,21 @@ export function PersonNode({
                 return;
             }
 
-            graph.selectNode({
-                id: data.id,
+            const personId = data.id;
+
+            const children = graph.index.personChildren.get(personId) ?? [];
+
+            graph.selectPerson({
+                id: personId,
                 x: positionAbsoluteX,
                 y: positionAbsoluteY,
                 capabilities: graph.layout.capabilities(data.id),
+                childrenNodes: children.map((childrenId) => {
+                    return {
+                        personId: childrenId,
+                        isVisible: graph.contains(childrenId),
+                    };
+                }),
             });
         } else {
             openPersonPage();
@@ -158,9 +168,9 @@ export function PersonNode({
             ) : (
                 <></>
             )}
-            {graph?.selectedNode?.id === data.id ? (
+            {graph?.selectedPerson?.id === data.id ? (
                 <button
-                    onClick={() => graph?.selectNode(null)}
+                    onClick={() => graph?.selectPerson(null)}
                     className="grafily-node-deselect-button"
                     dangerouslySetInnerHTML={{ __html: getIcon('target')?.outerHTML || '' }}
                 />

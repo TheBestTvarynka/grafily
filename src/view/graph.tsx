@@ -31,7 +31,7 @@ import {
     personIdToNodeId,
 } from 'layout';
 import { StartupMenu } from './StartupMenu';
-import { SelectedNode, SidePanel } from './SidePanel';
+import { SelectedPerson, SidePanel } from './SidePanel';
 import { App, Plugin } from 'obsidian';
 import { DEFAULT_STATE, GrafilyState } from 'main';
 
@@ -44,9 +44,10 @@ export type GraphContextValue = {
     expandChildren: (nodeId: string) => void;
     expandParents: (personId: string) => void;
     rearrange: (personId: string, action: RearrangeAction) => void;
+    contains: (personId: string) => boolean;
 
-    selectedNode: SelectedNode | null;
-    selectNode: (node: SelectedNode | null) => void;
+    selectedPerson: SelectedPerson | null;
+    selectPerson: (node: SelectedPerson | null) => void;
 
     refreshIndex: () => Promise<void>;
 };
@@ -96,7 +97,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
     const [isInitialized, setIsInitialized] = useState(false);
     const [savedGraphs, setSavedGraphs] = useState<Record<string, GraphDto>>({});
     const [loadedGraphName, setLoadedGraphName] = useState<string | null>(null);
-    const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
+    const [selectedNode, setSelectedNode] = useState<SelectedPerson | null>(null);
 
     const shiftGraphByAnchorNode = (
         oldNodes: Node[],
@@ -249,6 +250,10 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         }
     };
 
+    const contains = (personId: string): boolean => {
+        return layout.contains(personId);
+    };
+
     const handleStartupMenuSubmit = (layoutName: LayoutName, personId: string) => {
         const newLayout = new GenericLayout(layoutName, index);
         const newGraph = newLayout.buildNodes(personId);
@@ -393,9 +398,10 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
                 expandParents,
                 rearrange,
                 index,
-                selectedNode,
-                selectNode: setSelectedNode,
+                selectedPerson: selectedNode,
+                selectPerson: setSelectedNode,
                 refreshIndex,
+                contains,
             }}
         >
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -406,7 +412,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
                 {isInitialized && (
                     <SidePanel
                         loadedGraphName={loadedGraphName}
-                        selectedNode={selectedNode}
+                        selectedPerson={selectedNode}
                         onSave={handleSaveGraph}
                         onDelete={handleDeleteGraph}
                         onHome={handleHome}

@@ -266,6 +266,7 @@ export class GraphBuilder {
             } else {
                 persons.person1 = id.id;
             }
+
             this.nodes.set(id.id, {
                 id: id.id,
                 type: id.type,
@@ -1384,5 +1385,9 @@ export class GraphBuilder {
 
         siblings[neighborSiblingIndex] = nodeId.id;
         siblings[nodeSiblingIndex] = neighborSibling;
+    }
+
+    contains(nodeId: string): boolean {
+        return this.nodes.has(nodeId);
     }
 }

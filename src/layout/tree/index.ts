@@ -347,6 +347,17 @@ export class ReingoldTilford {
             },
         };
     }
+
+    /**
+     * Checks if the given person id is present in the current layout.
+     *
+     * @param {string} personId - A person id which user has selected.
+     * @returns Returns true when the given person id is present in the current layout. Otherwise, returns false.
+     */
+    contains(personId: string): boolean {
+        // TODO.
+        return false;
+    }
 }
 
 /**

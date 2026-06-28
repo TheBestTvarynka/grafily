@@ -549,6 +549,12 @@ If your plugin does not need CSS, delete this file.
     cursor: not-allowed;
 }
 
+.grafily-children-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
 .grafily-male-node {
     border: 2px solid #0060df;
 }
