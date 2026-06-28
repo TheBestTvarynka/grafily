@@ -555,6 +555,11 @@ If your plugin does not need CSS, delete this file.
     gap: 6px;
 }
 
+.grafily-node-hidden {
+    opacity: 0.8;
+    filter: grayscale(0.6);
+}
+
 .grafily-male-node {
     border: 2px solid #0060df;
 }

@@ -233,16 +233,18 @@ export function SidePanel({
                 {selectedPerson && selectedPerson.childrenNodes.length > 0 && (
                     <div className="grafily-children-list">
                         {selectedPerson.childrenNodes.map((child) => (
-                            <PersonNode
-                                positionAbsoluteX={0}
-                                positionAbsoluteY={0}
-                                data={{
-                                    id: child.personId,
-                                    isParentsCollapsible: false,
-                                    isParentsCollapsed: false,
-                                    side: NONE_SIDE,
-                                }}
-                            />
+                            <div className={child.isVisible ? undefined : 'grafily-node-hidden'} key={child.personId}>
+                                <PersonNode
+                                    positionAbsoluteX={0}
+                                    positionAbsoluteY={0}
+                                    data={{
+                                        id: child.personId,
+                                        isParentsCollapsible: false,
+                                        isParentsCollapsed: false,
+                                        side: NONE_SIDE,
+                                    }}
+                                />
+                            </div>
                         ))}
                     </div>
                 )}
