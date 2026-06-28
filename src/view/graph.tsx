@@ -267,6 +267,16 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], id.id);
 
         setGraph(newGraph);
+
+        const updatedChildrenNodes = selectedNode.childrenNodes.map((children) => {
+            return { personId: children.personId, isVisible: layout.contains(children.personId) };
+        });
+
+        setSelectedNode({
+            ...selectedNode,
+            capabilities: layout.capabilities(selectedNode.id),
+            childrenNodes: updatedChildrenNodes,
+        });
     };
 
     const handleStartupMenuSubmit = (layoutName: LayoutName, personId: string) => {
