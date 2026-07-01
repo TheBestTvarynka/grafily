@@ -20,7 +20,7 @@ import {
     SWAP_MARRIAGE_SPOUSES,
 } from 'layout';
 import { NodePersons } from 'layout/fullGraph/graphBuilder';
-import { Index, LEFT_SIDE, MarriageNodeSide } from 'model';
+import { Index, LEFT_SIDE, MarriageNodeSide, RIGHT_SIDE } from 'model';
 
 /**
  * Just an additional information about graph node. It is used for easier graph building and modifying.
@@ -268,7 +268,7 @@ export class TreeBuilder {
      * @param side - A place where to append the node. When the `parentId` node already has some
      * children nodes, we need to know where to place a new child node.
      */
-    addChildren(nodeId: Id, parentId: string, side: MarriageNodeSide) {
+    addChildren(nodeId: Id, parentId: string, side: MarriageNodeSide = RIGHT_SIDE) {
         this.addChildrenOf(nodeId.id);
 
         let node = nodeIdToTreeNode(nodeId, this.family);
@@ -459,14 +459,12 @@ export class TreeBuilder {
         return false;
     }
 
-    toggleSiblingVisibility(nodeId: string, selectedParentNodeId: string) {
-        if (this.contains(nodeId)) {
-            this.removeNode(nodeId, selectedParentNodeId);
+    toggleSiblingVisibility(nodeId: Id, selectedParentNodeId: string) {
+        if (this.contains(nodeId.id)) {
+            this.removeNode(nodeId.id, selectedParentNodeId);
         } else {
-            console.error(
-                `Node ${nodeId} is not present in the tree. Adding it back is not implemented yet.`,
-            );
-            // TODO.
+            this.addChildren(nodeId, selectedParentNodeId);
+            this.addChildrenOf(nodeId.id);
         }
     }
 }
