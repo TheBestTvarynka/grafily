@@ -458,6 +458,17 @@ export class TreeBuilder {
 
         return false;
     }
+
+    toggleSiblingVisibility(nodeId: string, selectedParentNodeId: string) {
+        if (this.contains(nodeId)) {
+            this.removeNode(nodeId, selectedParentNodeId);
+        } else {
+            console.error(
+                `Node ${nodeId} is not present in the tree. Adding it back is not implemented yet.`,
+            );
+            // TODO.
+        }
+    }
 }
 
 /**

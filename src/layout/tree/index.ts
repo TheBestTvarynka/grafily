@@ -361,7 +361,8 @@ export class ReingoldTilford {
     }
 
     toggleSiblingVisibility(personId: string, selectedParentNodeId: string): [Node[], Edge[]] {
-        // TODO.
+        const [id] = personIdToNodeId(personId, this.family);
+        this.childrenTreeBuilder.toggleSiblingVisibility(id.id, selectedParentNodeId);
 
         return this.buildNodesInternal();
     }
