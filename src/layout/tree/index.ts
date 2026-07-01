@@ -355,8 +355,9 @@ export class ReingoldTilford {
      * @returns Returns true when the given person id is present in the current layout. Otherwise, returns false.
      */
     contains(personId: string): boolean {
-        // TODO.
-        return false;
+        const [id] = personIdToNodeId(personId, this.family);
+
+        return this.childrenTreeBuilder.contains(id.id);
     }
 
     toggleSiblingVisibility(personId: string, selectedParentNodeId: string): [Node[], Edge[]] {

@@ -1432,8 +1432,7 @@ export class GraphBuilder {
                 children.filter((childId) => childId !== nodeId),
             );
         } else {
-            // this.addChildrenOf(parentsMarriage);
-            console.warn('Unimplemented');
+            this.addChildrenOf(parentsMarriage);
         }
     }
 }

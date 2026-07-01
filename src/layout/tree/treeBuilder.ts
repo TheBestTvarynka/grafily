@@ -432,6 +432,32 @@ export class TreeBuilder {
 
         return capabilities;
     }
+
+    contains(nodeId: string): boolean {
+        if (!this.root) {
+            console.warn('Children-tree root is not initialized.');
+
+            return false;
+        }
+
+        let children = [this.root];
+
+        while (children.length > 0) {
+            const newChildren = [];
+
+            for (const child of children) {
+                if (child.id.id === nodeId) {
+                    return true;
+                }
+
+                newChildren.push(...(this.children.get(child.id.id) ?? []));
+            }
+
+            children = newChildren;
+        }
+
+        return false;
+    }
 }
 
 /**
