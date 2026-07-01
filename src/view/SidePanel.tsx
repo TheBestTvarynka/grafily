@@ -1,23 +1,34 @@
 import { useState, KeyboardEvent } from 'react';
 import { getIcon } from 'obsidian';
-import { useGraph } from 'hooks';
+import { useApp, useGraph } from 'hooks';
 import {
     MOVE_PERSON_LEFT,
     MOVE_PERSON_RIGHT,
+    NODE_HEIGHT,
+    NODE_WIDTH,
     NodeCapabilities,
     SWAP_MARRIAGE_SPOUSES,
 } from 'layout';
+import { PROFILE_IMAGE_PLACEHOLDER } from 'images';
+import { FEMALE, Gender, MALE, NONE_SIDE, Person } from 'model';
+import { PersonNode, SimplePersonNode } from './node';
 
-export type SelectedNode = {
+export type ChildNodePreview = {
+    personId: string;
+    isVisible: boolean;
+};
+
+export type SelectedPerson = {
     id: string;
     x: number;
     y: number;
     capabilities: NodeCapabilities;
+    childrenNodes: ChildNodePreview[];
 };
 
 export type SidePanelProps = {
     loadedGraphName: string | null;
-    selectedNode: SelectedNode | null;
+    selectedPerson: SelectedPerson | null;
     onSave: (name: string) => Promise<void>;
     onDelete: (graphName: string) => Promise<void>;
     onHome: () => void;
@@ -27,7 +38,7 @@ export type SidePanelProps = {
 
 export function SidePanel({
     loadedGraphName,
-    selectedNode,
+    selectedPerson,
     onSave,
     onDelete,
     onHome,
@@ -38,7 +49,15 @@ export function SidePanel({
     const [inputValue, setInputValue] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
+    const app = useApp();
     const graph = useGraph();
+
+    const getImageSrc = (person: Person): string => {
+        if (!app || !person.image) return PROFILE_IMAGE_PLACEHOLDER;
+        const file = app.metadataCache.getFirstLinkpathDest(person.image, person.file.name);
+        if (!file) return PROFILE_IMAGE_PLACEHOLDER;
+        return app.vault.getResourcePath(file);
+    };
 
     const handleSaveClick = () => {
         // If graph name is known, save directly without modal
@@ -110,33 +129,33 @@ export function SidePanel({
     };
 
     const moveNodeLeft = () => {
-        if (!graph || !selectedNode) {
+        if (!graph || !selectedPerson) {
             return;
         }
 
-        graph.rearrange(selectedNode.id, MOVE_PERSON_LEFT);
+        graph.rearrange(selectedPerson.id, MOVE_PERSON_LEFT);
     };
 
     const moveNodeRight = () => {
-        if (!graph || !selectedNode) {
+        if (!graph || !selectedPerson) {
             return;
         }
 
-        graph.rearrange(selectedNode.id, MOVE_PERSON_RIGHT);
+        graph.rearrange(selectedPerson.id, MOVE_PERSON_RIGHT);
     };
 
     const swapSpouses = () => {
-        if (!graph || !selectedNode) {
+        if (!graph || !selectedPerson) {
             return;
         }
 
-        graph.rearrange(selectedNode.id, SWAP_MARRIAGE_SPOUSES);
+        graph.rearrange(selectedPerson.id, SWAP_MARRIAGE_SPOUSES);
     };
 
     return (
         <>
             <div className="grafily-save-panel">
-                {selectedNode && (
+                {selectedPerson && (
                     <div className="grafily-direction-buttons">
                         <button
                             className="grafily-direction-button"
@@ -145,7 +164,7 @@ export function SidePanel({
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('move-left')?.outerHTML || '',
                             }}
-                            disabled={!selectedNode.capabilities.movableLeft}
+                            disabled={!selectedPerson.capabilities.movableLeft}
                         />
                         <button
                             className="grafily-direction-button"
@@ -154,7 +173,7 @@ export function SidePanel({
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('move-right')?.outerHTML || '',
                             }}
-                            disabled={!selectedNode.capabilities.movableRight}
+                            disabled={!selectedPerson.capabilities.movableRight}
                         />
                         <button
                             className="grafily-direction-button"
@@ -163,12 +182,12 @@ export function SidePanel({
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('arrow-right-left')?.outerHTML || '',
                             }}
-                            disabled={!selectedNode.capabilities.spousesSwappable}
+                            disabled={!selectedPerson.capabilities.spousesSwappable}
                         />
                         <button
                             className="grafily-direction-button"
                             onClick={() => {
-                                onRevealNode(selectedNode.x, selectedNode.y);
+                                onRevealNode(selectedPerson.x, selectedPerson.y);
                             }}
                             title="Reveal the node"
                             dangerouslySetInnerHTML={{
@@ -211,6 +230,17 @@ export function SidePanel({
                         }}
                     />
                 )}
+                {selectedPerson && selectedPerson.childrenNodes.length > 0 && (
+                    <div className="grafily-children-list">
+                        {selectedPerson.childrenNodes.map((child) => (
+                            <SimplePersonNode
+                                personId={child.personId}
+                                isVisible={child.isVisible}
+                                key={child.personId}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
 
             {isModalOpen && (
@@ -247,4 +277,10 @@ export function SidePanel({
             )}
         </>
     );
+}
+
+function getNodeClass(gender: Gender): string {
+    if (gender === MALE) return 'grafily-male-node';
+    if (gender === FEMALE) return 'grafily-female-node';
+    return 'grafily-undefined-gender-node';
 }

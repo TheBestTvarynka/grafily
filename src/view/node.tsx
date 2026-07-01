@@ -8,12 +8,13 @@ import {
     LEFT_SIDE,
     MALE,
     MarriageNodeSide,
+    NONE_SIDE,
     Person,
     RIGHT_SIDE,
     UNDEFINED_GENDER,
 } from 'model';
 import { TFile, getIcon } from 'obsidian';
-import { useEffect, useState, MouseEvent } from 'react';
+import { useEffect, useState, MouseEvent, KeyboardEvent } from 'react';
 
 export type PersonNodeData = {
     id: string;
@@ -26,10 +27,12 @@ export function PersonNode({
     data,
     positionAbsoluteX,
     positionAbsoluteY,
+    onClickDisabled = false,
 }: {
     data: PersonNodeData;
     positionAbsoluteX: number;
     positionAbsoluteY: number;
+    onClickDisabled?: boolean;
 }) {
     const app = useApp();
     const graph = useGraph();
@@ -67,7 +70,7 @@ export function PersonNode({
     }, [graph]);
 
     const openPersonPage = () => {
-        if (!app) {
+        if (!app || onClickDisabled) {
             return;
         }
 
@@ -88,16 +91,26 @@ export function PersonNode({
     };
 
     const onNodeClick = (e: MouseEvent) => {
-        if (e.ctrlKey || e.metaKey) {
+        if (onClickDisabled === false && (e.ctrlKey || e.metaKey)) {
             if (!graph) {
                 return;
             }
 
-            graph.selectNode({
-                id: data.id,
+            const personId = data.id;
+
+            const children = graph.index.personChildren.get(personId) ?? [];
+
+            graph.selectPerson({
+                id: personId,
                 x: positionAbsoluteX,
                 y: positionAbsoluteY,
                 capabilities: graph.layout.capabilities(data.id),
+                childrenNodes: children.map((childrenId) => {
+                    return {
+                        personId: childrenId,
+                        isVisible: graph.contains(childrenId),
+                    };
+                }),
             });
         } else {
             openPersonPage();
@@ -158,9 +171,9 @@ export function PersonNode({
             ) : (
                 <></>
             )}
-            {graph?.selectedNode?.id === data.id ? (
+            {graph?.selectedPerson?.id === data.id ? (
                 <button
-                    onClick={() => graph?.selectNode(null)}
+                    onClick={() => graph?.selectPerson(null)}
                     className="grafily-node-deselect-button"
                     dangerouslySetInnerHTML={{ __html: getIcon('target')?.outerHTML || '' }}
                 />
@@ -211,6 +224,51 @@ export function PersonNode({
             ) : (
                 <></>
             )}
+        </div>
+    );
+}
+
+export function SimplePersonNode({
+    personId,
+    isVisible,
+}: {
+    personId: string;
+    isVisible: boolean;
+}) {
+    const graph = useGraph();
+
+    const onClick = (e: MouseEvent) => {
+        if (!graph) {
+            return;
+        }
+
+        e.stopPropagation();
+        graph.toggleSiblingVisibility(personId);
+    };
+
+    const classes = ['grafily-simple-node', !isVisible && 'grafily-node-hidden']
+        .filter(Boolean)
+        .join(' ');
+
+    return (
+        <div className={classes} onClick={onClick} title={isVisible ? 'Hide node' : 'Show node'}>
+            <div
+                className="grafily-simple-node-hover-overlay"
+                dangerouslySetInnerHTML={{
+                    __html: getIcon(isVisible ? 'eye-off' : 'eye')?.outerHTML || '',
+                }}
+            />
+            <PersonNode
+                positionAbsoluteX={0}
+                positionAbsoluteY={0}
+                data={{
+                    id: personId,
+                    isParentsCollapsible: false,
+                    isParentsCollapsed: false,
+                    side: NONE_SIDE,
+                }}
+                onClickDisabled={true}
+            />
         </div>
     );
 }

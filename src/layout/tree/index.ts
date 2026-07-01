@@ -347,6 +347,25 @@ export class ReingoldTilford {
             },
         };
     }
+
+    /**
+     * Checks if the given person id is present in the current layout.
+     *
+     * @param {string} personId - A person id which user has selected.
+     * @returns Returns true when the given person id is present in the current layout. Otherwise, returns false.
+     */
+    contains(personId: string): boolean {
+        const [id] = personIdToNodeId(personId, this.family);
+
+        return this.childrenTreeBuilder.contains(id.id);
+    }
+
+    toggleSiblingVisibility(personId: string, selectedParentNodeId: string): [Node[], Edge[]] {
+        const [id] = personIdToNodeId(personId, this.family);
+        this.childrenTreeBuilder.toggleSiblingVisibility(id, selectedParentNodeId);
+
+        return this.buildNodesInternal();
+    }
 }
 
 /**

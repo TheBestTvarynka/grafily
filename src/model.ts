@@ -169,7 +169,7 @@ export type Index = {
     // *Note*: currently, one person can marry only once.
     personMarriages: Map<string, Marriage[]>;
     // key - parent id
-    // value - children ids
+    // value - children ids (always person ids).
     personChildren: Map<string, string[]>;
     // key - child id
     // value - parents marriage id

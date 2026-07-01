@@ -20,7 +20,7 @@ import {
     SWAP_MARRIAGE_SPOUSES,
 } from 'layout';
 import { NodePersons } from 'layout/fullGraph/graphBuilder';
-import { Index, LEFT_SIDE, MarriageNodeSide } from 'model';
+import { Index, LEFT_SIDE, MarriageNodeSide, RIGHT_SIDE } from 'model';
 
 /**
  * Just an additional information about graph node. It is used for easier graph building and modifying.
@@ -268,7 +268,7 @@ export class TreeBuilder {
      * @param side - A place where to append the node. When the `parentId` node already has some
      * children nodes, we need to know where to place a new child node.
      */
-    addChildren(nodeId: Id, parentId: string, side: MarriageNodeSide) {
+    addChildren(nodeId: Id, parentId: string, side: MarriageNodeSide = RIGHT_SIDE) {
         this.addChildrenOf(nodeId.id);
 
         let node = nodeIdToTreeNode(nodeId, this.family);
@@ -431,6 +431,41 @@ export class TreeBuilder {
         }
 
         return capabilities;
+    }
+
+    contains(nodeId: string): boolean {
+        if (!this.root) {
+            console.warn('Children-tree root is not initialized.');
+
+            return false;
+        }
+
+        let children = [this.root];
+
+        while (children.length > 0) {
+            const newChildren = [];
+
+            for (const child of children) {
+                if (child.id.id === nodeId) {
+                    return true;
+                }
+
+                newChildren.push(...(this.children.get(child.id.id) ?? []));
+            }
+
+            children = newChildren;
+        }
+
+        return false;
+    }
+
+    toggleSiblingVisibility(nodeId: Id, selectedParentNodeId: string) {
+        if (this.contains(nodeId.id)) {
+            this.removeNode(nodeId.id, selectedParentNodeId);
+        } else {
+            this.addChildren(nodeId, selectedParentNodeId);
+            this.addChildrenOf(nodeId.id);
+        }
     }
 }
 
