@@ -263,8 +263,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         const [nodeId] = personIdToNodeId(selectedNode.id, index);
         const newGraph = layout.toggleSiblingVisibility(personId, nodeId.id);
 
-        const [id] = personIdToNodeId(personId, index);
-        newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], id.id);
+        newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], selectedNode.id);
 
         setGraph(newGraph);
 

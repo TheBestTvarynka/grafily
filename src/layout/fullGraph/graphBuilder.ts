@@ -1403,13 +1403,13 @@ export class GraphBuilder {
 
         const parentsMarriages = this.parents.get(nodeId.id);
         if (!parentsMarriages) {
-            console.warn(`toggleSiblingVisibility: ${nodeId} does not have parents`);
+            console.warn(`toggleSiblingVisibility: ${nodeId.id} does not have parents`);
             return;
         }
 
         if (parentsMarriages.length > 2 || parentsMarriages.length === 0) {
             console.warn(
-                `toggleSiblingVisibility: ${nodeId} has invalid number of parents: ${parentsMarriages.length}`,
+                `toggleSiblingVisibility: ${nodeId.id} has invalid number of parents: ${parentsMarriages.length}`,
             );
             return;
         }
@@ -1422,7 +1422,7 @@ export class GraphBuilder {
                 parentsMarriage = parentsMarriages[1]!;
             } else {
                 console.warn(
-                    `toggleSiblingVisibility: ${nodeId} has two parents, but neither matches the selected parent ID: ${selectedParentNodeId}`,
+                    `toggleSiblingVisibility: ${nodeId.id} has two parents, but neither matches the selected parent ID: ${selectedParentNodeId}`,
                 );
                 return;
             }

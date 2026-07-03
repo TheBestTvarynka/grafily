@@ -1,17 +1,13 @@
 import { useState, KeyboardEvent } from 'react';
 import { getIcon } from 'obsidian';
-import { useApp, useGraph } from 'hooks';
+import { useGraph } from 'hooks';
 import {
     MOVE_PERSON_LEFT,
     MOVE_PERSON_RIGHT,
-    NODE_HEIGHT,
-    NODE_WIDTH,
     NodeCapabilities,
     SWAP_MARRIAGE_SPOUSES,
 } from 'layout';
-import { PROFILE_IMAGE_PLACEHOLDER } from 'images';
-import { FEMALE, Gender, MALE, NONE_SIDE, Person } from 'model';
-import { PersonNode, SimplePersonNode } from './node';
+import { SimplePersonNode } from './node';
 
 export type ChildNodePreview = {
     personId: string;
@@ -49,15 +45,7 @@ export function SidePanel({
     const [inputValue, setInputValue] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
-    const app = useApp();
     const graph = useGraph();
-
-    const getImageSrc = (person: Person): string => {
-        if (!app || !person.image) return PROFILE_IMAGE_PLACEHOLDER;
-        const file = app.metadataCache.getFirstLinkpathDest(person.image, person.file.name);
-        if (!file) return PROFILE_IMAGE_PLACEHOLDER;
-        return app.vault.getResourcePath(file);
-    };
 
     const handleSaveClick = () => {
         // If graph name is known, save directly without modal

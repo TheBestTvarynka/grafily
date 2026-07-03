@@ -14,7 +14,7 @@ import {
     UNDEFINED_GENDER,
 } from 'model';
 import { TFile, getIcon } from 'obsidian';
-import { useEffect, useState, MouseEvent, KeyboardEvent } from 'react';
+import { useEffect, useState, MouseEvent } from 'react';
 
 export type PersonNodeData = {
     id: string;
