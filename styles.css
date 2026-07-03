@@ -553,6 +553,17 @@ If your plugin does not need CSS, delete this file.
     display: flex;
     flex-direction: column;
     gap: 6px;
+
+    background-color: darkslategray;
+    padding: 0.5em;
+    border-radius: 0.5em;
+
+    /*
+        The node height and width is set in pixels.
+        So, to make side panel nodes smaller, `scale` and `transform-origin` are used.
+    */
+    transform-origin: top right;
+    scale: 0.8;
 }
 
 .grafily-simple-node {
