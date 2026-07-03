@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { createContext, useEffect, useState } from 'react';
 
@@ -459,7 +458,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
     );
 }
 
-export function FamilyFlow({ plugin, dataDir }: { plugin: any; dataDir: string }) {
+export function FamilyFlow({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
     return (
         <div
             style={{

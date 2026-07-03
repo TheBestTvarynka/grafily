@@ -42,14 +42,12 @@ export default class Grafily extends Plugin {
     onunload() {}
 
     async loadSettings() {
-        /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-        const data: GrafilyState = (await this.loadData()) || DEFAULT_STATE;
+        const data: GrafilyState = ((await this.loadData()) as GrafilyState) || DEFAULT_STATE;
         this.settings = data.settings;
     }
 
     async saveSettings() {
-        /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-        const data: GrafilyState = (await this.loadData()) || DEFAULT_STATE;
+        const data: GrafilyState = ((await this.loadData()) as GrafilyState) || DEFAULT_STATE;
         data.settings = this.settings;
 
         await this.saveData(data);
