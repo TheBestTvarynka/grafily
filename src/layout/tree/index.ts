@@ -20,7 +20,7 @@ import {
     personIdToNodeId,
     RearrangeAction,
     REINGOLD_TILFORD,
-    SerializableLayout,
+    SerializableLayoutData,
     SWAP_MARRIAGE_SPOUSES,
 } from '../index';
 import { getChildY, getParentY, PreNode, ReingoldTilfordLayout } from './reingoldTilford';
@@ -338,7 +338,7 @@ export class ReingoldTilford {
      *
      * @returns {SerializableLayout} - A object ready to be serialized.
      */
-    toSerializableObject(): SerializableLayout {
+    toSerializableObject(): SerializableLayoutData {
         return {
             name: REINGOLD_TILFORD,
             data: {
@@ -368,6 +368,11 @@ export class ReingoldTilford {
     }
 }
 
+export type ReingoldTilfordLayoutData = {
+    parentsTreeBuilder: FamilyTree;
+    childrenTreeBuilder: FamilyTree;
+};
+
 /**
  * Then the user wants to save the layout into a file or somewhere else, it generates
  * the {@link SerializableLayout} object using the `toSerializableObject` method on the
@@ -378,14 +383,10 @@ export class ReingoldTilford {
  * @param {Index} family - The family index containing all the people and their relationships.
  * @returns {ReingoldTilford} - {@link ReingoldTilford} instance.
  */
-export function fromSerializableObject(layout: SerializableLayout, family: Index): ReingoldTilford {
-    // Trust me, I am Engineer!
-    /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
-    if (layout.name !== REINGOLD_TILFORD) {
-        throw new Error(`Invalid layout name: ${layout.name}. Expected: ${REINGOLD_TILFORD}`);
-    }
-
+export function fromSerializableObject(
+    layout: SerializableLayoutData & { name: typeof REINGOLD_TILFORD },
+    family: Index,
+): ReingoldTilford {
     const parentsTreeBuilder = new TreeBuilder(
         family,
         getNodeParents,

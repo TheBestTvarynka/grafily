@@ -26,7 +26,7 @@ import {
     NODE_HEIGHT,
     NODE_WIDTH,
     RearrangeAction,
-    SerializableLayout,
+    SerializableLayoutData,
     fromSerializableObject,
     personIdToNodeId,
 } from 'layout';
@@ -61,7 +61,7 @@ const nodeTypes = {
 
 export type GraphDto = {
     data: [Node[], Edge[]];
-    layout: SerializableLayout;
+    layout: SerializableLayoutData;
 };
 
 const DEFAULT_EMPTY_LAYOUT: GenericLayout = new GenericLayout(BRANDES_KORF, emptyIndex());
