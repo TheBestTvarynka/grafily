@@ -373,7 +373,7 @@ export class BrandesKopfLayout {
     toggleSiblingVisibility(personId: string, selectedParentNodeId: string): [Node[], Edge[]] {
         const [nodeId] = personIdToNodeId(personId, this.family);
 
-        this.graph.toggleSiblingVisibility(nodeId.id, selectedParentNodeId);
+        this.graph.toggleSiblingVisibility(nodeId, selectedParentNodeId);
 
         return this.buildNodesInternal();
     }

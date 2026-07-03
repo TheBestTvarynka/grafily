@@ -245,11 +245,13 @@ export class GraphBuilder {
         if (!this.layers.get(childrenLayerNumber)) {
             this.layers.set(childrenLayerNumber, []);
         }
+        // SAFE: if the layer does not exist, we create it above.
         const layer = this.layers.get(childrenLayerNumber)!;
 
         if (!this.children.has(parentsMarriage.id)) {
             this.children.set(parentsMarriage.id, []);
         }
+        // SAFE: if the children of the marriage does not exist, we initialize it above.
         const children = this.children.get(parentsMarriage.id)!;
 
         for (const childId of parentsMarriage.childrenIds) {
@@ -336,6 +338,7 @@ export class GraphBuilder {
         }
         // SAFE: if the layer does not exist, we will create it above.
         const layer = this.layers.get(layerNumber)!;
+
         if (!p1ParentsExist && !p2ParentsExist) {
             layer.push(id);
             this.nodes.set(id, {
@@ -982,7 +985,10 @@ export class GraphBuilder {
      *
      * @param {string} id - The ID of the marriage whose children we want to add to the graph.
      */
-    addChildrenOf(id: string) {
+    addChildrenOf(
+        id: string,
+        findChildNodes: (id: Id) => [Id[], ParentSide] = (id: Id) => this.getChildrenNodesIds(id),
+    ) {
         // It should be impossible to call this method on the PERSON_NODE_TYPE.
         // Only marriage nodes should have children nodes and UI button for expanding/collapsing them.
         const nodeId: Id = {
@@ -1055,7 +1061,7 @@ export class GraphBuilder {
 
             this.parents.set(nodeId, branches);
         };
-        const findChildNodes = (id: Id) => this.getChildrenNodesIds(id);
+        // const findChildNodes = (id: Id) => this.getChildrenNodesIds(id);
         const nextLayer = (layer: number) => layer + 1;
 
         if (!left) {
@@ -1392,10 +1398,10 @@ export class GraphBuilder {
         return this.nodes.has(nodeId);
     }
 
-    toggleSiblingVisibility(nodeId: string, selectedParentNodeId: string) {
-        const isVisible = this.contains(nodeId);
+    toggleSiblingVisibility(nodeId: Id, selectedParentNodeId: string) {
+        const isVisible = this.contains(nodeId.id);
 
-        const parentsMarriages = this.parents.get(nodeId);
+        const parentsMarriages = this.parents.get(nodeId.id);
         if (!parentsMarriages) {
             console.warn(`toggleSiblingVisibility: ${nodeId} does not have parents`);
             return;
@@ -1429,10 +1435,137 @@ export class GraphBuilder {
             const children = this.children.get(parentsMarriage) ?? [];
             this.removeChildrenOf(
                 parentsMarriage,
-                children.filter((childId) => childId !== nodeId),
+                children.filter((childId) => childId !== nodeId.id),
             );
         } else {
-            this.addChildrenOf(parentsMarriage);
+            const parentNodeChildren = this.children.get(parentsMarriage) ?? [];
+
+            if (parentNodeChildren.length === 0) {
+                // `nodeId` is a first child node to add.
+                let firstCall = true;
+                const findChildNodes = (id: Id): [Id[], ParentSide] => {
+                    if (firstCall) {
+                        firstCall = false;
+                        return [[nodeId], LEFT_PARENT];
+                    } else {
+                        return this.getChildrenNodesIds(id);
+                    }
+                };
+
+                this.addChildrenOf(selectedParentNodeId, findChildNodes);
+            } else {
+                // `nodeId` is not a first child node to add. Some siblings are already exist in the graph.
+                // We need to find a place where to insert a new sibling node.
+
+                let layerNumber: number;
+                if (parentNodeChildren.length === 1) {
+                    // SAFE: checked above. The parent node has at least one child node.
+                    const existingChildId = parentNodeChildren[0]!;
+                    // SAFE: at least one parent must exist.
+                    const existingChildParentNodes = this.parents.get(existingChildId)!;
+                    const { layer: l, position } = this.getNodeCoordinates(existingChildId);
+                    layerNumber = l;
+
+                    // SAFE: the layer must exist because we are getting the layer of the existing child node.
+                    const layer = this.layers.get(layerNumber)!;
+
+                    if (existingChildParentNodes.length === 2) {
+                        // The existing (sibling) node have two parent nodes. So, we need to find a place
+                        // to insert a new child node: to the left or to the right of the existing node.
+                        if (existingChildParentNodes[0] === selectedParentNodeId) {
+                            // The current parent node is the left parent of the existing child node.
+                            // So, we can insert a new child node to the left of the existing child node.
+                            layer.splice(position, 0, nodeId.id);
+
+                            this.children.set(selectedParentNodeId, [nodeId.id, existingChildId]);
+                        } else {
+                            // The current parent node is the right parent of the existing child node.
+                            // So, we can insert a new child node to the right of the existing child node.
+                            layer.splice(position + 1, 0, nodeId.id);
+
+                            this.children.set(selectedParentNodeId, [existingChildId, nodeId.id]);
+                        }
+                    }
+                    if (existingChildParentNodes.length === 1) {
+                        // The existing node have only one parent node.
+                        // So, we can insert a new child node to right (or to the left) of the existing child node
+                        // and do not worry about edges crossing.
+                        layer.splice(position + 1, 0, nodeId.id);
+
+                        this.children.set(selectedParentNodeId, [existingChildId, nodeId.id]);
+                    } else {
+                        console.error(
+                            `Invalid node(${existingChildId}) parents len: ${existingChildParentNodes.length}`,
+                        );
+                        return;
+                    }
+                } else {
+                    // parentNodeChildren.length >== 2.
+                    //
+                    // This case looks complicated, but it's easy in reality. The last child node can have two parent.
+                    // If not, then we can insert a new child node to the right of the last child node.
+                    // If it, eventually, have two parents, then we can safely insert a new child node to the left of
+                    // the last child node. Because even the node before last has two parents, we still can insert
+                    // a new child node between them.
+
+                    // SAFE: `parentNodeChildren` has at least two elements.
+                    const lastChildNodeId = parentNodeChildren.last()!;
+                    // SAFE: at least one parent must exist.
+                    const existingChildParentNodes = this.parents.get(lastChildNodeId)!;
+                    const { layer: l, position } = this.getNodeCoordinates(lastChildNodeId);
+                    layerNumber = l;
+
+                    // SAFE: the layer must exist because we are getting the layer of the existing child node.
+                    const layer = this.layers.get(layerNumber)!;
+
+                    if (existingChildParentNodes.length === 2) {
+                        // The last child node has two parent nodes. So, we can safely insert a new child node
+                        // to the left of the last child node.
+                        layer.splice(position, 0, nodeId.id);
+
+                        this.children.set(selectedParentNodeId, [
+                            ...parentNodeChildren.slice(0, -1),
+                            nodeId.id,
+                            lastChildNodeId,
+                        ]);
+                    } else if (existingChildParentNodes.length === 1) {
+                        // The last child node has only one parent node. So, we can safely insert a new child node
+                        // to the right of the last child node.
+                        layer.splice(position + 1, 0, nodeId.id);
+
+                        this.children.set(selectedParentNodeId, [...parentNodeChildren, nodeId.id]);
+                    } else {
+                        console.error(
+                            `Invalid node(${lastChildNodeId}) parents len: ${existingChildParentNodes.length}`,
+                        );
+                        return;
+                    }
+                }
+
+                const persons: NodePersons = {};
+                if (nodeId.type === MARRIAGE_NODE_TYPE) {
+                    const marriage = this.family.marriageById.get(nodeId.id);
+                    if (!marriage) {
+                        throw new Error(`Marriage ${nodeId.id} should exist`);
+                    }
+
+                    persons.person1 = marriage.parent1Id;
+                    persons.person2 = marriage.parent2Id;
+                } else {
+                    persons.person1 = nodeId.id;
+                }
+                this.nodes.set(nodeId.id, {
+                    id: nodeId.id,
+                    type: nodeId.type,
+                    layerNumber,
+                    persons,
+                });
+                this.parents.set(nodeId.id, [selectedParentNodeId]);
+
+                if (nodeId.type === MARRIAGE_NODE_TYPE) {
+                    this.addChildrenOf(nodeId.id);
+                }
+            }
         }
     }
 }

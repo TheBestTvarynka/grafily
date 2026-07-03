@@ -278,9 +278,3 @@ export function SidePanel({
         </>
     );
 }
-
-function getNodeClass(gender: Gender): string {
-    if (gender === MALE) return 'grafily-male-node';
-    if (gender === FEMALE) return 'grafily-female-node';
-    return 'grafily-undefined-gender-node';
-}
