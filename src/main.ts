@@ -42,12 +42,12 @@ export default class Grafily extends Plugin {
     onunload() {}
 
     async loadSettings() {
-        const data: GrafilyState = ((await this.loadData()) as GrafilyState) || DEFAULT_STATE;
+        const data = ((await this.loadData()) as GrafilyState) || DEFAULT_STATE;
         this.settings = data.settings;
     }
 
     async saveSettings() {
-        const data: GrafilyState = ((await this.loadData()) as GrafilyState) || DEFAULT_STATE;
+        const data = ((await this.loadData()) as GrafilyState) || DEFAULT_STATE;
         data.settings = this.settings;
 
         await this.saveData(data);

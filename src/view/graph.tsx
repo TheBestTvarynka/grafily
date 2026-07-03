@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 import { createContext, useEffect, useState } from 'react';
 
 import {
@@ -154,7 +151,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
 
         (async () => {
             try {
-                const savedData: GrafilyState = (await plugin.loadData()) || DEFAULT_STATE;
+                const savedData = ((await plugin.loadData()) as GrafilyState) || DEFAULT_STATE;
                 const graphsData = savedData.graphs;
 
                 if (!graphsData || Object.keys(graphsData).length === 0) {
@@ -306,7 +303,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         }
 
         try {
-            const existingStates: GrafilyState = (await plugin.loadData()) || DEFAULT_STATE;
+            const existingStates = ((await plugin.loadData()) as GrafilyState) || DEFAULT_STATE;
 
             const graphDto: GraphDto = {
                 data: graph,
@@ -342,7 +339,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         }
 
         try {
-            const existingStates = (await plugin.loadData()) || {};
+            const existingStates = ((await plugin.loadData()) as GrafilyState) || DEFAULT_STATE;
             const graphs = existingStates?.graphs || {};
 
             delete graphs[graphName];
