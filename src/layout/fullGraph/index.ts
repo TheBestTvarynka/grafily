@@ -400,6 +400,6 @@ export function fromSerializableObject(
 ): BrandesKopfLayout {
     return new BrandesKopfLayout(
         family,
-        new GraphBuilder(family, layout.data.graph as FamilyGraph, layout.data.nodes),
+        new GraphBuilder(family, layout.data.graph, layout.data.nodes),
     );
 }

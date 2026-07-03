@@ -390,12 +390,12 @@ export function fromSerializableObject(
     const parentsTreeBuilder = new TreeBuilder(
         family,
         getNodeParents,
-        layout.data.parentsTreeBuilder as FamilyTree,
+        layout.data.parentsTreeBuilder,
     );
     const childrenTreeBuilder = new TreeBuilder(
         family,
         getNodeChildren,
-        layout.data.childrenTreeBuilder as FamilyTree,
+        layout.data.childrenTreeBuilder,
     );
 
     return new ReingoldTilford(family, parentsTreeBuilder, childrenTreeBuilder);
