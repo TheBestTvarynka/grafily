@@ -7,17 +7,24 @@ import {
     NodeCapabilities,
     SWAP_MARRIAGE_SPOUSES,
 } from 'layout';
+import { SimplePersonNode } from './node';
 
-export type SelectedNode = {
+export type ChildNodePreview = {
+    personId: string;
+    isVisible: boolean;
+};
+
+export type SelectedPerson = {
     id: string;
     x: number;
     y: number;
     capabilities: NodeCapabilities;
+    childrenNodes: ChildNodePreview[];
 };
 
 export type SidePanelProps = {
     loadedGraphName: string | null;
-    selectedNode: SelectedNode | null;
+    selectedPerson: SelectedPerson | null;
     onSave: (name: string) => Promise<void>;
     onDelete: (graphName: string) => Promise<void>;
     onHome: () => void;
@@ -27,7 +34,7 @@ export type SidePanelProps = {
 
 export function SidePanel({
     loadedGraphName,
-    selectedNode,
+    selectedPerson,
     onSave,
     onDelete,
     onHome,
@@ -110,33 +117,33 @@ export function SidePanel({
     };
 
     const moveNodeLeft = () => {
-        if (!graph || !selectedNode) {
+        if (!graph || !selectedPerson) {
             return;
         }
 
-        graph.rearrange(selectedNode.id, MOVE_PERSON_LEFT);
+        graph.rearrange(selectedPerson.id, MOVE_PERSON_LEFT);
     };
 
     const moveNodeRight = () => {
-        if (!graph || !selectedNode) {
+        if (!graph || !selectedPerson) {
             return;
         }
 
-        graph.rearrange(selectedNode.id, MOVE_PERSON_RIGHT);
+        graph.rearrange(selectedPerson.id, MOVE_PERSON_RIGHT);
     };
 
     const swapSpouses = () => {
-        if (!graph || !selectedNode) {
+        if (!graph || !selectedPerson) {
             return;
         }
 
-        graph.rearrange(selectedNode.id, SWAP_MARRIAGE_SPOUSES);
+        graph.rearrange(selectedPerson.id, SWAP_MARRIAGE_SPOUSES);
     };
 
     return (
         <>
             <div className="grafily-save-panel">
-                {selectedNode && (
+                {selectedPerson && (
                     <div className="grafily-direction-buttons">
                         <button
                             className="grafily-direction-button"
@@ -145,7 +152,7 @@ export function SidePanel({
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('move-left')?.outerHTML || '',
                             }}
-                            disabled={!selectedNode.capabilities.movableLeft}
+                            disabled={!selectedPerson.capabilities.movableLeft}
                         />
                         <button
                             className="grafily-direction-button"
@@ -154,7 +161,7 @@ export function SidePanel({
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('move-right')?.outerHTML || '',
                             }}
-                            disabled={!selectedNode.capabilities.movableRight}
+                            disabled={!selectedPerson.capabilities.movableRight}
                         />
                         <button
                             className="grafily-direction-button"
@@ -163,12 +170,12 @@ export function SidePanel({
                             dangerouslySetInnerHTML={{
                                 __html: getIcon('arrow-right-left')?.outerHTML || '',
                             }}
-                            disabled={!selectedNode.capabilities.spousesSwappable}
+                            disabled={!selectedPerson.capabilities.spousesSwappable}
                         />
                         <button
                             className="grafily-direction-button"
                             onClick={() => {
-                                onRevealNode(selectedNode.x, selectedNode.y);
+                                onRevealNode(selectedPerson.x, selectedPerson.y);
                             }}
                             title="Reveal the node"
                             dangerouslySetInnerHTML={{
@@ -210,6 +217,17 @@ export function SidePanel({
                             __html: getIcon('trash')?.outerHTML || '',
                         }}
                     />
+                )}
+                {selectedPerson && selectedPerson.childrenNodes.length > 0 && (
+                    <div className="grafily-children-list">
+                        {selectedPerson.childrenNodes.map((child) => (
+                            <SimplePersonNode
+                                personId={child.personId}
+                                isVisible={child.isVisible}
+                                key={child.personId}
+                            />
+                        ))}
+                    </div>
                 )}
             </div>
 
