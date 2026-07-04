@@ -378,7 +378,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
     const { getViewport, setViewport } = useReactFlow();
 
     const handleRevealNode = (nodeX: number, nodeY: number) => {
-        const container = document.querySelector('.react-flow');
+        const container = activeDocument.querySelector('.react-flow');
         if (!container) {
             return;
         }
