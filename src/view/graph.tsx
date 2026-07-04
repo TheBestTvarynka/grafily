@@ -30,6 +30,7 @@ import { StartupMenu } from './StartupMenu';
 import { SelectedPerson, SidePanel } from './SidePanel';
 import { App, Plugin } from 'obsidian';
 import { DEFAULT_STATE, GrafilyState } from 'main';
+import { confirmDialog } from './ConfirmModal';
 
 export type GraphContextValue = {
     layout: GenericLayout;
@@ -92,38 +93,13 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
 
     const [graph, setGraph] = useState<[Node[], Edge[]]>([[], []]);
     const [isInitialized, setIsInitialized] = useState(false);
+    const [isChanged, setIsChanged] = useState(false);
     const [savedGraphs, setSavedGraphs] = useState<Record<string, GraphDto>>({});
     const [loadedGraphName, setLoadedGraphName] = useState<string | null>(null);
     const [selectedNode, setSelectedNode] = useState<SelectedPerson | null>(null);
 
-    const shiftGraphByAnchorNode = (
-        oldNodes: Node[],
-        newNodes: Node[],
-        anchorNodeId: string,
-    ): Node[] => {
-        const oldNode = oldNodes.find((n) => n.id === anchorNodeId);
-        const newNode = newNodes.find((n) => n.id === anchorNodeId);
-
-        if (!oldNode || !newNode) {
-            console.warn(
-                `Anchor node with id ${anchorNodeId} not found in one of the graphs. Skipping viewport shift.`,
-            );
-
-            return newNodes;
-        }
-
-        const dx = newNode.position.x - oldNode.position.x;
-        const dy = newNode.position.y - oldNode.position.y;
-
-        return newNodes.map((node) => {
-            node.position.x -= dx;
-            node.position.y -= dy;
-
-            return node;
-        });
-    };
-
     const app = useApp();
+
     useEffect(() => {
         let cancelled = false;
 
@@ -173,6 +149,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], nodeId);
 
         setGraph(newGraph);
+        setIsChanged(true);
         if (selectedNode) {
             setSelectedNode({
                 ...selectedNode,
@@ -196,6 +173,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], nodeId);
 
         setGraph(newGraph);
+        setIsChanged(true);
         if (selectedNode) {
             setSelectedNode({
                 ...selectedNode,
@@ -209,6 +187,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], nodeId);
 
         setGraph(newGraph);
+        setIsChanged(true);
         if (selectedNode) {
             setSelectedNode({
                 ...selectedNode,
@@ -224,6 +203,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], id.id);
 
         setGraph(newGraph);
+        setIsChanged(true);
         if (selectedNode) {
             setSelectedNode({
                 ...selectedNode,
@@ -239,6 +219,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], id.id);
 
         setGraph(newGraph);
+        setIsChanged(true);
         if (selectedNode) {
             setSelectedNode({
                 ...selectedNode,
@@ -262,6 +243,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], selectedNode.id);
 
         setGraph(newGraph);
+        setIsChanged(true);
 
         const updatedChildrenNodes = selectedNode.childrenNodes.map((children) => {
             return { personId: children.personId, isVisible: layout.contains(children.personId) };
@@ -274,13 +256,14 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         });
     };
 
-    const handleStartupMenuSubmit = (layoutName: LayoutName, personId: string) => {
+    const handleBuildGraph = (layoutName: LayoutName, personId: string) => {
         const newLayout = new GenericLayout(layoutName, index);
         const newGraph = newLayout.buildNodes(personId);
 
         setLayout(newLayout);
         setGraph(newGraph);
         setIsInitialized(true);
+        setIsChanged(true);
     };
 
     const handleLoadSavedGraph = (graphName: string) => {
@@ -294,6 +277,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         setGraph(loadedGraph.data);
         setLoadedGraphName(graphName);
         setIsInitialized(true);
+        setIsChanged(false);
     };
 
     const handleSaveGraph = async (name: string) => {
@@ -324,6 +308,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
             setLoadedGraphName(name);
 
             setSavedGraphs(graphs);
+            setIsChanged(false);
 
             console.debug(`Graph state "${name}" saved successfully`);
         } catch (err) {
@@ -334,8 +319,9 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
 
     const handleDeleteGraph = async (graphName: string) => {
         if (!plugin) {
-            console.error('Plugin instance not available');
-            throw new Error('Plugin instance not available');
+            console.warn('Plugin or app instance not available');
+
+            return;
         }
 
         try {
@@ -367,12 +353,34 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         }
     };
 
-    const handleHome = () => {
+    const handleHome = async () => {
+        if (isChanged) {
+            if (!app) {
+                console.warn('App instance not available');
+                return;
+            }
+
+            const confirmed = await confirmDialog(
+                app,
+                'You have unsaved changes. Are you sure you want to continue? This action cannot be undone.',
+                'Ok',
+            );
+
+            if (!confirmed) {
+                return;
+            }
+        }
+
         // Reset graph state and return to startup menu
         setLoadedGraphName(null);
         setGraph([[], []]);
         setIsInitialized(false);
+        setIsChanged(false);
         setLayout(DEFAULT_EMPTY_LAYOUT);
+    };
+
+    const handleHomeClick = () => {
+        handleHome().catch((err) => console.error(err));
     };
 
     const { getViewport, setViewport } = useReactFlow();
@@ -436,7 +444,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
                         selectedPerson={selectedNode}
                         onSave={handleSaveGraph}
                         onDelete={handleDeleteGraph}
-                        onHome={handleHome}
+                        onHome={handleHomeClick}
                         onRevealNode={handleRevealNode}
                         onRefresh={refreshIndex}
                     />
@@ -445,7 +453,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
                     <StartupMenu
                         persons={Array.from(index.personById.keys())}
                         savedGraphs={savedGraphs}
-                        onSubmit={handleStartupMenuSubmit}
+                        onSubmit={handleBuildGraph}
                         onLoadSavedGraph={handleLoadSavedGraph}
                         onDeleteSavedGraph={handleDeleteGraph}
                     />
@@ -470,3 +478,30 @@ export function FamilyFlow({ plugin, dataDir }: { plugin: Plugin; dataDir: strin
         </div>
     );
 }
+
+const shiftGraphByAnchorNode = (
+    oldNodes: Node[],
+    newNodes: Node[],
+    anchorNodeId: string,
+): Node[] => {
+    const oldNode = oldNodes.find((n) => n.id === anchorNodeId);
+    const newNode = newNodes.find((n) => n.id === anchorNodeId);
+
+    if (!oldNode || !newNode) {
+        console.warn(
+            `Anchor node with id ${anchorNodeId} not found in one of the graphs. Skipping viewport shift.`,
+        );
+
+        return newNodes;
+    }
+
+    const dx = newNode.position.x - oldNode.position.x;
+    const dy = newNode.position.y - oldNode.position.y;
+
+    return newNodes.map((node) => {
+        node.position.x -= dx;
+        node.position.y -= dy;
+
+        return node;
+    });
+};
