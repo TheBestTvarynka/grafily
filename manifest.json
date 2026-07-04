@@ -1,7 +1,7 @@
 {
     "id": "grafily",
     "name": "Grafily",
-    "version": "0.3.4",
+    "version": "0.3.5",
     "minAppVersion": "1.8.7",
     "description": "Plugin for rendering pretty family graphs (family trees).",
     "author": "TheBestTvarynka",
