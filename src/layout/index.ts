@@ -1,8 +1,16 @@
 import { Edge, Node } from '@xyflow/react';
 
 import { Index, Marriage } from '../model';
-import { BrandesKopfLayout, fromSerializableObject as deserializeFullGraph } from './fullGraph';
-import { ReingoldTilford, fromSerializableObject as deserializeTree } from './tree';
+import {
+    BrandesKopfLayout,
+    BrandesKopfLayoutData,
+    fromSerializableObject as deserializeFullGraph,
+} from './fullGraph';
+import {
+    ReingoldTilford,
+    ReingoldTilfordLayoutData,
+    fromSerializableObject as deserializeTree,
+} from './tree';
 
 /**
  * Node width.
@@ -249,7 +257,7 @@ export class GenericLayout {
      *
      * @returns {SerializableLayout} - A object ready to be serialized.
      */
-    toSerializableObject(): SerializableLayout {
+    toSerializableObject(): SerializableLayoutData {
         return this.layout.toSerializableObject();
     }
 
@@ -268,21 +276,9 @@ export class GenericLayout {
     }
 }
 
-/**
- * A special type for serialized layout instance.
- * The actual data is different for different layout types. But, all layout
- * implementations must follow this requirement:
- * - The `SerializableLayout` object must a _plain_ JS object. In other words,
- *   the following condition must be met:
- *   `JSON.parse(JSON.stringify(obj))` must be the same as `obj`.
- *
- * So, instead of `Map`, use `Record`. Do not use functions/closures, etc.
- */
-export interface SerializableLayout {
-    name: LayoutName;
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    data: any;
-}
+export type SerializableLayoutData =
+    | { name: typeof BRANDES_KORF; data: BrandesKopfLayoutData }
+    | { name: typeof REINGOLD_TILFORD; data: ReingoldTilfordLayoutData };
 
 /**
  * Then the user wants to save the layout into a file or somewhere else, it generates
@@ -290,12 +286,12 @@ export interface SerializableLayout {
  * {@link GenericLayout} class. Later, the user can use this method to construct and use
  * the layout object back again.
  *
- * @param {SerializableLayout} layoutData  - Layout data.
+ * @param {SerializableLayoutData} layoutData  - Layout data.
  * @param {Index} family - The family index containing all the people and their relationships.
  * @returns {GenericLayout} - The {@link GenericLayout} instance ready to be used.
  */
 export function fromSerializableObject(
-    layoutData: SerializableLayout,
+    layoutData: SerializableLayoutData,
     family: Index,
 ): GenericLayout {
     let layout: BrandesKopfLayout | ReingoldTilford;
@@ -305,8 +301,7 @@ export function fromSerializableObject(
     } else if (layoutData.name === REINGOLD_TILFORD) {
         layout = deserializeTree(layoutData, family);
     } else {
-        /* eslint-disable @typescript-eslint/restrict-template-expressions */
-        throw new Error(`Invalid layout type: ${layoutData.name}`);
+        throw new Error(`Invalid layout type`);
     }
 
     return new GenericLayout(layoutData.name, family, layout);

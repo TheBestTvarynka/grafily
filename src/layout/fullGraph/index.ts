@@ -12,7 +12,7 @@ import {
     NodeCapabilities,
     PERSON_NODE_TYPE,
     RearrangeAction,
-    SerializableLayout,
+    SerializableLayoutData,
     personIdToNodeId,
 } from '../';
 import { Index, LEFT_SIDE, NONE_SIDE, RIGHT_SIDE } from '../../model';
@@ -346,7 +346,7 @@ export class BrandesKopfLayout {
      *
      * @returns {SerializableLayout} - A object ready to be serialized.
      */
-    toSerializableObject(): SerializableLayout {
+    toSerializableObject(): SerializableLayoutData {
         const nodes: Record<string, GraphNode> = Object.fromEntries(this.graph.getNodes());
 
         return {
@@ -379,6 +379,11 @@ export class BrandesKopfLayout {
     }
 }
 
+export type BrandesKopfLayoutData = {
+    graph: FamilyGraph;
+    nodes: Record<string, GraphNode>;
+};
+
 /**
  * Then the user wants to save the layout into a file or somewhere else, it generates
  * the {@link SerializableLayout} object using the `toSerializableObject` method on the
@@ -390,19 +395,11 @@ export class BrandesKopfLayout {
  * @returns {BrandesKopfLayout} - {@link BrandesKopfLayout} instance.
  */
 export function fromSerializableObject(
-    layout: SerializableLayout,
+    layout: SerializableLayoutData & { name: typeof BRANDES_KORF },
     family: Index,
 ): BrandesKopfLayout {
-    // Trust me, I am Engineer!
-    /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-    /* eslint-disable @typescript-eslint/no-unsafe-argument */
-
-    if (layout.name !== BRANDES_KORF) {
-        throw new Error(`Invalid layout name: ${layout.name}. Expected: ${BRANDES_KORF}`);
-    }
-
     return new BrandesKopfLayout(
         family,
-        new GraphBuilder(family, layout.data.graph as FamilyGraph, layout.data.nodes),
+        new GraphBuilder(family, layout.data.graph, layout.data.nodes),
     );
 }

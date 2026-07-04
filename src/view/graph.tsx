@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { createContext, useEffect, useState } from 'react';
 
 import {
@@ -26,7 +22,7 @@ import {
     NODE_HEIGHT,
     NODE_WIDTH,
     RearrangeAction,
-    SerializableLayout,
+    SerializableLayoutData,
     fromSerializableObject,
     personIdToNodeId,
 } from 'layout';
@@ -61,7 +57,7 @@ const nodeTypes = {
 
 export type GraphDto = {
     data: [Node[], Edge[]];
-    layout: SerializableLayout;
+    layout: SerializableLayoutData;
 };
 
 const DEFAULT_EMPTY_LAYOUT: GenericLayout = new GenericLayout(BRANDES_KORF, emptyIndex());
@@ -155,7 +151,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
 
         (async () => {
             try {
-                const savedData: GrafilyState = (await plugin.loadData()) || DEFAULT_STATE;
+                const savedData = ((await plugin.loadData()) as GrafilyState) || DEFAULT_STATE;
                 const graphsData = savedData.graphs;
 
                 if (!graphsData || Object.keys(graphsData).length === 0) {
@@ -307,7 +303,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         }
 
         try {
-            const existingStates: GrafilyState = (await plugin.loadData()) || DEFAULT_STATE;
+            const existingStates = ((await plugin.loadData()) as GrafilyState) || DEFAULT_STATE;
 
             const graphDto: GraphDto = {
                 data: graph,
@@ -343,7 +339,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         }
 
         try {
-            const existingStates = (await plugin.loadData()) || {};
+            const existingStates = ((await plugin.loadData()) as GrafilyState) || DEFAULT_STATE;
             const graphs = existingStates?.graphs || {};
 
             delete graphs[graphName];
@@ -382,7 +378,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
     const { getViewport, setViewport } = useReactFlow();
 
     const handleRevealNode = (nodeX: number, nodeY: number) => {
-        const container = document.querySelector('.react-flow');
+        const container = activeDocument.querySelector('.react-flow');
         if (!container) {
             return;
         }
@@ -459,7 +455,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
     );
 }
 
-export function FamilyFlow({ plugin, dataDir }: { plugin: any; dataDir: string }) {
+export function FamilyFlow({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
     return (
         <div
             style={{
