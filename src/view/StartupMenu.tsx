@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { BRANDES_KORF, REINGOLD_TILFORD, LayoutName } from '../layout';
 import { GRAPH_ICON, TREE_ICON } from 'images';
 import { getIcon } from 'obsidian';
+import { useApp } from '../hooks';
+import { confirmDialog } from './ConfirmModal';
 import { GraphDto } from './graph';
 
 export type StartupMenuProps = {
@@ -23,6 +25,7 @@ export function StartupMenu({
     const [selectedPerson, setSelectedPerson] = useState<string>(persons[0] ?? '');
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [selectedSavedGraph, setSelectedSavedGraph] = useState<string>('');
+    const app = useApp();
 
     const filteredPersons = persons.filter((person) =>
         person.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -51,12 +54,15 @@ export function StartupMenu({
     };
 
     const handleDeleteSavedGraph = async (graphName: string) => {
-        if (!onDeleteSavedGraph) {
+        if (!onDeleteSavedGraph || !app) {
             return;
         }
 
-        /* eslint-disable no-alert */
-        if (!confirm(`Are you sure you want to delete "${graphName}"?`)) {
+        const confirmed = await confirmDialog(
+            app,
+            `Are you sure you want to delete "${graphName}"?`,
+        );
+        if (!confirmed) {
             return;
         }
 
