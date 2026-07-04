@@ -1,6 +1,6 @@
 import { useState, KeyboardEvent } from 'react';
 import { getIcon } from 'obsidian';
-import { useGraph } from 'hooks';
+import { useApp, useGraph } from 'hooks';
 import {
     MOVE_PERSON_LEFT,
     MOVE_PERSON_RIGHT,
@@ -8,6 +8,7 @@ import {
     SWAP_MARRIAGE_SPOUSES,
 } from 'layout';
 import { SimplePersonNode } from './node';
+import { confirmDialog } from './ConfirmModal';
 
 export type ChildNodePreview = {
     personId: string;
@@ -46,6 +47,7 @@ export function SidePanel({
     const [isSaving, setIsSaving] = useState(false);
 
     const graph = useGraph();
+    const app = useApp();
 
     const handleSaveClick = () => {
         // If graph name is known, save directly without modal
@@ -76,23 +78,28 @@ export function SidePanel({
         }
     };
 
-    const handleDeleteClick = () => {
-        if (!loadedGraphName || !onDelete) {
+    const confirmAndDelete = async () => {
+        if (!loadedGraphName || !onDelete || !app) {
             return;
         }
 
-        /* eslint-disable no-alert */
-        if (!confirm(`Are you sure you want to delete "${loadedGraphName}"?`)) {
+        const confirmed = await confirmDialog(
+            app,
+            `Are you sure you want to delete "${loadedGraphName}"?`,
+        );
+        if (!confirmed) {
             return;
         }
 
         try {
-            onDelete(loadedGraphName).catch((err) =>
-                console.error('Failed to delete graph state:', err),
-            );
+            await onDelete(loadedGraphName);
         } catch (err) {
             console.error('Failed to delete graph state:', err);
         }
+    };
+
+    const handleDeleteClick = () => {
+        confirmAndDelete().catch((err) => console.error('Failed to delete graph state:', err));
     };
 
     const handleRefresh = () => {
