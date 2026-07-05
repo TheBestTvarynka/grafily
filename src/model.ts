@@ -83,7 +83,10 @@ export function familyFromPersons(persons: Person[]): Family {
             const marriage = getMarriage(spouse_id, personMarriages);
 
             // We must ensure the order of the parents in the marriage is consistent.
-            const [person1, person2] = person.id.localeCompare(spouse_id) > 0 ? [spouse_id, person.id] : [person.id, spouse_id];
+            const [person1, person2] =
+                person.id.localeCompare(spouse_id) > 0
+                    ? [spouse_id, person.id]
+                    : [person.id, spouse_id];
 
             if (!marriage) {
                 marriages.push({
@@ -111,7 +114,8 @@ export function familyFromPersons(persons: Person[]): Family {
 
             if (!parentsMarriage) {
                 // We must ensure the order of the parents in the marriage is consistent.
-                const [person1, person2] = parent1.localeCompare(parent2) > 0 ? [parent2, parent1] : [parent1, parent2];
+                const [person1, person2] =
+                    parent1.localeCompare(parent2) > 0 ? [parent2, parent1] : [parent1, parent2];
 
                 parentsMarriage = {
                     id: `${person1}_${person2}`,
@@ -142,7 +146,9 @@ export function familyFromPersons(persons: Person[]): Family {
             const personMarriage = findMarriages(person.id)[0];
 
             if (!personMarriage) {
-                throw new Error(`person ${person.id} has children but no marriage (no spouse specified)`);
+                throw new Error(
+                    `person ${person.id} has children but no marriage (no spouse specified)`,
+                );
             }
 
             const marriage = findMarriages(person.id)[0];
