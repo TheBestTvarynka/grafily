@@ -6,6 +6,8 @@
   - [How it works](#how-it-works)
   - [Motivation](#motivation)
   - [Installation](#installation)
+    - [Obsidian Community Plugins](#obsidian-community-plugins)
+    - [Manual installation](#manual-installation)
   - [Usage](#usage)
     - [Metadata](#metadata)
   - [BDFL](#bdfl)
