@@ -1401,44 +1401,44 @@ export class GraphBuilder {
     toggleSiblingVisibility(nodeId: Id, selectedParentNodeId: string) {
         const isVisible = this.contains(nodeId.id);
 
-        const parentsMarriages = this.parents.get(nodeId.id);
-        if (!parentsMarriages) {
-            console.warn(`toggleSiblingVisibility: ${nodeId.id} does not have parents`);
-            return;
-        }
+        if (isVisible) {
+            const parentsMarriages = this.parents.get(nodeId.id);
+            if (!parentsMarriages) {
+                console.warn(`toggleSiblingVisibility: ${nodeId.id} does not have parents`);
+                return;
+            }
 
-        if (parentsMarriages.length > 2 || parentsMarriages.length === 0) {
-            console.warn(
-                `toggleSiblingVisibility: ${nodeId.id} has invalid number of parents: ${parentsMarriages.length}`,
-            );
-            return;
-        }
-
-        let parentsMarriage: string;
-        if (parentsMarriages.length === 2) {
-            if (parentsMarriages[0] === selectedParentNodeId) {
-                parentsMarriage = parentsMarriages[0]!;
-            } else if (parentsMarriages[1] === selectedParentNodeId) {
-                parentsMarriage = parentsMarriages[1]!;
-            } else {
+            if (parentsMarriages.length > 2 || parentsMarriages.length === 0) {
                 console.warn(
-                    `toggleSiblingVisibility: ${nodeId.id} has two parents, but neither matches the selected parent ID: ${selectedParentNodeId}`,
+                    `toggleSiblingVisibility: ${nodeId.id} has invalid number of parents: ${parentsMarriages.length}`,
                 );
                 return;
             }
-        } else {
-            // SAFE: checked above.
-            parentsMarriage = parentsMarriages[0]!;
-        }
 
-        if (isVisible) {
+            let parentsMarriage: string;
+            if (parentsMarriages.length === 2) {
+                if (parentsMarriages[0] === selectedParentNodeId) {
+                    parentsMarriage = parentsMarriages[0]!;
+                } else if (parentsMarriages[1] === selectedParentNodeId) {
+                    parentsMarriage = parentsMarriages[1]!;
+                } else {
+                    console.warn(
+                        `toggleSiblingVisibility: ${nodeId.id} has two parents, but neither matches the selected parent ID: ${selectedParentNodeId}`,
+                    );
+                    return;
+                }
+            } else {
+                // SAFE: checked above.
+                parentsMarriage = parentsMarriages[0]!;
+            }
+
             const children = this.children.get(parentsMarriage) ?? [];
             this.removeChildrenOf(
                 parentsMarriage,
                 children.filter((childId) => childId !== nodeId.id),
             );
         } else {
-            const parentNodeChildren = this.children.get(parentsMarriage) ?? [];
+            const parentNodeChildren = this.children.get(selectedParentNodeId) ?? [];
 
             if (parentNodeChildren.length === 0) {
                 // `nodeId` is a first child node to add.
@@ -1473,20 +1473,19 @@ export class GraphBuilder {
                         // The existing (sibling) node have two parent nodes. So, we need to find a place
                         // to insert a new child node: to the left or to the right of the existing node.
                         if (existingChildParentNodes[0] === selectedParentNodeId) {
-                            // The current parent node is the left parent of the existing child node.
-                            // So, we can insert a new child node to the left of the existing child node.
-                            layer.splice(position, 0, nodeId.id);
-
-                            this.children.set(selectedParentNodeId, [nodeId.id, existingChildId]);
-                        } else {
                             // The current parent node is the right parent of the existing child node.
                             // So, we can insert a new child node to the right of the existing child node.
                             layer.splice(position + 1, 0, nodeId.id);
 
                             this.children.set(selectedParentNodeId, [existingChildId, nodeId.id]);
+                        } else {
+                            // The current parent node is the left parent of the existing child node.
+                            // So, we can insert a new child node to the left of the existing child node.
+                            layer.splice(position, 0, nodeId.id);
+
+                            this.children.set(selectedParentNodeId, [nodeId.id, existingChildId]);
                         }
-                    }
-                    if (existingChildParentNodes.length === 1) {
+                    } else if (existingChildParentNodes.length === 1) {
                         // The existing node have only one parent node.
                         // So, we can insert a new child node to right (or to the left) of the existing child node
                         // and do not worry about edges crossing.
