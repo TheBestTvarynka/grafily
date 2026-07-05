@@ -1,4 +1,3 @@
-
 # Getting started
 
 Before diving into it, make sure you read and understand the [Metadata](./METADATA.md) format and purpose.

@@ -1,4 +1,3 @@
-
 # Metadata
 
 Grafily expects your vault to have **one page per person**. But it does not mean that all pages in the vault must be dedicated only to persons.

@@ -1,4 +1,3 @@
-
 - [Build the plugin](#build-the-plugin)
 - [Install the plugin](#install-the-plugin)
 
