@@ -75,14 +75,14 @@ You can install the plugin by downloading the release assets, placing them insid
 
 1. Go to the [TheBestTvarynka/grafily/releases](https://github.com/TheBestTvarynka/grafily/releases) page and download release assets: `main.js`, `manifest.json`, and `styles.css`.
 2. Place these files in the vault plugin directory:
-   ```bash
-   VAULT_DIR=/path/to/vault
-   GRAFILY_DIR=${VAULT_DIR}/.obsidian/plugins/grafily
-   mkdir -p ${GRAFILY_DIR}
-   cp main.js ${GRAFILY_DIR}
-   cp styles.css ${GRAFILY_DIR}
-   cp manifest.json ${GRAFILY_DIR}
-   ```
+```bash
+VAULT_DIR=/path/to/vault
+GRAFILY_DIR=${VAULT_DIR}/.obsidian/plugins/grafily
+mkdir -p ${GRAFILY_DIR}
+cp main.js ${GRAFILY_DIR}
+cp styles.css ${GRAFILY_DIR}
+cp manifest.json ${GRAFILY_DIR}
+```
 2. Enable the Grafily plugin in the Obsidian settings (`Community Plugins` section).
 
 If you want to build the plugin from the source code, please follow the [BUILD_FROM_SRC.md](./doc/BUILD_FROM_SRC.md) document.
