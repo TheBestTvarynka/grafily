@@ -36,7 +36,7 @@ This plugin is useful for family history/genealogy research, tracking family mem
 - The Grafily scans all pages in the directory (the directory is configurable), extracts persons' metadata (see the [Usage](#usage) section for the metadata format), builds an internal relationship graph, and then renders a pretty **interactive** graph that you can easily navigate and view family members.
 - An interactive UI allows you to collapse or expand family relationships with other persons (collapse/expand children/parent nodes).
 
-Basically, Grafily is just a tool which creates a pretty graph from vault `.md` files:
+Basically, Grafily is just a tool that creates a pretty graph from vault `.md` files:
 
 ```mermaid
 flowchart LR
@@ -60,8 +60,8 @@ But there was a problem: I couldn't find a suitable plugin to render a pretty gr
 So, I decided to write my own plugin.
 The Grafily has one concrete purpose: it is _**a viewer for family members' relationships**_.
 
-Actually, I found one very interesting plugin: https://github.com/banisterious/obsidian-charted-roots. It is super powerful. Too powerful for me. When I use such complex software, I do not have a feeling that I control the the process. I wanted _a simple_ plugin.
-But do not get me wrong, [obsidian-charted-roots](https://github.com/banisterious/obsidian-charted-roots) is a great plugin but it's just not for me.
+Actually, I found one very interesting plugin: https://github.com/banisterious/obsidian-charted-roots. It is super powerful. Too powerful for me. When I use such complex software, I do not have a feeling that I control the process. I wanted _a simple_ plugin.
+But do not get me wrong: [obsidian-charted-roots](https://github.com/banisterious/obsidian-charted-roots) is a great plugin, but it's just not for me.
 
 ## Installation
 
@@ -104,7 +104,7 @@ TL;DR:
 
 > **Benevolent dictator for life (BDFL)** is a title given to a small number of open-source software development leaders, typically project founders who retain the final say in disputes or arguments within the community.
 
-For the Grafily project, the BDFL is [@TheBestTvarynka (Pavlo Myroniuk)](https://github.com/TheBestTvarynka), original creator of Grafily.
+For the Grafily project, the BDFL is [@TheBestTvarynka (Pavlo Myroniuk)](https://github.com/TheBestTvarynka), the original creator of Grafily.
 
 ## App Philosophy
 
@@ -117,13 +117,13 @@ The Grafily follows the [Unix philosophy](https://en.wikipedia.org/wiki/Unix_phi
 
 > Do one thing and do it well.
 
-The Grafily is good in building graph layouts.
+The Grafily is good at building graph layouts.
 It does not even render them because the [`reactflow`](https://reactflow.dev/) library handles that.
 
 
 ### The Worse Is Better
 
-Did you hear about [the _worse-is-better_ philosophy](https://www.dreamsongs.com/RiseOfWorseIsBetter.html)? If not, I encourage you to read [The Rise of Worse is Better](https://www.dreamsongs.com/RiseOfWorseIsBetter.html) article.
+Did you hear about [the _worse-is-better_ philosophy](https://www.dreamsongs.com/RiseOfWorseIsBetter.html)? If not, I encourage you to read the [The Rise of Worse is Better](https://www.dreamsongs.com/RiseOfWorseIsBetter.html) article.
 
 TL;DR. This is a citation from the mentioned article above:
 
@@ -134,6 +134,6 @@ TL;DR. This is a citation from the mentioned article above:
 >   - Completeness -- the design must cover as many important situations as is practical. All reasonably expected cases should be covered. Completeness can be sacrificed in favor of any other quality. Consistency can be sacrificed to achieve completeness if simplicity is retained.
 
 :thinking: What does it mean for the app?
-It means that some features can be discarded in favor of app simplicity.
+It means some features can be discarded in favor of app simplicity.
 The benefits of some features may not justify the complexity of their implementation.
 I would rather keep the app simple than unreasonably complex.
