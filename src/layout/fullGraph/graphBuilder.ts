@@ -629,16 +629,16 @@ export class GraphBuilder {
         } else {
             const existingParents = this.parents.get(id.id) ?? [];
 
-            const marriage = this.family.marriageById.get(id.id);
-            if (!marriage) {
-                throw new Error(`Marriage ${id.id} should exist`);
+            const node = this.nodes.get(id.id);
+            if (!node) {
+                throw new Error(`getParentNodesIds: Node ${id.id} should exist`);
             }
 
             const parentsIds: Id[] = [];
             let parentSide: ParentSide = NO_PARENT;
 
-            if (marriage.parent1Id) {
-                const parentsMarriage = this.family.personParents.get(marriage.parent1Id);
+            if (node.persons.person1) {
+                const parentsMarriage = this.family.personParents.get(node.persons.person1);
                 if (parentsMarriage && parentsMarriage !== this.nodeToSkip) {
                     const marriage = this.family.marriageById.get(parentsMarriage);
                     if (!marriage) {
@@ -656,8 +656,8 @@ export class GraphBuilder {
                 }
             }
 
-            if (marriage.parent2Id) {
-                const parentsMarriage = this.family.personParents.get(marriage.parent2Id);
+            if (node.persons.person2) {
+                const parentsMarriage = this.family.personParents.get(node.persons.person2);
                 if (parentsMarriage && parentsMarriage !== this.nodeToSkip) {
                     const marriage = this.family.marriageById.get(parentsMarriage);
                     if (!marriage) {
@@ -826,12 +826,13 @@ export class GraphBuilder {
                 console.warn(
                     `Something weird happens here: trying to expand parents of a person node ${nodeId.id}, but it already has parents.`,
                 );
+
                 return;
             }
 
             // One of the marriage parents (parents of wife or parents of husband) are already expanded.
             if (node.persons.person1 === personId) {
-                // Parents of `marriage.parent2Id` are already expanded. So, the right boundary is the position of the current node, and the left boundary is the position of the left neighbor of the current node (if exists).
+                // Parents of `node.persons.person1` are already expanded. So, the right boundary is the position of the current node, and the left boundary is the position of the left neighbor of the current node (if exists).
                 right = nodeId.id;
 
                 let leftPosition = position - 1;
@@ -854,7 +855,7 @@ export class GraphBuilder {
                     }
                 }
             } else if (node.persons.person2 === personId) {
-                // Parents of `marriage.parent1Id` are already expanded. So, the left boundary is the position of the current node, and the right boundary is the position of the right neighbor of the current node (if exists).
+                // Parents of `node.persons.person2` are already expanded. So, the left boundary is the position of the current node, and the right boundary is the position of the right neighbor of the current node (if exists).
                 left = nodeId.id;
 
                 let rightPosition = position + 1;
@@ -1473,17 +1474,17 @@ export class GraphBuilder {
                         // The existing (sibling) node have two parent nodes. So, we need to find a place
                         // to insert a new child node: to the left or to the right of the existing node.
                         if (existingChildParentNodes[0] === selectedParentNodeId) {
-                            // The current parent node is the right parent of the existing child node.
-                            // So, we can insert a new child node to the right of the existing child node.
-                            layer.splice(position + 1, 0, nodeId.id);
-
-                            this.children.set(selectedParentNodeId, [existingChildId, nodeId.id]);
-                        } else {
                             // The current parent node is the left parent of the existing child node.
                             // So, we can insert a new child node to the left of the existing child node.
                             layer.splice(position, 0, nodeId.id);
 
                             this.children.set(selectedParentNodeId, [nodeId.id, existingChildId]);
+                        } else {
+                            // The current parent node is the right parent of the existing child node.
+                            // So, we can insert a new child node to the right of the existing child node.
+                            layer.splice(position + 1, 0, nodeId.id);
+
+                            this.children.set(selectedParentNodeId, [existingChildId, nodeId.id]);
                         }
                     } else if (existingChildParentNodes.length === 1) {
                         // The existing node have only one parent node.
