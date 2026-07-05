@@ -333,7 +333,7 @@ export function MarriageNode({ data }: { data: MarriageNodeData }) {
                 position: 'relative',
             }}
         >
-            {data.isChildrenCollapsible ? (
+            {data.isChildrenCollapsible && hasChildren ? (
                 <button
                     onClick={collapseChildren}
                     style={{
