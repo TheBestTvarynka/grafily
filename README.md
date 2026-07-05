@@ -90,49 +90,10 @@ If you want to build the plugin from the source code, please follow the [BUILD_F
 
 ## Usage
 
-As I said above, Grafily expects that your vault has one page per person. But it does not mean that all pages in the vault must be dedicated only to persons.
+Read these two guides to understand the metadata format and how to use the plugin:
 
-- Grafily will scan only pages in the specified directory in the plugin settings.
-- Grafily will accept only pages that include all required metadata.
-
-### Metadata
-
-Grafily expects predefined information at the start of each page. Here is a metadata template:
-
-```md
-# <surname> <name>
-
-**Spouse**: [[<spouse page>]]
-**Parents**: [[<1st parent page>]], [[<2nd parent page>]]
-**Birth**: <year>-<month>-<day>
-**Death**: <year>-<month>-<day>
-**Image**: [[<profile picture file>]]
-
----
-
-Person's page content.
-```
-
-Example:
-
-```md
-# Myroniuk Pavlo
-
-**Spouse**: [[Kateryna]]
-**Parents**: [[Yaroslav]], [[Halyna]]
-**Birth**: 2001-07-10
-**Image**: [[images/TheBestTvarynka.png]]
-
----
-
-Hi there 👋
-```
-
-You can type any information you want after the `---`. The `# <surname> <name>` line is required. All other key-value pairs are optional.
-You can add any other key-value pairs to the metadata you want.
-
-Moreover, you do not need to specify the spouse link for both; only one link is sufficient.
-For example, if you specified in the metadata that Bob's spouse is Emma, then it is not required to specify Bob in Emma's metadata.
+1. [METADATA.md](./doc/METADATA.md).
+2. [GETTING_STARTED.md](./doc/GETTING_STARTED.md).
 
 ## BDFL
 
