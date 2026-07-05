@@ -13,7 +13,7 @@ npm run build
 
 ## Install the plugin
 
-Execute commands below in the same directory as `npm run build` from the section above.
+Execute the commands below in the same directory as `npm run build` from the section above.
 
 ```bash
 VAULT_DIR=/path/to/vault
