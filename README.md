@@ -64,21 +64,27 @@ But do not get me wrong, [obsidian-charted-roots](https://github.com/banisteriou
 
 ## Installation
 
-> [!NOTE]  
-> Currently, the plugin has not been submitted to the [official list of plugins](https://github.com/obsidianmd/obsidian-releases/blob/master/community-plugins.json) because I am the only one who uses it.
-> If you considered using it and want to see it in the official list of plugins, create an issue.
+### Obsidian Community Plugins
 
-You can try this plugin by cloning the repo and enabling it in the Obsidian vault settings.
+The Grafily plugin is available in the [Obsidian Community Plugins](https://obsidian.md/help/community-plugins) list. So, you can install it right from the Obsidian app. Here a direct lint to the plugin page: https://community.obsidian.md/plugins/grafily.
 
-1. Go to the [Releases](https://github.com/TheBestTvarynka/grafily/releases) page and download release assets.
-   They consist of three files: `main.js`, `manifest.json`, and `styles.css`.
+### Manual installation
+
+You can install the plugin by downloading the release assets, placing them inside your Obsidian vault, and enabling it in the settings:
+
+1. Go to the [TheBestTvarynka/grafily/releases](https://github.com/TheBestTvarynka/grafily/releases) page and download release assets: `main.js`, `manifest.json`, and `styles.css`.
 2. Place these files in the vault plugin directory:
    ```bash
-   mkdir -p {vault}/.obsidian/plugins/grafily
-   cd {vault}/.obsidian/plugins/grafily
-   # Place `main.js`, `manifest.json`, and `styles.css` here. 
+   VAULT_DIR=/path/to/vault
+   GRAFILY_DIR=${VAULT_DIR}/.obsidian/plugins/grafily
+   mkdir -p ${GRAFILY_DIR}
+   cp main.js ${GRAFILY_DIR}
+   cp styles.css ${GRAFILY_DIR}
+   cp manifest.json ${GRAFILY_DIR}
    ```
 2. Enable the Grafily plugin in the Obsidian settings (`Community Plugins` section).
+
+If you want to build the plugin from the source code, please follow the [BUILD_FROM_SRC.md](./doc/BUILD_FROM_SRC.md) document.
 
 ## Usage
 
