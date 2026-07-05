@@ -34,6 +34,7 @@ export type Person = {
     // Children IDs.
     children?: string[];
     // Spouses IDs.
+    // Currently, only one spouse per person is supported.
     spouses?: string[];
     // Avatar image to render in the person node.
     image?: string;
@@ -81,9 +82,12 @@ export function familyFromPersons(persons: Person[]): Family {
             const spouse_id = person.spouses[0];
             const marriage = getMarriage(spouse_id, personMarriages);
 
+            // We must ensure the order of the parents in the marriage is consistent.
+            const [person1, person2] = person.id.localeCompare(spouse_id) > 0 ? [spouse_id, person.id] : [person.id, spouse_id];
+
             if (!marriage) {
                 marriages.push({
-                    id: `${person.id}_${spouse_id}`,
+                    id: `${person1}_${person2}`,
                     parent1Id: person.id,
                     parent2Id: spouse_id,
                     childrenIds: [],
@@ -92,23 +96,27 @@ export function familyFromPersons(persons: Person[]): Family {
         }
 
         if (person.parents) {
-            if (person.parents.length === 0 || person.parents.length > 2) {
+            if (person.parents.length !== 2) {
                 throw new Error(
                     `person ${person.id} has invalid number of parents: ${person.parents.length}`,
                 );
             }
 
-            if (!person.parents[0]) {
-                throw new Error('at least one parent must present in the array');
-            }
+            // SAFE: we already checked that person.parents.length === 2.
+            const parent1 = person.parents[0]!;
+            // SAFE: we already checked that person.parents.length === 2.
+            const parent2 = person.parents[1]!;
 
-            let parentsMarriage = getMarriage(person.parents[0], marriages);
+            let parentsMarriage = getMarriage(person.parents[0]!, marriages);
 
             if (!parentsMarriage) {
+                // We must ensure the order of the parents in the marriage is consistent.
+                const [person1, person2] = parent1.localeCompare(parent2) > 0 ? [parent2, parent1] : [parent1, parent2];
+
                 parentsMarriage = {
-                    id: `${person.parents[0]}_${person.parents[1] ?? 'Unknown'}`,
-                    parent1Id: person.parents[0],
-                    parent2Id: person.parents[1],
+                    id: `${person1}_${person2}`,
+                    parent1Id: parent1,
+                    parent2Id: parent2,
                     childrenIds: [person.id],
                 };
                 marriages.push(parentsMarriage);
@@ -134,11 +142,7 @@ export function familyFromPersons(persons: Person[]): Family {
             const personMarriage = findMarriages(person.id)[0];
 
             if (!personMarriage) {
-                marriages.push({
-                    id: `${person.id}_unknown`,
-                    parent1Id: person.id,
-                    childrenIds: [],
-                });
+                throw new Error(`person ${person.id} has children but no marriage (no spouse specified)`);
             }
 
             const marriage = findMarriages(person.id)[0];

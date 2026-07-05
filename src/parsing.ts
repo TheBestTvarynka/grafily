@@ -76,7 +76,7 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         ?.split(':')[1]
         ?.split(',')
         .map(removeSquarePrentness);
-    const spouses = lines
+    const spouse = lines
         .find((line) => line.startsWith('**Spouse**'))
         ?.split(':')[1]
         ?.split(',')
@@ -89,7 +89,7 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         death,
         parents,
         children,
-        spouses,
+        spouses: spouse,
         file,
         image,
         gender,
