@@ -1,4 +1,3 @@
-
 # Contributing
 
 First of all, thank you for considering contributing to this project :heart:. We appreciate your effort and time in making OSS better.
