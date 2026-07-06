@@ -67,7 +67,7 @@ But do not get me wrong: [obsidian-charted-roots](https://github.com/banisteriou
 
 ### Obsidian Community Plugins
 
-The Grafily plugin is available in the [Obsidian Community Plugins](https://obsidian.md/help/community-plugins) list. So, you can install it right from the Obsidian app. Here a direct lint to the plugin page: https://community.obsidian.md/plugins/grafily.
+The Grafily plugin is available in the [Obsidian Community Plugins](https://obsidian.md/help/community-plugins) list. So, you can install it right from the Obsidian app. Here is a direct link to the plugin page: https://community.obsidian.md/plugins/grafily.
 
 ### Manual installation
 
