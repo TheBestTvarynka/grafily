@@ -96,7 +96,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
     const [isChanged, setIsChanged] = useState(false);
     const [savedGraphs, setSavedGraphs] = useState<Record<string, GraphDto>>({});
     const [loadedGraphName, setLoadedGraphName] = useState<string | null>(null);
-    const [selectedNode, setSelectedNode] = useState<SelectedPerson | null>(null);
+    const [selectedPerson, setSelectedPerson] = useState<SelectedPerson | null>(null);
 
     const app = useApp();
 
@@ -150,10 +150,10 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
 
         setGraph(newGraph);
         setIsChanged(true);
-        if (selectedNode) {
-            setSelectedNode({
-                ...selectedNode,
-                capabilities: layout.capabilities(selectedNode.id),
+        if (selectedPerson) {
+            setSelectedPerson({
+                ...selectedPerson,
+                capabilities: layout.capabilities(selectedPerson.id),
             });
         }
     };
@@ -174,10 +174,10 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
 
         setGraph(newGraph);
         setIsChanged(true);
-        if (selectedNode) {
-            setSelectedNode({
-                ...selectedNode,
-                capabilities: layout.capabilities(selectedNode.id),
+        if (selectedPerson) {
+            setSelectedPerson({
+                ...selectedPerson,
+                capabilities: layout.capabilities(selectedPerson.id),
             });
         }
     };
@@ -188,10 +188,10 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
 
         setGraph(newGraph);
         setIsChanged(true);
-        if (selectedNode) {
-            setSelectedNode({
-                ...selectedNode,
-                capabilities: layout.capabilities(selectedNode.id),
+        if (selectedPerson) {
+            setSelectedPerson({
+                ...selectedPerson,
+                capabilities: layout.capabilities(selectedPerson.id),
             });
         }
     };
@@ -204,10 +204,10 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
 
         setGraph(newGraph);
         setIsChanged(true);
-        if (selectedNode) {
-            setSelectedNode({
-                ...selectedNode,
-                capabilities: layout.capabilities(selectedNode.id),
+        if (selectedPerson) {
+            setSelectedPerson({
+                ...selectedPerson,
+                capabilities: layout.capabilities(selectedPerson.id),
             });
         }
     };
@@ -220,10 +220,10 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
 
         setGraph(newGraph);
         setIsChanged(true);
-        if (selectedNode) {
-            setSelectedNode({
-                ...selectedNode,
-                capabilities: layout.capabilities(selectedNode.id),
+        if (selectedPerson) {
+            setSelectedPerson({
+                ...selectedPerson,
+                capabilities: layout.capabilities(selectedPerson.id),
             });
         }
     };
@@ -233,25 +233,25 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
     };
 
     const toggleSiblingVisibility = (personId: string) => {
-        if (!selectedNode) {
+        if (!selectedPerson) {
             return;
         }
 
-        const [nodeId] = personIdToNodeId(selectedNode.id, index);
+        const [nodeId] = personIdToNodeId(selectedPerson.id, index);
         const newGraph = layout.toggleSiblingVisibility(personId, nodeId.id);
 
-        newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], selectedNode.id);
+        newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], selectedPerson.id);
 
         setGraph(newGraph);
         setIsChanged(true);
 
-        const updatedChildrenNodes = selectedNode.childrenNodes.map((children) => {
+        const updatedChildrenNodes = selectedPerson.childrenNodes.map((children) => {
             return { personId: children.personId, isVisible: layout.contains(children.personId) };
         });
 
-        setSelectedNode({
-            ...selectedNode,
-            capabilities: layout.capabilities(selectedNode.id),
+        setSelectedPerson({
+            ...selectedPerson,
+            capabilities: layout.capabilities(selectedPerson.id),
             childrenNodes: updatedChildrenNodes,
         });
     };
@@ -260,10 +260,65 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         const newLayout = new GenericLayout(layoutName, index);
         const newGraph = newLayout.buildNodes(personId);
 
+        const [id] = personIdToNodeId(personId, index);
+        const newNode = newGraph[0].find((n) => n.id === id.id);
+        if (newNode) {
+            // We cannot use `reactflow`-related API because this function is located outside of the `ReactFlow`
+            // component. Instead, we will calculate the center of the graph container and shift by its half-size.
+            // It is not center-perfect (because it does not include node size), but it is good enough.
+            //
+            // Important: the viewport scale must be 1.0 and viewport (x; y) mut be (0; 0).
+            const familyGraphContainer = document.getElementById('familyGraphContainer');
+            let dx = 0;
+            let dy = 0;
+            if (familyGraphContainer) {
+                dx = familyGraphContainer.clientWidth / 2;
+                dy = familyGraphContainer.clientHeight / 2;
+            }
+
+            newGraph[0] = shiftGraphBy(
+                newGraph[0],
+                newNode.position.x - dx,
+                newNode.position.y - dy,
+            );
+        } else {
+            console.error(`Node with id ${id.id} not found in the new graph.`);
+        }
+
+        const personNode = newGraph[0].find((node) => node.id === personId);
+        let x = 0;
+        let y = 0;
+
+        if (personNode) {
+            x = personNode.position.x;
+            y = personNode.position.y;
+        } else {
+            console.error(
+                `Person node with id ${personId} not found in the new graph. Defaulting position to (0, 0).`,
+            );
+
+            x = 0;
+            y = 0;
+        }
+
+        const children = index.personChildren.get(personId) ?? [];
+
         setLayout(newLayout);
         setGraph(newGraph);
         setIsInitialized(true);
         setIsChanged(true);
+        setSelectedPerson({
+            id: personId,
+            x,
+            y,
+            capabilities: newLayout.capabilities(personId),
+            childrenNodes: children.map((childrenId) => {
+                return {
+                    personId: childrenId,
+                    isVisible: newLayout.contains(childrenId),
+                };
+            }),
+        });
     };
 
     const handleLoadSavedGraph = (graphName: string) => {
@@ -426,14 +481,17 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
                 expandParents,
                 rearrange,
                 index,
-                selectedPerson: selectedNode,
-                selectPerson: setSelectedNode,
+                selectedPerson: selectedPerson,
+                selectPerson: setSelectedPerson,
                 refreshIndex,
                 contains,
                 toggleSiblingVisibility,
             }}
         >
-            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <div
+                id="familyGraphContainer"
+                style={{ position: 'relative', width: '100%', height: '100%' }}
+            >
                 <ReactFlow nodes={graph[0]} edges={graph[1]} nodeTypes={nodeTypes}>
                     <Background color="grey" variant={BackgroundVariant.Dots} gap={20} />
                     <Controls />
@@ -441,7 +499,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
                 {isInitialized && (
                     <SidePanel
                         loadedGraphName={loadedGraphName}
-                        selectedPerson={selectedNode}
+                        selectedPerson={selectedPerson}
                         onSave={handleSaveGraph}
                         onDelete={handleDeleteGraph}
                         onHome={handleHomeClick}
@@ -498,7 +556,11 @@ const shiftGraphByAnchorNode = (
     const dx = newNode.position.x - oldNode.position.x;
     const dy = newNode.position.y - oldNode.position.y;
 
-    return newNodes.map((node) => {
+    return shiftGraphBy(newNodes, dx, dy);
+};
+
+const shiftGraphBy = (nodes: Node[], dx: number, dy: number): Node[] => {
+    return nodes.map((node) => {
         node.position.x -= dx;
         node.position.y -= dy;
 

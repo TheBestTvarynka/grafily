@@ -1,5 +1,6 @@
 import { useState, KeyboardEvent } from 'react';
 import { getIcon } from 'obsidian';
+import { useReactFlow } from '@xyflow/react';
 import { useApp, useGraph } from 'hooks';
 import {
     MOVE_PERSON_LEFT,
@@ -49,6 +50,8 @@ export function SidePanel({
     const graph = useGraph();
     const app = useApp();
 
+    const reactFlowInstance = useReactFlow();
+
     const handleSaveClick = () => {
         // If graph name is known, save directly without modal
         if (loadedGraphName) {
@@ -90,6 +93,11 @@ export function SidePanel({
         if (!confirmed) {
             return;
         }
+
+        // Set default viewport state.
+        reactFlowInstance
+            .setViewport({ x: 0, y: 0, zoom: 1 })
+            .catch((err) => console.error('Failed to reset viewport:', err));
 
         try {
             await onDelete(loadedGraphName);
@@ -147,6 +155,14 @@ export function SidePanel({
         graph.rearrange(selectedPerson.id, SWAP_MARRIAGE_SPOUSES);
     };
 
+    const handleOnHome = () => {
+        // Set default viewport state.
+        reactFlowInstance
+            .setViewport({ x: 0, y: 0, zoom: 1 })
+            .catch((err) => console.error('Failed to reset viewport:', err));
+        onHome();
+    };
+
     return (
         <>
             <div className="grafily-save-panel">
@@ -194,7 +210,7 @@ export function SidePanel({
                     )}
                     <button
                         className="grafily-home-button"
-                        onClick={onHome}
+                        onClick={handleOnHome}
                         title="Return to home menu"
                         dangerouslySetInnerHTML={{
                             __html: getIcon('house')?.outerHTML || '',
