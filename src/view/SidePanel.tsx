@@ -150,53 +150,63 @@ export function SidePanel({
     return (
         <>
             <div className="grafily-save-panel">
-                {selectedPerson && (
-                    <div className="grafily-direction-buttons">
-                        <button
-                            className="grafily-direction-button"
-                            onClick={moveNodeLeft}
-                            title="Move node left"
-                            dangerouslySetInnerHTML={{
-                                __html: getIcon('move-left')?.outerHTML || '',
-                            }}
-                            disabled={!selectedPerson.capabilities.movableLeft}
-                        />
-                        <button
-                            className="grafily-direction-button"
-                            onClick={moveNodeRight}
-                            title="Move node right"
-                            dangerouslySetInnerHTML={{
-                                __html: getIcon('move-right')?.outerHTML || '',
-                            }}
-                            disabled={!selectedPerson.capabilities.movableRight}
-                        />
-                        <button
-                            className="grafily-direction-button"
-                            onClick={swapSpouses}
-                            title="Swap position with spouse"
-                            dangerouslySetInnerHTML={{
-                                __html: getIcon('arrow-right-left')?.outerHTML || '',
-                            }}
-                            disabled={!selectedPerson.capabilities.spousesSwappable}
-                        />
-                        <button
-                            className="grafily-direction-button"
-                            onClick={() => {
-                                onRevealNode(selectedPerson.x, selectedPerson.y);
-                            }}
-                            title="Reveal the node"
-                            dangerouslySetInnerHTML={{
-                                __html: getIcon('eye')?.outerHTML || '',
-                            }}
-                        />
-                    </div>
-                )}
+                <div className="grafily-direction-buttons">
+                    {selectedPerson && (
+                        <>
+                            <button
+                                className="grafily-direction-button"
+                                onClick={moveNodeLeft}
+                                title="Move node left"
+                                dangerouslySetInnerHTML={{
+                                    __html: getIcon('move-left')?.outerHTML || '',
+                                }}
+                                disabled={!selectedPerson.capabilities.movableLeft}
+                            />
+                            <button
+                                className="grafily-direction-button"
+                                onClick={moveNodeRight}
+                                title="Move node right"
+                                dangerouslySetInnerHTML={{
+                                    __html: getIcon('move-right')?.outerHTML || '',
+                                }}
+                                disabled={!selectedPerson.capabilities.movableRight}
+                            />
+                            <button
+                                className="grafily-direction-button"
+                                onClick={swapSpouses}
+                                title="Swap position with spouse"
+                                dangerouslySetInnerHTML={{
+                                    __html: getIcon('arrow-right-left')?.outerHTML || '',
+                                }}
+                                disabled={!selectedPerson.capabilities.spousesSwappable}
+                            />
+                            <button
+                                className="grafily-direction-button"
+                                onClick={() => {
+                                    onRevealNode(selectedPerson.x, selectedPerson.y);
+                                }}
+                                title="Reveal the node"
+                                dangerouslySetInnerHTML={{
+                                    __html: getIcon('eye')?.outerHTML || '',
+                                }}
+                            />
+                        </>
+                    )}
+                    <button
+                        className="grafily-home-button"
+                        onClick={onHome}
+                        title="Return to home menu"
+                        dangerouslySetInnerHTML={{
+                            __html: getIcon('house')?.outerHTML || '',
+                        }}
+                    />
+                </div>
                 <button
-                    className="grafily-home-button"
-                    onClick={onHome}
-                    title="Return to home menu"
+                    className="grafily-save-button"
+                    onClick={handleSaveClick}
+                    title="Save graph state"
                     dangerouslySetInnerHTML={{
-                        __html: getIcon('house')?.outerHTML || '',
+                        __html: getIcon('save')?.outerHTML || '',
                     }}
                 />
                 <button
@@ -205,14 +215,6 @@ export function SidePanel({
                     title="Refresh graph (rescan vault)"
                     dangerouslySetInnerHTML={{
                         __html: getIcon('refresh-ccw')?.outerHTML || '',
-                    }}
-                />
-                <button
-                    className="grafily-save-button"
-                    onClick={handleSaveClick}
-                    title="Save graph state"
-                    dangerouslySetInnerHTML={{
-                        __html: getIcon('save')?.outerHTML || '',
                     }}
                 />
                 {loadedGraphName && (
