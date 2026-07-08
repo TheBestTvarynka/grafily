@@ -1,5 +1,6 @@
 import { useState, KeyboardEvent } from 'react';
 import { getIcon } from 'obsidian';
+import { useReactFlow } from '@xyflow/react';
 import { useApp, useGraph } from 'hooks';
 import {
     MOVE_PERSON_LEFT,
@@ -28,7 +29,13 @@ export type SidePanelProps = {
     selectedPerson: SelectedPerson | null;
     onSave: (name: string) => Promise<void>;
     onDelete: (graphName: string) => Promise<void>;
-    onHome: () => void;
+    // `updateViewport` is a callback function that will be called when the user confirms
+    // that they want to return to the home menu. When there are unsaved changes, the user
+    // may discard `onHome` action to save the changes. In that case, we do not need to
+    // reset the viewport. Only when the user confirms the action, the outer component will
+    // call `updateViewport` to reset the viewport.
+    // We cannot track unsaved changes in `SidePanel` because it's a job for the outer component.
+    onHome: (updateViewport: () => void) => void;
     onRevealNode: (x: number, y: number) => void;
     onRefresh: () => Promise<void>;
 };
@@ -48,6 +55,8 @@ export function SidePanel({
 
     const graph = useGraph();
     const app = useApp();
+
+    const reactFlowInstance = useReactFlow();
 
     const handleSaveClick = () => {
         // If graph name is known, save directly without modal
@@ -90,6 +99,11 @@ export function SidePanel({
         if (!confirmed) {
             return;
         }
+
+        // Set default viewport state.
+        reactFlowInstance
+            .setViewport({ x: 0, y: 0, zoom: 1 })
+            .catch((err) => console.error('Failed to reset viewport:', err));
 
         try {
             await onDelete(loadedGraphName);
@@ -147,6 +161,19 @@ export function SidePanel({
         graph.rearrange(selectedPerson.id, SWAP_MARRIAGE_SPOUSES);
     };
 
+    const confirmAndHome = async () => {
+        onHome(() => {
+            // Set default viewport state.
+            reactFlowInstance
+                .setViewport({ x: 0, y: 0, zoom: 1 })
+                .catch((err) => console.error('Failed to reset viewport:', err));
+        });
+    };
+
+    const handleHomeClick = () => {
+        confirmAndHome().catch((err) => console.error(err));
+    };
+
     return (
         <>
             <div className="grafily-save-panel">
@@ -194,7 +221,7 @@ export function SidePanel({
                     )}
                     <button
                         className="grafily-home-button"
-                        onClick={onHome}
+                        onClick={handleHomeClick}
                         title="Return to home menu"
                         dangerouslySetInnerHTML={{
                             __html: getIcon('house')?.outerHTML || '',
