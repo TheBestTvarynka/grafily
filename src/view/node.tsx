@@ -213,7 +213,16 @@ export function PersonNode({
                     )}
                 </div>
             </div>
-            {hasParents ? <Handle type="target" position={Position.Top} id="top" /> : <></>}
+            {hasParents ? (
+                <Handle
+                    type="target"
+                    position={Position.Top}
+                    id="top"
+                    style={{ top: `${NODE_HEIGHT / 2}px`, background: 'none', border: 'none' }}
+                />
+            ) : (
+                <></>
+            )}
             {data.side === LEFT_SIDE ? (
                 <Handle type="target" position={Position.Left} id="left" />
             ) : (
