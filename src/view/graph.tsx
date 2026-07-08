@@ -408,7 +408,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         }
     };
 
-    const handleHome = async () => {
+    const handleHome = async (updateViewport: () => void) => {
         if (isChanged) {
             if (!app) {
                 console.warn('App instance not available');
@@ -426,6 +426,8 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
             }
         }
 
+        updateViewport();
+
         // Reset graph state and return to startup menu
         setLoadedGraphName(null);
         setGraph([[], []]);
@@ -434,8 +436,8 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         setLayout(DEFAULT_EMPTY_LAYOUT);
     };
 
-    const handleHomeClick = () => {
-        handleHome().catch((err) => console.error(err));
+    const handleHomeClick = (updateViewport: () => void) => {
+        handleHome(updateViewport).catch((err) => console.error(err));
     };
 
     const { getViewport, setViewport } = useReactFlow();
