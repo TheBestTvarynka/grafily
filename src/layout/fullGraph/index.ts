@@ -166,6 +166,7 @@ export class BrandesKopfLayout {
                         source: id,
                         sourceHandle: 'left',
                         targetHandle: 'right',
+                        type: 'smoothstep',
                     });
                 }
 
@@ -196,6 +197,7 @@ export class BrandesKopfLayout {
                         source: id,
                         sourceHandle: 'right',
                         targetHandle: 'left',
+                        type: 'smoothstep',
                     });
                 }
             }
@@ -231,6 +233,7 @@ export class BrandesKopfLayout {
                     target: childId,
                     sourceHandle: 'bottom',
                     targetHandle: 'top',
+                    type: 'smoothstep',
                 });
             }
         }

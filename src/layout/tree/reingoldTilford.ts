@@ -361,6 +361,7 @@ export class ReingoldTilfordLayout {
                     source: nodeId.id.id,
                     sourceHandle: 'left',
                     targetHandle: 'right',
+                    type: 'smoothstep',
                 });
             }
 
@@ -406,6 +407,7 @@ export class ReingoldTilfordLayout {
                     source: marriage.id,
                     sourceHandle: 'right',
                     targetHandle: 'left',
+                    type: 'smoothstep',
                 });
             }
 
@@ -416,6 +418,7 @@ export class ReingoldTilfordLayout {
                     target: childId,
                     sourceHandle: 'bottom',
                     targetHandle: 'top',
+                    type: 'smoothstep',
                 });
             }
         } else {
@@ -459,6 +462,7 @@ export class ReingoldTilfordLayout {
                     target: childId,
                     sourceHandle: 'bottom',
                     targetHandle: 'top',
+                    type: 'smoothstep',
                 });
             }
         }
