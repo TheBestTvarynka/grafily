@@ -43,6 +43,7 @@ export class ReingoldTilford {
         family: Index,
         parentsTreeBuilder?: TreeBuilder,
         childrenTreeBuilder?: TreeBuilder,
+        rootPersonId?: string,
     ) {
         this.family = family;
 
@@ -56,6 +57,10 @@ export class ReingoldTilford {
             this.childrenTreeBuilder = childrenTreeBuilder;
         } else {
             this.childrenTreeBuilder = new TreeBuilder(this.family, getNodeChildren);
+        }
+
+        if (rootPersonId) {
+            this.root = rootPersonId;
         }
     }
 
@@ -340,11 +345,16 @@ export class ReingoldTilford {
      * @returns {SerializableLayout} - A object ready to be serialized.
      */
     toSerializableObject(): SerializableLayoutData {
+        if (!this.root) {
+            throw new Error('Tree root person id is not initialized');
+        }
+
         return {
             name: REINGOLD_TILFORD,
             data: {
                 parentsTreeBuilder: this.parentsTreeBuilder.familyTree(),
                 childrenTreeBuilder: this.childrenTreeBuilder.familyTree(),
+                rootPersonId: this.root,
             },
         };
     }
@@ -362,6 +372,11 @@ export class ReingoldTilford {
         if (isVisibleInChildrenTree) {
             return {
                 isVisible: true,
+                disabled: false,
+            };
+        } else if (childrenExists(personId, this.root, this.family)) {
+            return {
+                isVisible: false,
                 disabled: false,
             };
         }
@@ -391,6 +406,7 @@ export class ReingoldTilford {
 export type ReingoldTilfordLayoutData = {
     parentsTreeBuilder: FamilyTree;
     childrenTreeBuilder: FamilyTree;
+    rootPersonId: string;
 };
 
 /**
@@ -418,5 +434,36 @@ export function fromSerializableObject(
         layout.data.childrenTreeBuilder,
     );
 
-    return new ReingoldTilford(family, parentsTreeBuilder, childrenTreeBuilder);
+    return new ReingoldTilford(
+        family,
+        parentsTreeBuilder,
+        childrenTreeBuilder,
+        layout.data.rootPersonId,
+    );
+}
+
+function childrenExists(personId: string, root: string | null, family: Index): boolean {
+    if (!root) {
+        console.warn('Tree root is not initialized!');
+
+        return false;
+    }
+
+    let children = family.personChildren.get(root) ?? [];
+
+    while (children.length > 0) {
+        let newChildren = [];
+
+        for (const child of children) {
+            if (child === personId) {
+                return true;
+            }
+
+            newChildren.push(...(family.personChildren.get(child) ?? []));
+        }
+
+        children = newChildren;
+    }
+
+    return false;
 }

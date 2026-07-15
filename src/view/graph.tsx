@@ -365,8 +365,6 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
 
             setSavedGraphs(graphs);
             setIsChanged(false);
-
-            console.debug(`Graph state "${name}" saved successfully`);
         } catch (err) {
             console.error('Failed to save graph state:', err);
             throw err;
@@ -392,8 +390,6 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
             };
 
             await plugin.saveData(updatedStates);
-
-            console.debug(`Graph state "${graphName}" deleted successfully`);
 
             setLoadedGraphName(null);
             setGraph([[], []]);

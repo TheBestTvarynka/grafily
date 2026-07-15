@@ -136,6 +136,14 @@ export class TreeBuilder {
     }
 
     /**
+     * Returns the root node of the tree builder.
+     * @returns {TreeNode | null} a root node.
+     */
+    getRoot(): TreeNode | null {
+        return this.root;
+    }
+
+    /**
      * Returns all nodes connections in the current tree.
      *
      * @returns {Map<string, Id[]} - Connections between nodes.
