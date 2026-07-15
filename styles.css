@@ -612,6 +612,19 @@ If your plugin does not need CSS, delete this file.
     border: 2px solid #e3dfc1;
 }
 
+/* Navigation code block */
+.grafily-navigation-block {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    margin: 8px 0;
+    width: fit-content;
+}
+
+.grafily-navigation-button {
+    flex: 1;
+}
+
 /* node_modules/@xyflow/react/dist/style.css */
 .react-flow {
     direction: ltr;

@@ -32,6 +32,7 @@ import { SelectedPerson, SidePanel } from './SidePanel';
 import { App, Plugin } from 'obsidian';
 import { DEFAULT_STATE, GrafilyState } from 'main';
 import { confirmDialog } from './ConfirmModal';
+import type { GrafilyViewRequest } from './GrafilyView';
 
 export type GraphContextValue = {
     layout: GenericLayout;
@@ -88,7 +89,15 @@ async function scanVaultForPersons(app: App, dataDir: string): Promise<Index> {
     return buildIndex(family);
 }
 
-function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
+function FamilyGraph({
+    plugin,
+    dataDir,
+    initialRequest,
+}: {
+    plugin: Plugin;
+    dataDir: string;
+    initialRequest?: GrafilyViewRequest | null;
+}) {
     const [layout, setLayout] = useState<GenericLayout>(DEFAULT_EMPTY_LAYOUT);
     const [index, setIndex] = useState<Index>(emptyIndex());
 
@@ -120,6 +129,21 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
             cancelled = true;
         };
     }, [app]);
+
+    useEffect(() => {
+        if (!initialRequest || index.personById.size < 1) {
+            console.warn('Initial request is not defined or index is not populated yet');
+            return;
+        }
+
+        if (index.personById.has(initialRequest.personId)) {
+            handleBuildGraph(initialRequest.layoutName, initialRequest.personId);
+        } else {
+            console.error(
+                `Grafily navigation: person "${initialRequest.personId}" was not found in "${dataDir}".`,
+            );
+        }
+    }, [initialRequest, index]);
 
     useEffect(() => {
         if (!plugin) {
@@ -520,7 +544,15 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
     );
 }
 
-export function FamilyFlow({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
+export function FamilyFlow({
+    plugin,
+    dataDir,
+    initialRequest,
+}: {
+    plugin: Plugin;
+    dataDir: string;
+    initialRequest?: GrafilyViewRequest | null;
+}) {
     return (
         <div
             style={{
@@ -530,7 +562,7 @@ export function FamilyFlow({ plugin, dataDir }: { plugin: Plugin; dataDir: strin
             }}
         >
             <ReactFlowProvider>
-                <FamilyGraph plugin={plugin} dataDir={dataDir} />
+                <FamilyGraph plugin={plugin} dataDir={dataDir} initialRequest={initialRequest} />
             </ReactFlowProvider>
         </div>
     );

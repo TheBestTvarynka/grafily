@@ -1,7 +1,8 @@
 import { Plugin } from 'obsidian';
 
 import { DEFAULT_SETTINGS, GrafilySettings, GrafilySettingTab } from './settings';
-import { GrafilyView, VIEW_TYPE } from './view/GrafilyView';
+import { GrafilyView, GrafilyViewRequest, VIEW_TYPE } from './view/GrafilyView';
+import { renderNavigationBlock } from './view/navigationBlock';
 
 import '@xyflow/react/dist/style.css';
 import { GraphDto } from 'view/graph';
@@ -28,14 +29,19 @@ export default class Grafily extends Plugin {
 
         this.registerView(VIEW_TYPE, (leaf) => new GrafilyView(leaf, this.settings.dataDir, this));
 
+        this.registerMarkdownCodeBlockProcessor('grafily-navigation', (_source, el, ctx) => {
+            renderNavigationBlock(el, ctx, this);
+        });
+
         this.addSettingTab(new GrafilySettingTab(this.app, this));
     }
 
-    async activateView() {
+    async activateView(request?: GrafilyViewRequest) {
         const leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({
             type: VIEW_TYPE,
             active: true,
+            state: request,
         });
     }
 
