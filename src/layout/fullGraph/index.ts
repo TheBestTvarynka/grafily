@@ -11,6 +11,7 @@ import {
     NODE_WIDTH,
     NodeCapabilities,
     PERSON_NODE_TYPE,
+    PersonVisibility,
     RearrangeAction,
     SerializableLayoutData,
     personIdToNodeId,
@@ -367,10 +368,10 @@ export class BrandesKopfLayout {
      * @param {string} personId - A person id which user has selected.
      * @returns Returns true when the given person id is present in the current layout. Otherwise, returns false.
      */
-    contains(personId: string): boolean {
+    contains(personId: string): PersonVisibility {
         const [nodeId] = personIdToNodeId(personId, this.family);
 
-        return this.graph.contains(nodeId.id);
+        return { isVisible: this.graph.contains(nodeId.id), disabled: false };
     }
 
     toggleSiblingVisibility(personId: string, selectedParentNodeId: string): [Node[], Edge[]] {

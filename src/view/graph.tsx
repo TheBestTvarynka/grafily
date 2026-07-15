@@ -21,6 +21,7 @@ import {
     LayoutName,
     NODE_HEIGHT,
     NODE_WIDTH,
+    PersonVisibility,
     RearrangeAction,
     SerializableLayoutData,
     fromSerializableObject,
@@ -41,7 +42,7 @@ export type GraphContextValue = {
     expandChildren: (nodeId: string) => void;
     expandParents: (personId: string) => void;
     rearrange: (personId: string, action: RearrangeAction) => void;
-    contains: (personId: string) => boolean;
+    contains: (personId: string) => PersonVisibility;
     toggleSiblingVisibility: (personId: string) => void;
 
     selectedPerson: SelectedPerson | null;
@@ -228,7 +229,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         }
     };
 
-    const contains = (personId: string): boolean => {
+    const contains = (personId: string): PersonVisibility => {
         return layout.contains(personId);
     };
 
@@ -246,7 +247,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
         setIsChanged(true);
 
         const updatedChildrenNodes = selectedPerson.childrenNodes.map((children) => {
-            return { personId: children.personId, isVisible: layout.contains(children.personId) };
+            return { personId: children.personId, visibility: layout.contains(children.personId) };
         });
 
         setSelectedPerson({
@@ -315,7 +316,7 @@ function FamilyGraph({ plugin, dataDir }: { plugin: Plugin; dataDir: string }) {
             childrenNodes: children.map((childrenId) => {
                 return {
                     personId: childrenId,
-                    isVisible: newLayout.contains(childrenId),
+                    visibility: newLayout.contains(childrenId),
                 };
             }),
         });

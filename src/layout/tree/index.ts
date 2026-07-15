@@ -18,6 +18,7 @@ import {
     MARRIAGE_NODE_TYPE,
     NodeCapabilities,
     personIdToNodeId,
+    PersonVisibility,
     RearrangeAction,
     REINGOLD_TILFORD,
     SerializableLayoutData,
@@ -352,12 +353,31 @@ export class ReingoldTilford {
      * Checks if the given person id is present in the current layout.
      *
      * @param {string} personId - A person id which user has selected.
-     * @returns Returns true when the given person id is present in the current layout. Otherwise, returns false.
+     * @returns {PersonVisibility}
      */
-    contains(personId: string): boolean {
+    contains(personId: string): PersonVisibility {
         const [id] = personIdToNodeId(personId, this.family);
 
-        return this.childrenTreeBuilder.contains(id.id);
+        const isVisibleInChildrenTree = this.childrenTreeBuilder.contains(id.id);
+        if (isVisibleInChildrenTree) {
+            return {
+                isVisible: true,
+                disabled: false,
+            };
+        }
+
+        const isVisibleInParentsTree = this.parentsTreeBuilder.contains(id.id);
+        if (isVisibleInParentsTree) {
+            return {
+                isVisible: true,
+                disabled: true,
+            };
+        }
+
+        return {
+            isVisible: false,
+            disabled: true,
+        };
     }
 
     toggleSiblingVisibility(personId: string, selectedParentNodeId: string): [Node[], Edge[]] {
