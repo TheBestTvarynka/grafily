@@ -18,6 +18,7 @@ import {
     MARRIAGE_NODE_TYPE,
     NodeCapabilities,
     personIdToNodeId,
+    PersonVisibility,
     RearrangeAction,
     REINGOLD_TILFORD,
     SerializableLayoutData,
@@ -42,6 +43,7 @@ export class ReingoldTilford {
         family: Index,
         parentsTreeBuilder?: TreeBuilder,
         childrenTreeBuilder?: TreeBuilder,
+        rootPersonId?: string,
     ) {
         this.family = family;
 
@@ -55,6 +57,10 @@ export class ReingoldTilford {
             this.childrenTreeBuilder = childrenTreeBuilder;
         } else {
             this.childrenTreeBuilder = new TreeBuilder(this.family, getNodeChildren);
+        }
+
+        if (rootPersonId) {
+            this.root = rootPersonId;
         }
     }
 
@@ -339,11 +345,16 @@ export class ReingoldTilford {
      * @returns {SerializableLayout} - A object ready to be serialized.
      */
     toSerializableObject(): SerializableLayoutData {
+        if (!this.root) {
+            throw new Error('Tree root person id is not initialized');
+        }
+
         return {
             name: REINGOLD_TILFORD,
             data: {
                 parentsTreeBuilder: this.parentsTreeBuilder.familyTree(),
                 childrenTreeBuilder: this.childrenTreeBuilder.familyTree(),
+                rootPersonId: this.root,
             },
         };
     }
@@ -352,12 +363,36 @@ export class ReingoldTilford {
      * Checks if the given person id is present in the current layout.
      *
      * @param {string} personId - A person id which user has selected.
-     * @returns Returns true when the given person id is present in the current layout. Otherwise, returns false.
+     * @returns {PersonVisibility}
      */
-    contains(personId: string): boolean {
+    contains(personId: string): PersonVisibility {
         const [id] = personIdToNodeId(personId, this.family);
 
-        return this.childrenTreeBuilder.contains(id.id);
+        const isVisibleInChildrenTree = this.childrenTreeBuilder.contains(id.id);
+        if (isVisibleInChildrenTree) {
+            return {
+                isVisible: true,
+                disabled: false,
+            };
+        } else if (childrenExists(personId, this.root, this.family)) {
+            return {
+                isVisible: false,
+                disabled: false,
+            };
+        }
+
+        const isVisibleInParentsTree = this.parentsTreeBuilder.contains(id.id);
+        if (isVisibleInParentsTree) {
+            return {
+                isVisible: true,
+                disabled: true,
+            };
+        }
+
+        return {
+            isVisible: false,
+            disabled: true,
+        };
     }
 
     toggleSiblingVisibility(personId: string, selectedParentNodeId: string): [Node[], Edge[]] {
@@ -371,6 +406,7 @@ export class ReingoldTilford {
 export type ReingoldTilfordLayoutData = {
     parentsTreeBuilder: FamilyTree;
     childrenTreeBuilder: FamilyTree;
+    rootPersonId: string;
 };
 
 /**
@@ -398,5 +434,36 @@ export function fromSerializableObject(
         layout.data.childrenTreeBuilder,
     );
 
-    return new ReingoldTilford(family, parentsTreeBuilder, childrenTreeBuilder);
+    return new ReingoldTilford(
+        family,
+        parentsTreeBuilder,
+        childrenTreeBuilder,
+        layout.data.rootPersonId,
+    );
+}
+
+function childrenExists(personId: string, root: string | null, family: Index): boolean {
+    if (!root) {
+        console.warn('Tree root is not initialized!');
+
+        return false;
+    }
+
+    let children = family.personChildren.get(root) ?? [];
+
+    while (children.length > 0) {
+        let newChildren = [];
+
+        for (const child of children) {
+            if (child === personId) {
+                return true;
+            }
+
+            newChildren.push(...(family.personChildren.get(child) ?? []));
+        }
+
+        children = newChildren;
+    }
+
+    return false;
 }

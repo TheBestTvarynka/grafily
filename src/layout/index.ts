@@ -267,7 +267,7 @@ export class GenericLayout {
      * @param {string} personId - A person id which user has selected.
      * @returns Returns true when the given person id is present in the current layout. Otherwise, returns false.
      */
-    contains(personId: string): boolean {
+    contains(personId: string): PersonVisibility {
         return this.layout.contains(personId);
     }
 
@@ -275,6 +275,18 @@ export class GenericLayout {
         return this.layout.toggleSiblingVisibility(personId, selectedParentNodeId);
     }
 }
+
+export type PersonVisibility = {
+    /**
+     * true if the person is currently visible on the graph. Otherwise, false.
+     */
+    isVisible: boolean;
+    /**
+     * true if the person is can be shown/hidden on the graph.
+     * Otherwise, false.
+     */
+    disabled: boolean;
+};
 
 export type SerializableLayoutData =
     | { name: typeof BRANDES_KORF; data: BrandesKopfLayoutData }

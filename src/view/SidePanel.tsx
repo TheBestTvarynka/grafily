@@ -6,6 +6,7 @@ import {
     MOVE_PERSON_LEFT,
     MOVE_PERSON_RIGHT,
     NodeCapabilities,
+    PersonVisibility,
     SWAP_MARRIAGE_SPOUSES,
 } from 'layout';
 import { SimplePersonNode } from './node';
@@ -13,7 +14,7 @@ import { confirmDialog } from './ConfirmModal';
 
 export type ChildNodePreview = {
     personId: string;
-    isVisible: boolean;
+    visibility: PersonVisibility;
 };
 
 export type SelectedPerson = {
@@ -259,7 +260,7 @@ export function SidePanel({
                         {selectedPerson.childrenNodes.map((child) => (
                             <SimplePersonNode
                                 personId={child.personId}
-                                isVisible={child.isVisible}
+                                visibility={child.visibility}
                                 key={child.personId}
                             />
                         ))}
