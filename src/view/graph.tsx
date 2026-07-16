@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useId, useState } from 'react';
 
 import {
     ReactFlow,
@@ -98,6 +98,11 @@ function FamilyGraph({
     dataDir: string;
     initialRequest?: GrafilyViewRequest | null;
 }) {
+    // Each Obsidian tab mounts its own React Flow instance in the same document, so the
+    // background dot pattern needs a per-instance id — otherwise the SVG <pattern> ids collide
+    // and only the first-mounted tab's dots render.
+    const flowId = useId();
+
     const [layout, setLayout] = useState<GenericLayout>(DEFAULT_EMPTY_LAYOUT);
     const [index, setIndex] = useState<Index>(emptyIndex());
 
@@ -515,8 +520,13 @@ function FamilyGraph({
                 id="familyGraphContainer"
                 style={{ position: 'relative', width: '100%', height: '100%' }}
             >
-                <ReactFlow nodes={graph[0]} edges={graph[1]} nodeTypes={nodeTypes}>
-                    <Background color="grey" variant={BackgroundVariant.Dots} gap={20} />
+                <ReactFlow id={flowId} nodes={graph[0]} edges={graph[1]} nodeTypes={nodeTypes}>
+                    <Background
+                        id={flowId}
+                        color="grey"
+                        variant={BackgroundVariant.Dots}
+                        gap={20}
+                    />
                     <Controls />
                 </ReactFlow>
                 {isInitialized && (
