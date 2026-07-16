@@ -11,7 +11,7 @@ import {
     useReactFlow,
 } from '@xyflow/react';
 
-import { buildIndex, emptyIndex, familyFromPersons, Index } from '../model';
+import { buildIndex, emptyIndex, familyFromPersons, formatPersonName, Index } from '../model';
 import { useApp } from '../hooks';
 import { extractPageMeta } from '../parsing';
 import { PersonNode, MarriageNode } from './node';
@@ -29,7 +29,7 @@ import {
 } from 'layout';
 import { StartupMenu } from './StartupMenu';
 import { SelectedPerson, SidePanel } from './SidePanel';
-import { App, Plugin } from 'obsidian';
+import { App, Notice, Plugin } from 'obsidian';
 import { DEFAULT_STATE, GrafilyState } from 'main';
 import { confirmDialog } from './ConfirmModal';
 import type { GrafilyViewRequest } from './GrafilyView';
@@ -93,9 +93,11 @@ function FamilyGraph({
     plugin,
     dataDir,
     initialRequest,
+    onTitleChange,
 }: {
     plugin: Plugin;
     dataDir: string;
+    onTitleChange: (title: string) => void;
     initialRequest?: GrafilyViewRequest | null;
 }) {
     // Each Obsidian tab mounts its own React Flow instance in the same document, so the
@@ -142,6 +144,22 @@ function FamilyGraph({
         }
 
         if (index.personById.has(initialRequest.personId)) {
+            const person = index.personById.get(initialRequest.personId);
+            if (!person) {
+                new Notice(`The starting person not found. id='${initialRequest.personId}'`);
+                console.error(`The starting person not found. id='${initialRequest.personId}'`);
+
+                return;
+            }
+
+            let requestName: string;
+            if (initialRequest.layoutName === BRANDES_KORF) {
+                requestName = 'Family explorer';
+            } else {
+                requestName = 'Family tree';
+            }
+
+            onTitleChange(`${formatPersonName(person)} - ${requestName}`);
             handleBuildGraph(initialRequest.layoutName, initialRequest.personId);
         } else {
             console.error(
@@ -286,6 +304,19 @@ function FamilyGraph({
         });
     };
 
+    const handleStartupSubmit = (layoutName: LayoutName, personId: string) => {
+        const person = index.personById.get(personId);
+        if (!person) {
+            new Notice(`The starting person not found. id='${personId}'`);
+            console.error(`The starting person not found. id='${personId}'`);
+
+            return;
+        }
+
+        onTitleChange(`${formatPersonName(person)} - Grafily`);
+        handleBuildGraph(layoutName, personId);
+    };
+
     const handleBuildGraph = (layoutName: LayoutName, personId: string) => {
         const newLayout = new GenericLayout(layoutName, index);
         const newGraph = newLayout.buildNodes(personId);
@@ -363,6 +394,7 @@ function FamilyGraph({
         setLoadedGraphName(graphName);
         setIsInitialized(true);
         setIsChanged(false);
+        onTitleChange(graphName);
     };
 
     const handleSaveGraph = async (name: string) => {
@@ -394,6 +426,7 @@ function FamilyGraph({
 
             setSavedGraphs(graphs);
             setIsChanged(false);
+            onTitleChange(name);
         } catch (err) {
             console.error('Failed to save graph state:', err);
             throw err;
@@ -424,6 +457,7 @@ function FamilyGraph({
             setGraph([[], []]);
             setIsInitialized(false);
             setLayout(DEFAULT_EMPTY_LAYOUT);
+            onTitleChange('Grafily');
 
             const saved = savedGraphs;
             delete saved[graphName];
@@ -460,6 +494,7 @@ function FamilyGraph({
         setIsInitialized(false);
         setIsChanged(false);
         setLayout(DEFAULT_EMPTY_LAYOUT);
+        onTitleChange('Grafily');
     };
 
     const handleHomeClick = (updateViewport: () => void) => {
@@ -544,7 +579,7 @@ function FamilyGraph({
                     <StartupMenu
                         persons={Array.from(index.personById.keys())}
                         savedGraphs={savedGraphs}
-                        onSubmit={handleBuildGraph}
+                        onSubmit={handleStartupSubmit}
                         onLoadSavedGraph={handleLoadSavedGraph}
                         onDeleteSavedGraph={handleDeleteGraph}
                     />
@@ -558,9 +593,11 @@ export function FamilyFlow({
     plugin,
     dataDir,
     initialRequest,
+    onTitleChange,
 }: {
     plugin: Plugin;
     dataDir: string;
+    onTitleChange: (title: string) => void;
     initialRequest?: GrafilyViewRequest | null;
 }) {
     return (
@@ -572,7 +609,12 @@ export function FamilyFlow({
             }}
         >
             <ReactFlowProvider>
-                <FamilyGraph plugin={plugin} dataDir={dataDir} initialRequest={initialRequest} />
+                <FamilyGraph
+                    plugin={plugin}
+                    dataDir={dataDir}
+                    onTitleChange={onTitleChange}
+                    initialRequest={initialRequest}
+                />
             </ReactFlowProvider>
         </div>
     );
