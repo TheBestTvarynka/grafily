@@ -41,6 +41,10 @@ export type Person = {
     file: TFile;
 };
 
+export function formatPersonName(person: Person): string {
+    return `${person.name.surname} ${person.name.name}`;
+}
+
 export type Marriage = {
     id: string;
     parent1Id?: string;

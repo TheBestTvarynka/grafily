@@ -20,14 +20,21 @@ const ReactView = ({
     plugin,
     dataDir,
     initialRequest,
+    onTitleChange,
 }: {
     plugin: Plugin;
     dataDir: string;
     initialRequest: GrafilyViewRequest | null;
+    onTitleChange: (title: string) => void;
 }) => {
     return (
         <div style={{ width: '100%', height: '100%' }}>
-            <FamilyFlow plugin={plugin} dataDir={dataDir} initialRequest={initialRequest} />
+            <FamilyFlow
+                plugin={plugin}
+                dataDir={dataDir}
+                initialRequest={initialRequest}
+                onTitleChange={onTitleChange}
+            />
         </div>
     );
 };
@@ -40,6 +47,7 @@ export class GrafilyView extends ItemView {
     plugin: Plugin | null = null;
     dataDir: string;
     initialRequest: GrafilyViewRequest | null = null;
+    title = 'Grafily';
 
     constructor(leaf: WorkspaceLeaf, dataDir: string, plugin?: Plugin) {
         super(leaf);
@@ -52,8 +60,13 @@ export class GrafilyView extends ItemView {
     }
 
     getDisplayText() {
-        return 'Grafily';
+        return this.title;
     }
+
+    private handleTitleChange = (title: string) => {
+        this.title = title;
+        (this.leaf as WorkspaceLeaf & { updateHeader: () => void }).updateHeader();
+    };
 
     async onOpen() {
         this.root = createRoot(this.contentEl);
@@ -81,6 +94,7 @@ export class GrafilyView extends ItemView {
                             plugin={this.plugin!}
                             dataDir={this.dataDir}
                             initialRequest={this.initialRequest}
+                            onTitleChange={this.handleTitleChange}
                         />
                     </StrictMode>
                 </PluginContext.Provider>
