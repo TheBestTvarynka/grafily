@@ -63,6 +63,10 @@ export class GrafilyView extends ItemView {
         return this.title;
     }
 
+    getIcon() {
+        return 'network';
+    }
+
     private handleTitleChange = (title: string) => {
         this.title = title;
         (this.leaf as WorkspaceLeaf & { updateHeader: () => void }).updateHeader();
