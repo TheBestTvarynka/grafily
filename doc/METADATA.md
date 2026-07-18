@@ -48,15 +48,15 @@ Now that you understand the metadata format and its meaning, you are ready to fo
 
 It's not always convenient to build family graph from the plugin start-up menu. Often we want to _just_ build a relationships graph of the current person. In that case, the Grafily plugin supports the `grafily-navigation` code block:
 
-```
+````
     ```grafily-navigation
     ```
-```
+````
 
 It will be rendered as two button for quick and easy graph building:
 
 ![](./images/grafily-navigation-buttons.png)
 
-The left button opens the family tree of the current person (`Reingold-Tilford` layout). The right button opens the graph explorer with  the starting person as the current person (`Brandes-Köpf` layout). Example:
+The left button opens the family tree of the current person (`Reingold-Tilford` layout). The right button opens the graph explorer with the starting person as the current person (`Brandes-Köpf` layout). Example:
 
 ![](./images/grafily-navigation-showcase.gif)
