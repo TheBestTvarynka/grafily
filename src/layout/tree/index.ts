@@ -395,9 +395,11 @@ export class ReingoldTilford {
         };
     }
 
-    toggleSiblingVisibility(personId: string, selectedParentNodeId: string): [Node[], Edge[]] {
-        const [id] = personIdToNodeId(personId, this.family);
-        this.childrenTreeBuilder.toggleSiblingVisibility(id, selectedParentNodeId);
+    toggleSiblingVisibility(personIds: string[], selectedParentNodeId: string): [Node[], Edge[]] {
+        for (const personId of personIds) {
+            const [id] = personIdToNodeId(personId, this.family);
+            this.childrenTreeBuilder.toggleSiblingVisibility(id, selectedParentNodeId);
+        }
 
         return this.buildNodesInternal();
     }

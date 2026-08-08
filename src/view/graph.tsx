@@ -44,7 +44,7 @@ export type GraphContextValue = {
     expandParents: (personId: string) => void;
     rearrange: (personId: string, action: RearrangeAction) => void;
     contains: (personId: string) => PersonVisibility;
-    toggleSiblingVisibility: (personId: string) => void;
+    toggleSiblingVisibility: (personIds: string[]) => void;
 
     selectedPerson: SelectedPerson | null;
     selectPerson: (node: SelectedPerson | null) => void;
@@ -280,13 +280,13 @@ function FamilyGraph({
         return layout.contains(personId);
     };
 
-    const toggleSiblingVisibility = (personId: string) => {
+    const toggleSiblingVisibility = (personIds: string[]) => {
         if (!selectedPerson) {
             return;
         }
 
         const [nodeId] = personIdToNodeId(selectedPerson.id, index);
-        const newGraph = layout.toggleSiblingVisibility(personId, nodeId.id);
+        const newGraph = layout.toggleSiblingVisibility(personIds, nodeId.id);
 
         newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], selectedPerson.id);
 

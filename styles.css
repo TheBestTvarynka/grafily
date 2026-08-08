@@ -570,34 +570,23 @@ If your plugin does not need CSS, delete this file.
     position: relative;
 }
 
-.grafily-simple-node > :first-child {
-    display: none;
-    z-index: 1;
-}
-
-.grafily-simple-node:hover > :first-child {
+.grafily-sibling-toggle-row {
     display: flex;
-}
-
-.grafily-simple-node-hover-overlay {
-    position: absolute;
-    inset: 0;
     align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.35);
-    border-radius: 10px;
-    pointer-events: none;
+    gap: 6px;
 }
 
-.grafily-simple-node-hover-overlay svg {
-    width: 24px;
-    height: 24px;
-    color: #fff;
+.grafily-sibling-toggle-checkbox {
+    flex-shrink: 0;
 }
 
-.grafily-node-hidden {
-    opacity: 0.8;
-    filter: grayscale(0.6);
+.grafily-show-all-button {
+    width: 100%;
+}
+
+.grafily-show-all-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .grafily-male-node {

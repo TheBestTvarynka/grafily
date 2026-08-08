@@ -26,12 +26,10 @@ export function PersonNode({
     data,
     positionAbsoluteX,
     positionAbsoluteY,
-    onClickDisabled = false,
 }: {
     data: PersonNodeData;
     positionAbsoluteX: number;
     positionAbsoluteY: number;
-    onClickDisabled?: boolean;
 }) {
     const app = useApp();
     const graph = useGraph();
@@ -69,7 +67,7 @@ export function PersonNode({
     }, [graph]);
 
     const openPersonPage = () => {
-        if (!app || onClickDisabled) {
+        if (!app) {
             return;
         }
 
@@ -90,7 +88,7 @@ export function PersonNode({
     };
 
     const onNodeClick = (e: MouseEvent) => {
-        if (onClickDisabled === false && (e.ctrlKey || e.metaKey)) {
+        if (e.ctrlKey || e.metaKey) {
             if (!graph) {
                 return;
             }

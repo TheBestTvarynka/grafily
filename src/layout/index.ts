@@ -271,8 +271,8 @@ export class GenericLayout {
         return this.layout.contains(personId);
     }
 
-    toggleSiblingVisibility(personId: string, selectedParentNodeId: string): [Node[], Edge[]] {
-        return this.layout.toggleSiblingVisibility(personId, selectedParentNodeId);
+    toggleSiblingVisibility(personIds: string[], selectedParentNodeId: string): [Node[], Edge[]] {
+        return this.layout.toggleSiblingVisibility(personIds, selectedParentNodeId);
     }
 }
 

@@ -374,10 +374,12 @@ export class BrandesKopfLayout {
         return { isVisible: this.graph.contains(nodeId.id), disabled: false };
     }
 
-    toggleSiblingVisibility(personId: string, selectedParentNodeId: string): [Node[], Edge[]] {
-        const [nodeId] = personIdToNodeId(personId, this.family);
+    toggleSiblingVisibility(personIds: string[], selectedParentNodeId: string): [Node[], Edge[]] {
+        for (const personId of personIds) {
+            const [nodeId] = personIdToNodeId(personId, this.family);
 
-        this.graph.toggleSiblingVisibility(nodeId, selectedParentNodeId);
+            this.graph.toggleSiblingVisibility(nodeId, selectedParentNodeId);
+        }
 
         return this.buildNodesInternal();
     }
