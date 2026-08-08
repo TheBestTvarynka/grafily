@@ -137,6 +137,13 @@ export function SidePanel({
             handleCancel();
         }
     };
+    const toggleSiblingVisibility = (personId: string) => {
+        if (!graph) {
+            return;
+        }
+
+        graph.toggleSiblingVisibility(personId);
+    };
 
     const moveNodeLeft = () => {
         if (!graph || !selectedPerson) {
@@ -258,11 +265,20 @@ export function SidePanel({
                 {selectedPerson && selectedPerson.childrenNodes.length > 0 && (
                     <div className="grafily-children-list">
                         {selectedPerson.childrenNodes.map((child) => (
-                            <SimplePersonNode
-                                personId={child.personId}
-                                visibility={child.visibility}
-                                key={child.personId}
-                            />
+                            <div className="grafily-sibling-toggle-row" key={child.personId}>
+                                <input
+                                    type="checkbox"
+                                    className="grafily-sibling-toggle-checkbox"
+                                    checked={child.visibility.isVisible}
+                                    disabled={child.visibility.disabled}
+                                    onChange={() => toggleSiblingVisibility(child.personId)}
+                                    title={child.visibility.isVisible ? 'Hide node' : 'Show node'}
+                                />
+                                <SimplePersonNode
+                                    personId={child.personId}
+                                    visibility={child.visibility}
+                                />
+                            </div>
                         ))}
                     </div>
                 )}
