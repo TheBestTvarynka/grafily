@@ -137,12 +137,24 @@ export function SidePanel({
             handleCancel();
         }
     };
-    const toggleSiblingVisibility = (personId: string) => {
+    const toggleSiblingVisibility = (personIds: string[]) => {
         if (!graph) {
             return;
         }
 
-        graph.toggleSiblingVisibility(personId);
+        graph.toggleSiblingVisibility(personIds);
+    };
+
+    const showAllSiblings = () => {
+        if (!selectedPerson) {
+            return;
+        }
+
+        const hiddenIds = selectedPerson.childrenNodes
+            .filter((child) => !child.visibility.isVisible && !child.visibility.disabled)
+            .map((child) => child.personId);
+
+        toggleSiblingVisibility(hiddenIds);
     };
 
     const moveNodeLeft = () => {
@@ -264,6 +276,15 @@ export function SidePanel({
                 )}
                 {selectedPerson && selectedPerson.childrenNodes.length > 0 && (
                     <div className="grafily-children-list">
+                        <button
+                            className="grafily-show-all-button"
+                            onClick={showAllSiblings}
+                            disabled={selectedPerson.childrenNodes.every(
+                                (child) => child.visibility.isVisible || child.visibility.disabled,
+                            )}
+                        >
+                            Show all
+                        </button>
                         {selectedPerson.childrenNodes.map((child) => (
                             <div className="grafily-sibling-toggle-row" key={child.personId}>
                                 <input
@@ -271,7 +292,7 @@ export function SidePanel({
                                     className="grafily-sibling-toggle-checkbox"
                                     checked={child.visibility.isVisible}
                                     disabled={child.visibility.disabled}
-                                    onChange={() => toggleSiblingVisibility(child.personId)}
+                                    onChange={() => toggleSiblingVisibility([child.personId])}
                                     title={child.visibility.isVisible ? 'Hide node' : 'Show node'}
                                 />
                                 <SimplePersonNode

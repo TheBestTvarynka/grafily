@@ -580,6 +580,15 @@ If your plugin does not need CSS, delete this file.
     flex-shrink: 0;
 }
 
+.grafily-show-all-button {
+    width: 100%;
+}
+
+.grafily-show-all-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .grafily-male-node {
     border: 2px solid #0060df;
 }
