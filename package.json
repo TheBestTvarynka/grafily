@@ -29,6 +29,7 @@
 	},
 	"dependencies": {
 		"@xyflow/react": "^12.10.0",
+		"quadprog": "^2.0.0",
 		"obsidian": "latest",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1"

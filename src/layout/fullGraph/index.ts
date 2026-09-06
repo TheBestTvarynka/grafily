@@ -46,19 +46,36 @@ export interface FamilyGraph {
 }
 
 /**
+ * Assigns an x coordinate - the geometrical center of the node - to every node of the graph.
+ * The {@link positionX} function is the Brandes-Kopf implementation. The `src/layout/beta` module
+ * provides another one.
+ */
+export type PositionX = (
+    graph: FamilyGraph,
+    nodeWidth: (v: string) => number,
+    nodeSep: number,
+) => Record<string, number>;
+
+/**
  * Represents the family graph layout based on the Brandes-Kopf algorithm. This layout is designed to handle general directed acyclic graphs (DAGs) and is not limited to tree structures.
  */
 export class BrandesKopfLayout {
     family: Index;
     graph: GraphBuilder;
+    private readonly positionXFn: PositionX;
 
     /**
      * Constructs a new instance of the Brandes-Kopf layout.
      *
      * @param {Index} family - The family index containing all the information about persons and marriages.
+     * @param {GraphBuilder} graph - An already built graph. When omitted, an empty one is created.
+     * @param {PositionX} positionXFn - The x coordinates assignment to use. Everything else about
+     * this layout is independent of the algorithm, so a different one is the only thing another
+     * layout needs to replace.
      */
-    constructor(family: Index, graph?: GraphBuilder) {
+    constructor(family: Index, graph?: GraphBuilder, positionXFn: PositionX = positionX) {
         this.family = family;
+        this.positionXFn = positionXFn;
         if (graph) {
             this.graph = graph;
         } else {
@@ -86,7 +103,7 @@ export class BrandesKopfLayout {
             throw new Error(`Node/Marriage ${id} not found`);
         };
 
-        const xCoords = positionX(familyGraph, nodeWidth, NODES_GAP);
+        const xCoords = this.positionXFn(familyGraph, nodeWidth, NODES_GAP);
         const yCoords = positionY(familyGraph, (_id) => NODE_HEIGHT, NODES_GAP);
 
         const nodes: Node[] = [];

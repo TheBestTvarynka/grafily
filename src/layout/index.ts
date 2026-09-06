@@ -2,6 +2,11 @@ import { Edge, Node } from '@xyflow/react';
 
 import { Index, Marriage } from '../model';
 import {
+    QuadraticLayout,
+    QuadraticLayoutData,
+    fromSerializableObject as deserializeBeta,
+} from './beta';
+import {
     BrandesKopfLayout,
     BrandesKopfLayoutData,
     fromSerializableObject as deserializeFullGraph,
@@ -143,9 +148,19 @@ export const BRANDES_KORF = 'brandesKopf';
 export const REINGOLD_TILFORD = 'reingoldTilford';
 
 /**
- * The available layout algorithms for the family graph. Currently supports {@link BRANDES_KORF} and {@link REINGOLD_TILFORD}.
+ * An experimental layout algorithm. It builds the same graph as the {@link BRANDES_KORF} layout
+ * but assigns x coordinates by solving a quadratic program. See the `src/layout/beta` module.
+ *
+ * *Note*: this value is written into the plugin data file as the discriminant of every saved
+ * graph, so changing it needs a migration.
  */
-export type LayoutName = typeof BRANDES_KORF | typeof REINGOLD_TILFORD;
+export const QUADRATIC = 'quadratic';
+
+/**
+ * The available layout algorithms for the family graph. Currently supports {@link BRANDES_KORF},
+ * {@link REINGOLD_TILFORD}, and {@link QUADRATIC}.
+ */
+export type LayoutName = typeof BRANDES_KORF | typeof REINGOLD_TILFORD | typeof QUADRATIC;
 
 export type NodeCapabilities = {
     movableLeft: boolean;
@@ -157,12 +172,14 @@ export type NodeCapabilities = {
  * Represents a generic layout for the family graph. This class serves as a wrapper around specific layout implementations, allowing for flexibility in choosing different layout algorithms in the future.
  */
 export class GenericLayout {
+    // The `QuadraticLayout` extends the `BrandesKopfLayout`, so it is already covered by this
+    // union. Naming it here would read as if it added something, but TypeScript just collapses it.
     private layout: BrandesKopfLayout | ReingoldTilford;
 
     /**
      * Constructs a new instance of the GenericLayout class with the specified layout implementation.
      *
-     * @param {LayoutName} layoutName - The layout algorithm to use for building the graph. Currently supports {@link BRANDES_KORF} and {@link REINGOLD_TILFORD}.
+     * @param {LayoutName} layoutName - The layout algorithm to use for building the graph. Currently supports {@link BRANDES_KORF}, {@link REINGOLD_TILFORD}, and {@link QUADRATIC}.
      * @param {Index} family - The family index containing all the information about persons and marriages.
      */
     constructor(
@@ -180,6 +197,16 @@ export class GenericLayout {
                 case REINGOLD_TILFORD:
                     this.layout = new ReingoldTilford(family);
                     break;
+                case QUADRATIC:
+                    this.layout = new QuadraticLayout(family);
+                    break;
+                default: {
+                    // Turns a forgotten layout into a compile error rather than an undefined
+                    // `this.layout` at run time.
+                    const unsupported: never = layoutName;
+
+                    throw new Error(`Unsupported layout: ${String(unsupported)}`);
+                }
             }
         }
     }
@@ -290,7 +317,8 @@ export type PersonVisibility = {
 
 export type SerializableLayoutData =
     | { name: typeof BRANDES_KORF; data: BrandesKopfLayoutData }
-    | { name: typeof REINGOLD_TILFORD; data: ReingoldTilfordLayoutData };
+    | { name: typeof REINGOLD_TILFORD; data: ReingoldTilfordLayoutData }
+    | { name: typeof QUADRATIC; data: QuadraticLayoutData };
 
 /**
  * Then the user wants to save the layout into a file or somewhere else, it generates
@@ -312,8 +340,13 @@ export function fromSerializableObject(
         layout = deserializeFullGraph(layoutData, family);
     } else if (layoutData.name === REINGOLD_TILFORD) {
         layout = deserializeTree(layoutData, family);
+    } else if (layoutData.name === QUADRATIC) {
+        layout = deserializeBeta(layoutData, family);
     } else {
-        throw new Error(`Invalid layout type`);
+        // Turns a forgotten layout into a compile error rather than a run time one.
+        const unsupported: never = layoutData;
+
+        throw new Error(`Invalid layout type: ${JSON.stringify(unsupported)}`);
     }
 
     return new GenericLayout(layoutData.name, family, layout);

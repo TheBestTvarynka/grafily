@@ -22,6 +22,8 @@ import {
     NODE_HEIGHT,
     NODE_WIDTH,
     PersonVisibility,
+    QUADRATIC,
+    REINGOLD_TILFORD,
     RearrangeAction,
     SerializableLayoutData,
     fromSerializableObject,
@@ -64,6 +66,17 @@ export type GraphDto = {
 };
 
 const DEFAULT_EMPTY_LAYOUT: GenericLayout = new GenericLayout(BRANDES_KORF, emptyIndex());
+
+/**
+ * The tab title to use when the graph is opened directly for a person, skipping the startup menu.
+ * Being a `Record` over every layout name, it turns a new layout into a compile error here
+ * instead of a silently wrong title.
+ */
+const LAYOUT_TAB_NAME: Record<LayoutName, string> = {
+    [BRANDES_KORF]: 'Family explorer',
+    [REINGOLD_TILFORD]: 'Family tree',
+    [QUADRATIC]: 'Family explorer (beta)',
+};
 
 async function scanVaultForPersons(app: App, dataDir: string): Promise<Index> {
     const { vault } = app;
@@ -152,12 +165,7 @@ function FamilyGraph({
                 return;
             }
 
-            let requestName: string;
-            if (initialRequest.layoutName === BRANDES_KORF) {
-                requestName = 'Family explorer';
-            } else {
-                requestName = 'Family tree';
-            }
+            const requestName = LAYOUT_TAB_NAME[initialRequest.layoutName];
 
             onTitleChange(`${formatPersonName(person)} - ${requestName}`);
             handleBuildGraph(initialRequest.layoutName, initialRequest.personId);
