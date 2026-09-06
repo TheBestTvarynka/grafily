@@ -134,13 +134,8 @@ export function StartupMenu({
                                     <span>Quadratic (beta)</span>
                                     <span>
                                         The same graph as Brandes-Kopf, but node positions are found
-                                        by solving an optimization problem.{' '}
-                                        <strong>
-                                            Experimental: better centering, but slow on very large
-                                            graphs.
-                                        </strong>
+                                        by solving an optimization problem.
                                     </span>
-                                    <img src={GRAPH_ICON} style={{ width: '80%' }} />
                                 </label>
                             </div>
                         </div>

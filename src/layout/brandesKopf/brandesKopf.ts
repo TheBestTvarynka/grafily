@@ -10,7 +10,7 @@
  * @module brandesKopf
  */
 
-import { FamilyGraph } from './index';
+import { FamilyGraph } from '../graphBuilder';
 
 /**
  * Aligns nodes into vertical "blocks" by trying to align each node with the
