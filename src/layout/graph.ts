@@ -12,7 +12,9 @@
 import { Edge, Node } from '@xyflow/react';
 
 import {
-    GraphLayoutName,
+    FamilyGraph,
+    GraphNode,
+    LayoutKind,
     MARRIAGE_GAP,
     MARRIAGE_NODE_SIZE,
     MARRIAGE_NODE_TYPE,
@@ -23,12 +25,14 @@ import {
     NodeCapabilities,
     PERSON_NODE_TYPE,
     PersonVisibility,
+    PositioningAlgorithm,
     RearrangeAction,
     SerializableLayoutData,
+    TREE,
     personIdToNodeId,
 } from './';
-import { positionY } from './brandesKopf/brandesKopf';
-import { FamilyGraph, GraphBuilder, GraphNode } from './graphBuilder';
+import { positionY } from './positioning/brandesKopf';
+import { GraphBuilder } from './builder';
 import { Index, LEFT_SIDE, NONE_SIDE, RIGHT_SIDE } from '../model';
 import { MarriageNodeData, PersonNodeData } from 'view/node';
 
@@ -63,20 +67,29 @@ export type GraphLayoutData = {
 export class GraphLayout {
     family: Index;
     graph: GraphBuilder;
-    private readonly name: GraphLayoutName;
+    private readonly kind: LayoutKind;
+    private readonly algorithm: PositioningAlgorithm;
     private readonly positionX: PositionX;
 
     /**
      * Constructs a new instance of the graph layout.
      *
      * @param {Index} family - The family index containing all the information about persons and marriages.
-     * @param {GraphLayoutName} name - The layout name to write into the serialized state.
+     * @param {LayoutKind} kind - What to put into the initial graph: a family tree or a full graph.
+     * @param {PositioningAlgorithm} algorithm - The name of the algorithm `positionX` implements, written into the serialized state.
      * @param {PositionX} positionX - The x coordinates assignment to use.
      * @param {GraphBuilder} graph - An already built graph. When omitted, an empty one is created.
      */
-    constructor(family: Index, name: GraphLayoutName, positionX: PositionX, graph?: GraphBuilder) {
+    constructor(
+        family: Index,
+        kind: LayoutKind,
+        algorithm: PositioningAlgorithm,
+        positionX: PositionX,
+        graph?: GraphBuilder,
+    ) {
         this.family = family;
-        this.name = name;
+        this.kind = kind;
+        this.algorithm = algorithm;
         this.positionX = positionX;
 
         if (graph) {
@@ -270,7 +283,12 @@ export class GraphLayout {
      */
     buildNodes(perspectivePersonId: string): [Node[], Edge[]] {
         this.graph = new GraphBuilder(this.family);
-        this.graph.buildInitialGraph(perspectivePersonId);
+
+        if (this.kind === TREE) {
+            this.graph.buildInitialTree(perspectivePersonId);
+        } else {
+            this.graph.buildInitialGraph(perspectivePersonId);
+        }
 
         return this.buildNodesInternal();
     }
@@ -374,7 +392,8 @@ export class GraphLayout {
         const nodes: Record<string, GraphNode> = Object.fromEntries(this.graph.getNodes());
 
         return {
-            name: this.name,
+            kind: this.kind,
+            algorithm: this.algorithm,
             data: {
                 graph: this.graph.buildFamilyGraph(),
                 nodes,

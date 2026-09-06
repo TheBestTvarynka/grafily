@@ -1,16 +1,21 @@
 /**
- * This module builds and modifies the family graph before calculating node positions.
+ * This module modifies the family graph before calculating node positions.
  * When use makes any kind of graph change, for example marriage children collapsing,
  * this module will remove all marriage children nodes from the graph.
  * Or, when the user wants to add new nodes to the graph, this module will add only
  * legal nodes (no edges crossing) to the graph and will put them on the right layers.
  *
- * @module graphBuilder
+ * The initial graph and the initial tree are built by the sibling `graph` and `tree` modules of
+ * this directory. This module owns everything the user does to a graph afterwards.
+ *
+ * @module builder
  */
 
 import {
+    FamilyGraph,
+    GraphNode,
     Id,
-    NodeType,
+    NodePersons,
     MARRIAGE_NODE_TYPE,
     PERSON_NODE_TYPE,
     personIdToNodeId,
@@ -19,66 +24,10 @@ import {
     MOVE_PERSON_LEFT,
     MOVE_PERSON_RIGHT,
     NodeCapabilities,
-} from './';
-import { Index, LEFT_SIDE, RIGHT_SIDE, Marriage } from '../model';
-
-/**
- * Represents the family graph. No modifications are needed to this graph. It is ready for nodes positions calculations.
- * When the graph is modified by the user, a new instance of the graph must be created by the {@link GraphBuilder} class.
- *
- * @property {Map<string, string[]>} parents - A map where the key is a node id and the value is an array of parent node ids.
- * @property {Map<string, string[]>} children - A map where the key is a node id and the value is an array of child node ids.
- * @property {string[][]} layering - A 2D array where layering[level][order] = nodeId. For example, layering[0] is the list of node ids in the first (top) layer,
- * sorted by their `order` value. In DAG-related papers, the `order` value is often referred to as the "position" of the node within its layer or "rank".
- */
-export interface FamilyGraph {
-    /** parents[nodeId] = array of parent node ids */
-    parents: Record<string, string[]>;
-    /** children[nodeId] = array of child node ids */
-    children: Record<string, string[]>;
-    /**
-     * layering[level][order] = nodeId
-     * e.g. layering[0] is the list of node ids in the first (top) layer,
-     * sorted by their `order` value.
-     */
-    layering: string[][];
-    /** This field is not used during coordinates calculation. It is only needed for deserializing graph from the file. */
-    firstLayer: number;
-}
-
-const MIDDLE_SIDE = 'middle_side';
-
-/**
- * During the initial graph building (initial parents expanding), we need to determine
- * where to place the caller child among its siblings. This type represents the side
- * where the caller child should be placed.
- */
-type ChildSide = typeof LEFT_SIDE | typeof MIDDLE_SIDE | typeof RIGHT_SIDE;
-
-interface CallerChild {
-    side: ChildSide;
-    childId: string;
-}
-
-export interface NodePersons {
-    person1?: string;
-    person2?: string;
-}
-
-/**
- * Just an additional information about graph node. It is used for easier graph building and modifying.
- *
- * @property {string} id - node id.
- * @property {NodeType} type - node type.
- * @property {NodePersons} persons - persons associated with the node. For the person node, only `person1` is filled. For the marriage node, both `person1` and `person2` are filled.
- * @property {number} layerNumber - the layer number where the node is located.
- */
-export interface GraphNode {
-    id: string;
-    type: NodeType;
-    persons: NodePersons;
-    layerNumber: number;
-}
+} from '../';
+import { Index } from '../../model';
+import { buildInitialGraph } from './graph';
+import { buildInitialTree } from './tree';
 
 /**
  * Node coordinated in the layering matrix.
@@ -112,17 +61,20 @@ type ParentSide = typeof LEFT_PARENT | typeof RIGHT_PARENT | typeof NO_PARENT;
  * This implementation does not calculate any nodes positions. Its only purpose is to modify the graph structure and layering.
  */
 export class GraphBuilder {
-    private nodes = new Map<string, GraphNode>();
+    // The four state maps and the family index are shared with the `graph` and `tree` modules of
+    // this directory, which build the initial graph into them. They are not part of the public
+    // API of this directory - nothing outside `src/layout/builder` may touch them.
+    /** @internal */ nodes = new Map<string, GraphNode>();
     // string - node id.
     // string[] - list of parent node ids.
-    private parents = new Map<string, string[]>();
+    /** @internal */ parents = new Map<string, string[]>();
     // string - node id.
     // string[] - list of child node ids.
-    private children = new Map<string, string[]>();
+    /** @internal */ children = new Map<string, string[]>();
     // number - layer index.
     // string[] - list of node ids in the layer.
-    private layers: Map<number, string[]> = new Map<number, string[]>();
-    private family: Index;
+    /** @internal */ layers: Map<number, string[]> = new Map<number, string[]>();
+    /** @internal */ family: Index;
 
     // WORKAROUND: I could not create a shorted and simpler solution than this. It's not that bad but not aesthetic either.
     // The `nodeToSkip` is used during nodes expanding to point which node we should not expand.
@@ -204,228 +156,23 @@ export class GraphBuilder {
     }
 
     /**
-     * Returns the parents marriage of the person with the given ID. If the person has no parents, returns null.
-     *
-     * @param {string} personId - The ID of the person to convert.
-     * @returns {Marriage | null} - The parents marriage of the person, or null if the person has no parents.
-     */
-    personParents(personId: string): Marriage | null {
-        const marriageId = this.family.personParents.get(personId);
-        if (!marriageId) {
-            return null;
-        }
-
-        const marriage = this.family.marriageById.get(marriageId);
-        if (!marriage) {
-            throw new Error(`Marriage ${marriageId} should exist`);
-        }
-
-        return marriage;
-    }
-
-    /**
-     * Builds the initial graph for the given person's perspective. The initial graph contain all parents and children of the given person.
-     * Also, siblings of all ancestors and descendants are included in the graph.
+     * Builds the initial graph for the given person's perspective. The initial graph contains all
+     * ancestors and descendants of the given person, and the siblings of all of them.
      *
      * @param {string} perspectiveId - The ID of the person from whose perspective to build the graph.
      */
     buildInitialGraph(perspectiveId: string) {
-        let [id, marriage] = personIdToNodeId(perspectiveId, this.family);
-
-        const layerNumber = 0;
-
-        if (marriage) {
-            this.addParents(null, marriage, layerNumber);
-            this.addChildren(marriage, layerNumber + 1);
-        } else {
-            const parents = this.personParents(id.id);
-            if (parents) {
-                this.addParents({ side: MIDDLE_SIDE, childId: id.id }, parents, -1);
-            } else {
-                if (!this.layers.has(layerNumber)) {
-                    this.layers.set(layerNumber, []);
-                }
-                // SAFE: if the layer does not exist, we will create it above.
-                const layer = this.layers.get(layerNumber)!;
-                layer.push(id.id);
-                this.nodes.set(id.id, {
-                    id: id.id,
-                    type: PERSON_NODE_TYPE,
-                    persons: {
-                        person1: id.id,
-                    },
-                    layerNumber,
-                });
-            }
-        }
+        buildInitialGraph(this, perspectiveId);
     }
 
-    private addChildren(parentsMarriage: Marriage, childrenLayerNumber: number) {
-        if (!parentsMarriage.childrenIds.length) {
-            return;
-        }
-
-        if (!this.layers.get(childrenLayerNumber)) {
-            this.layers.set(childrenLayerNumber, []);
-        }
-        // SAFE: if the layer does not exist, we create it above.
-        const layer = this.layers.get(childrenLayerNumber)!;
-
-        if (!this.children.has(parentsMarriage.id)) {
-            this.children.set(parentsMarriage.id, []);
-        }
-        // SAFE: if the children of the marriage does not exist, we initialize it above.
-        const children = this.children.get(parentsMarriage.id)!;
-
-        for (const childId of parentsMarriage.childrenIds) {
-            const [id, marriage] = personIdToNodeId(childId, this.family);
-
-            const persons: NodePersons = {};
-            if (marriage) {
-                if (marriage.parent1Id) {
-                    persons.person1 = marriage.parent1Id;
-                }
-                if (marriage.parent2Id) {
-                    persons.person2 = marriage.parent2Id;
-                }
-            } else {
-                persons.person1 = id.id;
-            }
-
-            this.nodes.set(id.id, {
-                id: id.id,
-                type: id.type,
-                persons,
-                layerNumber: childrenLayerNumber,
-            });
-
-            if (!this.parents.has(id.id)) {
-                this.parents.set(id.id, []);
-            }
-            const parents = this.parents.get(id.id)!;
-
-            parents.push(parentsMarriage.id);
-            children.push(id.id);
-            layer.push(id.id);
-
-            if (marriage) {
-                this.addChildren(marriage, childrenLayerNumber + 1);
-            }
-        }
-    }
-
-    private addParents(caller: CallerChild | null, marriage: Marriage, layerNumber: number) {
-        const id = marriage.id;
-
-        let p1ParentsExist = false;
-        let p2ParentsExist = false;
-        if (marriage.parent1Id) {
-            let p1Parents = this.personParents(marriage.parent1Id);
-
-            if (p1Parents) {
-                p1ParentsExist = true;
-                let side: ChildSide;
-                if (marriage.parent2Id && this.personParents(marriage.parent2Id)) {
-                    side = RIGHT_SIDE;
-                } else {
-                    side = MIDDLE_SIDE;
-                }
-
-                this.addParents({ side, childId: marriage.parent1Id }, p1Parents, layerNumber - 1);
-            }
-        }
-
-        if (marriage.parent2Id) {
-            let p2Parents = this.personParents(marriage.parent2Id);
-
-            if (p2Parents) {
-                if (p1ParentsExist) {
-                    const layer = this.layers.get(layerNumber)!;
-                    layer.pop();
-                }
-
-                p2ParentsExist = true;
-                let side: ChildSide;
-                if (marriage.parent1Id && this.personParents(marriage.parent1Id)) {
-                    side = LEFT_SIDE;
-                } else {
-                    side = MIDDLE_SIDE;
-                }
-
-                this.addParents({ side, childId: marriage.parent2Id }, p2Parents, layerNumber - 1);
-            }
-        }
-
-        if (!this.layers.has(layerNumber)) {
-            this.layers.set(layerNumber, []);
-        }
-        // SAFE: if the layer does not exist, we will create it above.
-        const layer = this.layers.get(layerNumber)!;
-
-        if (!p1ParentsExist && !p2ParentsExist) {
-            layer.push(id);
-            this.nodes.set(id, {
-                id,
-                type: MARRIAGE_NODE_TYPE,
-                persons: {
-                    person1: marriage.parent1Id,
-                    person2: marriage.parent2Id,
-                },
-                layerNumber,
-            });
-        }
-
-        if (caller) {
-            if (!this.layers.has(layerNumber + 1)) {
-                this.layers.set(layerNumber + 1, []);
-            }
-            // SAFE: if the layer does not exist, we will create it above.
-            const childrenLayer = this.layers.get(layerNumber + 1)!;
-
-            if (!this.children.get(id)) {
-                this.children.set(id, []);
-            }
-            // SAFE: if the children of the marriage does not exist, we will initialize it above.
-            const children = this.children.get(id)!;
-
-            const childrenIds = marriage.childrenIds.filter(
-                (childId) => childId !== caller.childId,
-            );
-            if (caller.side === LEFT_SIDE) {
-                childrenIds.splice(0, 0, caller.childId);
-            } else if (caller.side === RIGHT_SIDE) {
-                childrenIds.push(caller.childId);
-            } else {
-                childrenIds.splice(Math.ceil(childrenIds.length / 2), 0, caller.childId);
-            }
-
-            for (const childId of childrenIds) {
-                const [childNodeId, childMarriage] = personIdToNodeId(childId, this.family);
-                childrenLayer.push(childNodeId.id);
-
-                const persons: NodePersons =
-                    childNodeId.type === MARRIAGE_NODE_TYPE
-                        ? {
-                              person1: childMarriage!.parent1Id,
-                              person2: childMarriage!.parent2Id,
-                          }
-                        : { person1: childNodeId.id };
-                this.nodes.set(childNodeId.id, {
-                    id: childNodeId.id,
-                    type: childNodeId.type,
-                    persons,
-                    layerNumber: layerNumber + 1,
-                });
-
-                children.push(childNodeId.id);
-
-                if (!this.parents.get(childNodeId.id)) {
-                    this.parents.set(childNodeId.id, []);
-                }
-                const childParents = this.parents.get(childNodeId.id)!;
-                childParents.push(id);
-            }
-        }
+    /**
+     * Builds the initial family tree for the given person: their whole pedigree and all of their
+     * descendants, without the siblings of the person or of any ancestor.
+     *
+     * @param {string} perspectiveId - The ID of the person from whose perspective to build the tree.
+     */
+    buildInitialTree(perspectiveId: string) {
+        buildInitialTree(this, perspectiveId);
     }
 
     /**

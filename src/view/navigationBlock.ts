@@ -1,7 +1,7 @@
 import { MarkdownPostProcessorContext, TFile } from 'obsidian';
 
 import Grafily from '../main';
-import { BRANDES_KORF, REINGOLD_TILFORD } from '../layout';
+import { DEFAULT_ALGORITHM, GRAPH, TREE } from '../layout';
 
 /**
  * Renders the `grafily-navigation` code block: two buttons that open the Grafily view in a new
@@ -34,12 +34,12 @@ export function renderNavigationBlock(
 
     treeButton.onclick = () => {
         plugin
-            .activateView({ layoutName: REINGOLD_TILFORD, personId })
+            .activateView({ options: { kind: TREE, algorithm: DEFAULT_ALGORITHM }, personId })
             .catch((err) => console.error(err));
     };
     explorerButton.onclick = () => {
         plugin
-            .activateView({ layoutName: BRANDES_KORF, personId })
+            .activateView({ options: { kind: GRAPH, algorithm: DEFAULT_ALGORITHM }, personId })
             .catch((err) => console.error(err));
     };
 }

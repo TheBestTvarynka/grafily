@@ -1,6 +1,6 @@
 import { solveQP } from 'quadprog';
 
-import { FamilyGraph } from '../graphBuilder';
+import { FamilyGraph } from '../..';
 import { DenseMatrix } from './matrix';
 
 // Positions nodes by solving a quadratic program instead of by following a

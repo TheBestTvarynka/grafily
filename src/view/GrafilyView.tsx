@@ -3,7 +3,7 @@ import { ItemView, WorkspaceLeaf, App, Plugin, ViewStateResult } from 'obsidian'
 import { Root, createRoot } from 'react-dom/client';
 
 import { FamilyFlow } from './graph';
-import { LayoutName } from 'layout';
+import { LayoutOptions } from 'layout';
 
 export const VIEW_TYPE = 'grafily-view';
 
@@ -12,7 +12,7 @@ export const VIEW_TYPE = 'grafily-view';
  * Used to open the view directly from the `grafily-navigation` code block.
  */
 export type GrafilyViewRequest = {
-    layoutName: LayoutName;
+    options: LayoutOptions;
     personId: string;
 };
 
@@ -79,7 +79,7 @@ export class GrafilyView extends ItemView {
 
     async setState(state: unknown, result: ViewStateResult): Promise<void> {
         const request = state as GrafilyViewRequest | null;
-        if (request?.layoutName && request?.personId) {
+        if (request?.options && request?.personId) {
             this.initialRequest = request;
             if (this.root) {
                 this.renderReactRoot();

@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { BRANDES_KORF, QUADRATIC, REINGOLD_TILFORD, LayoutName } from '../layout';
+import {
+    BRANDES_KORF,
+    DEFAULT_ALGORITHM,
+    GRAPH,
+    LayoutKind,
+    LayoutOptions,
+    PositioningAlgorithm,
+    QUADRATIC,
+    TREE,
+} from '../layout';
 import { GRAPH_ICON, TREE_ICON } from 'images';
 import { getIcon } from 'obsidian';
 import { useApp } from '../hooks';
@@ -9,7 +18,7 @@ import { GraphDto } from './graph';
 export type StartupMenuProps = {
     persons: string[];
     savedGraphs?: Record<string, GraphDto>;
-    onSubmit: (layoutName: LayoutName, personId: string) => void;
+    onSubmit: (options: LayoutOptions, personId: string) => void;
     onLoadSavedGraph?: (graphName: string) => void;
     onDeleteSavedGraph?: (graphName: string) => Promise<void>;
 };
@@ -21,7 +30,8 @@ export function StartupMenu({
     onLoadSavedGraph,
     onDeleteSavedGraph,
 }: StartupMenuProps) {
-    const [selectedLayout, setSelectedLayout] = useState<LayoutName>(BRANDES_KORF);
+    const [kind, setKind] = useState<LayoutKind>(GRAPH);
+    const [algorithm, setAlgorithm] = useState<PositioningAlgorithm>(DEFAULT_ALGORITHM);
     const [selectedPerson, setSelectedPerson] = useState<string>(persons[0] ?? '');
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [selectedSavedGraph, setSelectedSavedGraph] = useState<string>('');
@@ -40,7 +50,7 @@ export function StartupMenu({
 
     const handleSubmit = () => {
         if (selectedPerson) {
-            onSubmit(selectedLayout, selectedPerson);
+            onSubmit({ kind, algorithm }, selectedPerson);
         }
     };
 
@@ -79,63 +89,63 @@ export function StartupMenu({
     return (
         <div className="grafily-startup-menu-overlay">
             <div className="grafily-startup-menu">
-                <h2>Grafily - Family Graph</h2>
-
                 <div className="grafily-startup-menu-container">
                     <div className="grafily-startup-menu-left">
                         <div className="grafily-startup-menu-section">
+                            <span className="grafily-startup-menu-label">Layout:</span>
                             <div className="grafily-startup-menu-options">
                                 <label className="grafily-startup-menu-radio">
                                     <input
                                         type="radio"
-                                        name="layout"
-                                        value={BRANDES_KORF}
-                                        checked={selectedLayout === BRANDES_KORF}
-                                        onChange={() => setSelectedLayout(BRANDES_KORF)}
+                                        name="kind"
+                                        value={GRAPH}
+                                        checked={kind === GRAPH}
+                                        onChange={() => setKind(GRAPH)}
                                     />
-                                    <span>Brandes-Kopf</span>
+                                    <span>Graph explorer</span>
                                     <span>
-                                        Perfect for graph of any complexity. Interactive nodes
-                                        collapsing or expanding.{' '}
-                                        <strong>
-                                            Not all nodes are centered related to its ancestors or
-                                            descendants.
-                                        </strong>
+                                        Start with a graph that includes siblings of direct
+                                        relatives.
                                     </span>
                                     <img src={GRAPH_ICON} style={{ width: '80%' }} />
                                 </label>
                                 <label className="grafily-startup-menu-radio">
                                     <input
                                         type="radio"
-                                        name="layout"
-                                        value={REINGOLD_TILFORD}
-                                        checked={selectedLayout === REINGOLD_TILFORD}
-                                        onChange={() => setSelectedLayout(REINGOLD_TILFORD)}
+                                        name="kind"
+                                        value={TREE}
+                                        checked={kind === TREE}
+                                        onChange={() => setKind(TREE)}
                                     />
-                                    <span>Reingold-Tilford</span>
-                                    <span>
-                                        Includes only direct ancestors and descendants of the
-                                        selected person.{' '}
-                                        <strong>
-                                            All nodes are perfectly centered related to their
-                                            ancestors or descendants.
-                                        </strong>
-                                    </span>
+                                    <span>Family tree</span>
+                                    <span>Start with person's family tree.</span>
                                     <img src={TREE_ICON} style={{ width: '60%' }} />
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="grafily-startup-menu-section">
+                            <span className="grafily-startup-menu-label">Positioning:</span>
+                            <div className="grafily-startup-menu-options">
+                                <label className="grafily-startup-menu-radio">
+                                    <input
+                                        type="radio"
+                                        name="algorithm"
+                                        value={QUADRATIC}
+                                        checked={algorithm === QUADRATIC}
+                                        onChange={() => setAlgorithm(QUADRATIC)}
+                                    />
+                                    <span>Quadratic</span>
                                 </label>
                                 <label className="grafily-startup-menu-radio">
                                     <input
                                         type="radio"
-                                        name="layout"
-                                        value={QUADRATIC}
-                                        checked={selectedLayout === QUADRATIC}
-                                        onChange={() => setSelectedLayout(QUADRATIC)}
+                                        name="algorithm"
+                                        value={BRANDES_KORF}
+                                        checked={algorithm === BRANDES_KORF}
+                                        onChange={() => setAlgorithm(BRANDES_KORF)}
                                     />
-                                    <span>Quadratic (beta)</span>
-                                    <span>
-                                        The same graph as Brandes-Kopf, but node positions are found
-                                        by solving an optimization problem.
-                                    </span>
+                                    <span>Brandes-Kopf</span>
                                 </label>
                             </div>
                         </div>
