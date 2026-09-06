@@ -1,14 +1,8 @@
-import { Edge, Node } from '@xyflow/react';
-
 import { Index, Marriage } from '../model';
-import { quadraticLayout, fromSerializableObject as deserializeBeta } from './beta';
-import { brandesKopfLayout, fromSerializableObject as deserializeBrandesKopf } from './brandesKopf';
-import { GraphLayout, GraphLayoutData } from './graph';
-import {
-    ReingoldTilford,
-    ReingoldTilfordLayoutData,
-    fromSerializableObject as deserializeTree,
-} from './tree';
+import { positionX as positionBrandesKopf } from './positioning/brandesKopf';
+import { GraphBuilder } from './builder';
+import { GraphLayout, GraphLayoutData, PositionX } from './graph';
+import { positionQuadratic } from './positioning/quadratic/quadratic';
 
 /**
  * Node width.
@@ -73,6 +67,50 @@ export type Id = {
     id: string;
 };
 
+export interface NodePersons {
+    person1?: string;
+    person2?: string;
+}
+
+/**
+ * Just an additional information about graph node. It is used for easier graph building and modifying.
+ *
+ * @property {string} id - node id.
+ * @property {NodeType} type - node type.
+ * @property {NodePersons} persons - persons associated with the node. For the person node, only `person1` is filled. For the marriage node, both `person1` and `person2` are filled.
+ * @property {number} layerNumber - the layer number where the node is located.
+ */
+export interface GraphNode {
+    id: string;
+    type: NodeType;
+    persons: NodePersons;
+    layerNumber: number;
+}
+
+/**
+ * Represents the family graph. No modifications are needed to this graph. It is ready for nodes positions calculations.
+ * When the graph is modified by the user, a new instance of the graph must be created by the `GraphBuilder` class.
+ *
+ * @property {Map<string, string[]>} parents - A map where the key is a node id and the value is an array of parent node ids.
+ * @property {Map<string, string[]>} children - A map where the key is a node id and the value is an array of child node ids.
+ * @property {string[][]} layering - A 2D array where layering[level][order] = nodeId. For example, layering[0] is the list of node ids in the first (top) layer,
+ * sorted by their `order` value. In DAG-related papers, the `order` value is often referred to as the "position" of the node within its layer or "rank".
+ */
+export interface FamilyGraph {
+    /** parents[nodeId] = array of parent node ids */
+    parents: Record<string, string[]>;
+    /** children[nodeId] = array of child node ids */
+    children: Record<string, string[]>;
+    /**
+     * layering[level][order] = nodeId
+     * e.g. layering[0] is the list of node ids in the first (top) layer,
+     * sorted by their `order` value.
+     */
+    layering: string[][];
+    /** This field is not used during coordinates calculation. It is only needed for deserializing graph from the file. */
+    firstLayer: number;
+}
+
 /**
  * Returns the width of the node based on its type.
  *
@@ -131,172 +169,67 @@ export type RearrangeAction =
     | typeof SWAP_MARRIAGE_SPOUSES;
 
 /**
- * The layout algorithm based on the Brandes-Kopf algorithm. This layout is designed to handle general directed acyclic graphs (DAGs) and is not limited to tree structures.
+ * A family tree: the pedigree of the selected person and all of their descendants. It contains
+ * no siblings of the selected person and no siblings of any ancestor, so no aunts, uncles, or
+ * cousins.
+ */
+export const TREE = 'tree';
+
+/**
+ * A family graph: every ancestor and descendant of the selected person, plus the siblings of all
+ * of them. Handles a family of any complexity.
+ */
+export const GRAPH = 'graph';
+
+/**
+ * What the layout puts into the graph. Both kinds are drawn by the same code and support the
+ * same interactions; they differ only in which nodes the initial graph contains.
+ *
+ * *Note*: this value is written into the plugin data file for every saved graph, so changing it
+ * needs a migration.
+ */
+export type LayoutKind = typeof TREE | typeof GRAPH;
+
+/**
+ * Assigns x coordinates with the Brandes-Kopf algorithm. Fast and predictable, but not every
+ * node ends up centered relative to its ancestors or descendants.
  */
 export const BRANDES_KORF = 'brandesKopf';
 
 /**
- * The layout algorithm based on the Reingold-Tilford algorithm. This layout is designed to handle tree structures and does not work with graphs.
- */
-export const REINGOLD_TILFORD = 'reingoldTilford';
-
-/**
- * An experimental layout algorithm. It builds the same graph as the {@link BRANDES_KORF} layout
- * but assigns x coordinates by solving a quadratic program. See the `src/layout/beta` module.
- *
- * *Note*: this value is written into the plugin data file as the discriminant of every saved
- * graph, so changing it needs a migration.
+ * Assigns x coordinates by solving a quadratic program. Centers every node at the average of its
+ * neighbours in the adjacent layers, at the cost of a solve that grows with the graph.
  */
 export const QUADRATIC = 'quadratic';
 
 /**
- * The available layout algorithms for the family graph. Currently supports {@link BRANDES_KORF},
- * {@link REINGOLD_TILFORD}, and {@link QUADRATIC}.
+ * How the layout decides where nodes go horizontally. Orthogonal to the {@link LayoutKind}: any
+ * algorithm can position any kind.
+ *
+ * *Note*: this value is written into the plugin data file for every saved graph, so changing it
+ * needs a migration.
  */
-export type LayoutName = typeof BRANDES_KORF | typeof REINGOLD_TILFORD | typeof QUADRATIC;
+export type PositioningAlgorithm = typeof BRANDES_KORF | typeof QUADRATIC;
 
 /**
- * The layouts built on top of the {@link GraphLayout} class. They share everything but the x
- * coordinates assignment, so they also share the serialized state shape.
+ * The two choices a user makes when building a graph.
  */
-export type GraphLayoutName = typeof BRANDES_KORF | typeof QUADRATIC;
+export type LayoutOptions = {
+    kind: LayoutKind;
+    algorithm: PositioningAlgorithm;
+};
+
+/**
+ * The algorithm used when the user has not picked one - opening the view from the file menu or
+ * from a `grafily-navigation` code block.
+ */
+export const DEFAULT_ALGORITHM: PositioningAlgorithm = QUADRATIC;
 
 export type NodeCapabilities = {
     movableLeft: boolean;
     movableRight: boolean;
     spousesSwappable: boolean;
 };
-
-/**
- * Represents a generic layout for the family graph. This class serves as a wrapper around specific layout implementations, allowing for flexibility in choosing different layout algorithms in the future.
- */
-export class GenericLayout {
-    // Both graph-based layouts are a `GraphLayout` composed with their own positioner, so they
-    // need no type of their own here.
-    private layout: GraphLayout | ReingoldTilford;
-
-    /**
-     * Constructs a new instance of the GenericLayout class with the specified layout implementation.
-     *
-     * @param {LayoutName} layoutName - The layout algorithm to use for building the graph. Currently supports {@link BRANDES_KORF}, {@link REINGOLD_TILFORD}, and {@link QUADRATIC}.
-     * @param {Index} family - The family index containing all the information about persons and marriages.
-     */
-    constructor(layoutName: LayoutName, family: Index, layout?: GraphLayout | ReingoldTilford) {
-        if (layout) {
-            this.layout = layout;
-        } else {
-            switch (layoutName) {
-                case BRANDES_KORF:
-                    this.layout = brandesKopfLayout(family);
-                    break;
-                case REINGOLD_TILFORD:
-                    this.layout = new ReingoldTilford(family);
-                    break;
-                case QUADRATIC:
-                    this.layout = quadraticLayout(family);
-                    break;
-                default: {
-                    // Turns a forgotten layout into a compile error rather than an undefined
-                    // `this.layout` at run time.
-                    const unsupported: never = layoutName;
-
-                    throw new Error(`Unsupported layout: ${String(unsupported)}`);
-                }
-            }
-        }
-    }
-
-    /**
-     * Initializes the initial graph, calculates nodes coordinates, and creates graph nodes and edges.
-     *
-     * @param {string} perspectivePersonId - The person id to build the graph from the perspective of. This person will be in the "center" of the graph.
-     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
-     */
-    buildNodes(perspectiveId: string): [Node[], Edge[]] {
-        return this.layout.buildNodes(perspectiveId);
-    }
-
-    /**
-     * Collapses the children of a given marriage.
-     *
-     * @param {string} nodeId - The id of the node to collapse its children. This node if must be a marriage id.
-     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
-     */
-    collapseChildren(nodeId: string): [Node[], Edge[]] {
-        return this.layout.collapseChildren(nodeId);
-    }
-
-    /**
-     * Collapses the parents of a given person.
-     *
-     * @param {string} personId - The person id to collapse its parents.
-     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
-     */
-    collapseParents(personId: string): [Node[], Edge[]] {
-        return this.layout.collapseParents(personId);
-    }
-
-    /**
-     * Expands the children of a given marriage.
-     *
-     * @param {string} nodeId - The marriage id to expand its children.
-     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
-     */
-    expandChildren(nodeId: string): [Node[], Edge[]] {
-        return this.layout.expandChildren(nodeId);
-    }
-
-    /**
-     * Expands the parents of a given person.
-     *
-     * @param {string} personId - The person id to expand its parents.
-     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
-     */
-    expandParents(personId: string): [Node[], Edge[]] {
-        return this.layout.expandParents(personId);
-    }
-
-    capabilities(personId: string): NodeCapabilities {
-        return this.layout.capabilities(personId);
-    }
-
-    /**
-     * This method is used to changes nodes positions within the layout. This method never deletes or
-     * add nodes. Only changes they arrangement: position among siblings or person's position relative
-     * to the spouse within the node. See also the {@link RearrangeAction} type documentation.
-     *
-     * @param {string} personId - A person id which user has selected.
-     * @param {RearrangeAction} action - An action to be performed.
-     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
-     */
-    rearrange(personId: string, action: RearrangeAction): [Node[], Edge[]] {
-        return this.layout.rearrange(personId, action);
-    }
-
-    /**
-     * Returns the layout state ready for serialization. Is it safe to stringify it to the JSON
-     * and parse back again.
-     *
-     * @returns {SerializableLayout} - A object ready to be serialized.
-     */
-    toSerializableObject(): SerializableLayoutData {
-        return this.layout.toSerializableObject();
-    }
-
-    /**
-     * Checks if the given person id is present in the current layout.
-     *
-     * @param {string} personId - A person id which user has selected.
-     * @returns Returns true when the given person id is present in the current layout. Otherwise, returns false.
-     */
-    contains(personId: string): PersonVisibility {
-        return this.layout.contains(personId);
-    }
-
-    toggleSiblingVisibility(personIds: string[], selectedParentNodeId: string): [Node[], Edge[]] {
-        return this.layout.toggleSiblingVisibility(personIds, selectedParentNodeId);
-    }
-}
 
 export type PersonVisibility = {
     /**
@@ -310,39 +243,68 @@ export type PersonVisibility = {
     disabled: boolean;
 };
 
-export type SerializableLayoutData =
-    | { name: typeof BRANDES_KORF; data: GraphLayoutData }
-    | { name: typeof REINGOLD_TILFORD; data: ReingoldTilfordLayoutData }
-    | { name: typeof QUADRATIC; data: GraphLayoutData };
+/**
+ * The layout state ready for serialization. Both layout kinds and both positioning algorithms
+ * produce the very same {@link GraphLayoutData}, because they all build one `GraphBuilder` graph
+ * and differ only in what goes into it and where the nodes end up horizontally.
+ */
+export type SerializableLayoutData = {
+    kind: LayoutKind;
+    algorithm: PositioningAlgorithm;
+    data: GraphLayoutData;
+};
 
 /**
- * Then the user wants to save the layout into a file or somewhere else, it generates
- * the {@link SerializableLayout} object using the `toSerializableObject` method on the
- * {@link GenericLayout} class. Later, the user can use this method to construct and use
- * the layout object back again.
+ * Creates a layout for the given options.
  *
- * @param {SerializableLayoutData} layoutData  - Layout data.
+ * @param {LayoutOptions} options - The layout kind and the positioning algorithm to use.
+ * @param {Index} family - The family index containing all the information about persons and marriages.
+ * @param {GraphBuilder} graph - An already built graph. When omitted, an empty one is created.
+ * @returns {GraphLayout} - The layout instance ready to be used.
+ */
+export function createLayout(
+    options: LayoutOptions,
+    family: Index,
+    graph?: GraphBuilder,
+): GraphLayout {
+    let positionX: PositionX;
+
+    switch (options.algorithm) {
+        case BRANDES_KORF:
+            positionX = positionBrandesKopf;
+            break;
+        case QUADRATIC:
+            positionX = positionQuadratic;
+            break;
+        default: {
+            // Turns a forgotten algorithm into a compile error rather than an undefined
+            // positioner at run time.
+            const unsupported: never = options.algorithm;
+
+            throw new Error(`Unsupported positioning algorithm: ${String(unsupported)}`);
+        }
+    }
+
+    return new GraphLayout(family, options.kind, options.algorithm, positionX, graph);
+}
+
+/**
+ * When the user wants to save the layout into a file or somewhere else, it generates the
+ * {@link SerializableLayoutData} object using the `toSerializableObject` method on the
+ * {@link GraphLayout} class. Later, the user can use this method to construct and use the layout
+ * object back again.
+ *
+ * @param {SerializableLayoutData} layoutData - Layout data.
  * @param {Index} family - The family index containing all the people and their relationships.
- * @returns {GenericLayout} - The {@link GenericLayout} instance ready to be used.
+ * @returns {GraphLayout} - The {@link GraphLayout} instance ready to be used.
  */
 export function fromSerializableObject(
     layoutData: SerializableLayoutData,
     family: Index,
-): GenericLayout {
-    let layout: GraphLayout | ReingoldTilford;
-
-    if (layoutData.name === BRANDES_KORF) {
-        layout = deserializeBrandesKopf(layoutData, family);
-    } else if (layoutData.name === REINGOLD_TILFORD) {
-        layout = deserializeTree(layoutData, family);
-    } else if (layoutData.name === QUADRATIC) {
-        layout = deserializeBeta(layoutData, family);
-    } else {
-        // Turns a forgotten layout into a compile error rather than a run time one.
-        const unsupported: never = layoutData;
-
-        throw new Error(`Invalid layout type: ${JSON.stringify(unsupported)}`);
-    }
-
-    return new GenericLayout(layoutData.name, family, layout);
+): GraphLayout {
+    return createLayout(
+        { kind: layoutData.kind, algorithm: layoutData.algorithm },
+        family,
+        new GraphBuilder(family, layoutData.data.graph, layoutData.data.nodes),
+    );
 }

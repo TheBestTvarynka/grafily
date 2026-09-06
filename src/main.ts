@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS, GrafilySettings, GrafilySettingTab } from './settings
 import { GrafilyView, GrafilyViewRequest, VIEW_TYPE } from './view/GrafilyView';
 import { renderNavigationBlock } from './view/navigationBlock';
 import { extractPageMeta } from './parsing';
-import { BRANDES_KORF, REINGOLD_TILFORD } from './layout';
+import { DEFAULT_ALGORITHM, GRAPH, TREE } from './layout';
 
 import '@xyflow/react/dist/style.css';
 import { GraphDto } from 'view/graph';
@@ -133,17 +133,19 @@ export default class Grafily extends Plugin {
 
             submenu.addItem((subItem) =>
                 subItem.setTitle('Family tree').onClick(() => {
-                    this.activateView({ layoutName: REINGOLD_TILFORD, personId }).catch((err) =>
-                        console.error(err),
-                    );
+                    this.activateView({
+                        options: { kind: TREE, algorithm: DEFAULT_ALGORITHM },
+                        personId,
+                    }).catch((err) => console.error(err));
                 }),
             );
 
             submenu.addItem((subItem) =>
                 subItem.setTitle('Graph explorer').onClick(() => {
-                    this.activateView({ layoutName: BRANDES_KORF, personId }).catch((err) =>
-                        console.error(err),
-                    );
+                    this.activateView({
+                        options: { kind: GRAPH, algorithm: DEFAULT_ALGORITHM },
+                        personId,
+                    }).catch((err) => console.error(err));
                 }),
             );
         });

@@ -16,19 +16,21 @@ import { useApp } from '../hooks';
 import { extractPageMeta } from '../parsing';
 import { PersonNode, MarriageNode } from './node';
 import {
-    BRANDES_KORF,
-    GenericLayout,
-    LayoutName,
+    DEFAULT_ALGORITHM,
+    GRAPH,
+    LayoutKind,
+    LayoutOptions,
     NODE_HEIGHT,
     NODE_WIDTH,
     PersonVisibility,
-    QUADRATIC,
-    REINGOLD_TILFORD,
     RearrangeAction,
     SerializableLayoutData,
+    TREE,
+    createLayout,
     fromSerializableObject,
     personIdToNodeId,
 } from 'layout';
+import { GraphLayout } from 'layout/graph';
 import { StartupMenu } from './StartupMenu';
 import { SelectedPerson, SidePanel } from './SidePanel';
 import { App, Notice, Plugin } from 'obsidian';
@@ -37,7 +39,7 @@ import { confirmDialog } from './ConfirmModal';
 import type { GrafilyViewRequest } from './GrafilyView';
 
 export type GraphContextValue = {
-    layout: GenericLayout;
+    layout: GraphLayout;
     index: Index;
 
     collapseChildren: (nodeId: string) => void;
@@ -65,17 +67,20 @@ export type GraphDto = {
     layout: SerializableLayoutData;
 };
 
-const DEFAULT_EMPTY_LAYOUT: GenericLayout = new GenericLayout(BRANDES_KORF, emptyIndex());
+const DEFAULT_EMPTY_LAYOUT: GraphLayout = createLayout(
+    { kind: GRAPH, algorithm: DEFAULT_ALGORITHM },
+    emptyIndex(),
+);
 
 /**
  * The tab title to use when the graph is opened directly for a person, skipping the startup menu.
- * Being a `Record` over every layout name, it turns a new layout into a compile error here
- * instead of a silently wrong title.
+ * The title tracks the layout kind, not the positioning algorithm - the algorithm changes where
+ * the nodes sit, not what the tab is showing. Being a `Record` over every kind, it turns a new
+ * one into a compile error here instead of a silently wrong title.
  */
-const LAYOUT_TAB_NAME: Record<LayoutName, string> = {
-    [BRANDES_KORF]: 'Family explorer',
-    [REINGOLD_TILFORD]: 'Family tree',
-    [QUADRATIC]: 'Family explorer (beta)',
+const LAYOUT_TAB_NAME: Record<LayoutKind, string> = {
+    [TREE]: 'Family tree',
+    [GRAPH]: 'Family explorer',
 };
 
 async function scanVaultForPersons(app: App, dataDir: string): Promise<Index> {
@@ -118,7 +123,7 @@ function FamilyGraph({
     // and only the first-mounted tab's dots render.
     const flowId = useId();
 
-    const [layout, setLayout] = useState<GenericLayout>(DEFAULT_EMPTY_LAYOUT);
+    const [layout, setLayout] = useState<GraphLayout>(DEFAULT_EMPTY_LAYOUT);
     const [index, setIndex] = useState<Index>(emptyIndex());
 
     const [graph, setGraph] = useState<[Node[], Edge[]]>([[], []]);
@@ -165,10 +170,10 @@ function FamilyGraph({
                 return;
             }
 
-            const requestName = LAYOUT_TAB_NAME[initialRequest.layoutName];
+            const requestName = LAYOUT_TAB_NAME[initialRequest.options.kind];
 
             onTitleChange(`${formatPersonName(person)} - ${requestName}`);
-            handleBuildGraph(initialRequest.layoutName, initialRequest.personId);
+            handleBuildGraph(initialRequest.options, initialRequest.personId);
         } else {
             console.error(
                 `Grafily navigation: person "${initialRequest.personId}" was not found in "${dataDir}".`,
@@ -312,7 +317,7 @@ function FamilyGraph({
         });
     };
 
-    const handleStartupSubmit = (layoutName: LayoutName, personId: string) => {
+    const handleStartupSubmit = (options: LayoutOptions, personId: string) => {
         const person = index.personById.get(personId);
         if (!person) {
             new Notice(`The starting person not found. id='${personId}'`);
@@ -322,11 +327,11 @@ function FamilyGraph({
         }
 
         onTitleChange(`${formatPersonName(person)} - Grafily`);
-        handleBuildGraph(layoutName, personId);
+        handleBuildGraph(options, personId);
     };
 
-    const handleBuildGraph = (layoutName: LayoutName, personId: string) => {
-        const newLayout = new GenericLayout(layoutName, index);
+    const handleBuildGraph = (options: LayoutOptions, personId: string) => {
+        const newLayout = createLayout(options, index);
         const newGraph = newLayout.buildNodes(personId);
 
         const [id] = personIdToNodeId(personId, index);
