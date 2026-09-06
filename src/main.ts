@@ -20,7 +20,7 @@ export const DEFAULT_STATE: GrafilyState = {
 };
 
 export default class Grafily extends Plugin {
-    settings: GrafilySettings;
+    settings: GrafilySettings = DEFAULT_SETTINGS;
     // Maps a person page's file path to its person id. Obsidian shows the `file-menu` context
     // menu synchronously right after firing the event, so `handleFileMenu` cannot read and parse
     // the file (an async operation) before deciding whether to add the Grafily item — by the time
