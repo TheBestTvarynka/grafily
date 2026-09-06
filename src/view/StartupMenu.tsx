@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BRANDES_KORF, REINGOLD_TILFORD, LayoutName } from '../layout';
+import { BRANDES_KORF, QUADRATIC, REINGOLD_TILFORD, LayoutName } from '../layout';
 import { GRAPH_ICON, TREE_ICON } from 'images';
 import { getIcon } from 'obsidian';
 import { useApp } from '../hooks';
@@ -122,6 +122,20 @@ export function StartupMenu({
                                         </strong>
                                     </span>
                                     <img src={TREE_ICON} style={{ width: '60%' }} />
+                                </label>
+                                <label className="grafily-startup-menu-radio">
+                                    <input
+                                        type="radio"
+                                        name="layout"
+                                        value={QUADRATIC}
+                                        checked={selectedLayout === QUADRATIC}
+                                        onChange={() => setSelectedLayout(QUADRATIC)}
+                                    />
+                                    <span>Quadratic (beta)</span>
+                                    <span>
+                                        The same graph as Brandes-Kopf, but node positions are found
+                                        by solving an optimization problem.
+                                    </span>
                                 </label>
                             </div>
                         </div>

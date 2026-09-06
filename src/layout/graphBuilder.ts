@@ -8,7 +8,6 @@
  * @module graphBuilder
  */
 
-import { FamilyGraph } from './';
 import {
     Id,
     NodeType,
@@ -20,8 +19,32 @@ import {
     MOVE_PERSON_LEFT,
     MOVE_PERSON_RIGHT,
     NodeCapabilities,
-} from '../';
-import { Index, LEFT_SIDE, RIGHT_SIDE, Marriage } from '../../model';
+} from './';
+import { Index, LEFT_SIDE, RIGHT_SIDE, Marriage } from '../model';
+
+/**
+ * Represents the family graph. No modifications are needed to this graph. It is ready for nodes positions calculations.
+ * When the graph is modified by the user, a new instance of the graph must be created by the {@link GraphBuilder} class.
+ *
+ * @property {Map<string, string[]>} parents - A map where the key is a node id and the value is an array of parent node ids.
+ * @property {Map<string, string[]>} children - A map where the key is a node id and the value is an array of child node ids.
+ * @property {string[][]} layering - A 2D array where layering[level][order] = nodeId. For example, layering[0] is the list of node ids in the first (top) layer,
+ * sorted by their `order` value. In DAG-related papers, the `order` value is often referred to as the "position" of the node within its layer or "rank".
+ */
+export interface FamilyGraph {
+    /** parents[nodeId] = array of parent node ids */
+    parents: Record<string, string[]>;
+    /** children[nodeId] = array of child node ids */
+    children: Record<string, string[]>;
+    /**
+     * layering[level][order] = nodeId
+     * e.g. layering[0] is the list of node ids in the first (top) layer,
+     * sorted by their `order` value.
+     */
+    layering: string[][];
+    /** This field is not used during coordinates calculation. It is only needed for deserializing graph from the file. */
+    firstLayer: number;
+}
 
 const MIDDLE_SIDE = 'middle_side';
 

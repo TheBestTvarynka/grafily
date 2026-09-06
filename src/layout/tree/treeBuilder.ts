@@ -19,7 +19,7 @@ import {
     RearrangeAction,
     SWAP_MARRIAGE_SPOUSES,
 } from 'layout';
-import { NodePersons } from 'layout/fullGraph/graphBuilder';
+import { NodePersons } from 'layout/graphBuilder';
 import { Index, LEFT_SIDE, MarriageNodeSide, RIGHT_SIDE } from 'model';
 
 /**

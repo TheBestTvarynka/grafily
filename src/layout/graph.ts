@@ -1,7 +1,18 @@
+/**
+ * This module renders a built family graph into the nodes and edges the view draws.
+ *
+ * Everything here is independent of the positioning algorithm except the x coordinates, which
+ * are delegated to an injected {@link PositionX} function. That is the only thing a graph-based
+ * layout has to bring of its own: the graph building, the node and edge emission, and every
+ * user action are shared. See the `brandesKopf` and `beta` modules for the two positioners.
+ *
+ * @module graph
+ */
+
 import { Edge, Node } from '@xyflow/react';
 
 import {
-    BRANDES_KORF,
+    GraphLayoutName,
     MARRIAGE_GAP,
     MARRIAGE_NODE_SIZE,
     MARRIAGE_NODE_TYPE,
@@ -15,50 +26,59 @@ import {
     RearrangeAction,
     SerializableLayoutData,
     personIdToNodeId,
-} from '../';
-import { Index, LEFT_SIDE, NONE_SIDE, RIGHT_SIDE } from '../../model';
-import { positionX, positionY } from './brandesKopf';
-import { GraphBuilder, GraphNode } from './graphBuilder';
+} from './';
+import { positionY } from './brandesKopf/brandesKopf';
+import { FamilyGraph, GraphBuilder, GraphNode } from './graphBuilder';
+import { Index, LEFT_SIDE, NONE_SIDE, RIGHT_SIDE } from '../model';
 import { MarriageNodeData, PersonNodeData } from 'view/node';
 
 /**
- * Represents the family graph. No modifications are needed to this graph. It is ready for nodes positions calculations.
- * When the graph is modified by the user, a new instance of the graph must be created by the {@link GraphBuilder} class.
- *
- * @property {Map<string, string[]>} parents - A map where the key is a node id and the value is an array of parent node ids.
- * @property {Map<string, string[]>} children - A map where the key is a node id and the value is an array of child node ids.
- * @property {string[][]} layering - A 2D array where layering[level][order] = nodeId. For example, layering[0] is the list of node ids in the first (top) layer,
- * sorted by their `order` value. In DAG-related papers, the `order` value is often referred to as the "position" of the node within its layer or "rank".
+ * Assigns an x coordinate - the geometrical center of the node - to every node of the graph.
+ * The `positionX` function of the `brandesKopf` module and the `positionQuadratic` function of
+ * the `beta` module are the two implementations.
  */
-export interface FamilyGraph {
-    /** parents[nodeId] = array of parent node ids */
-    parents: Record<string, string[]>;
-    /** children[nodeId] = array of child node ids */
-    children: Record<string, string[]>;
-    /**
-     * layering[level][order] = nodeId
-     * e.g. layering[0] is the list of node ids in the first (top) layer,
-     * sorted by their `order` value.
-     */
-    layering: string[][];
-    /** This field is not used during coordinates calculation. It is only needed for deserializing graph from the file. */
-    firstLayer: number;
-}
+export type PositionX = (
+    graph: FamilyGraph,
+    nodeWidth: (v: string) => number,
+    nodeSep: number,
+) => Record<string, number>;
 
 /**
- * Represents the family graph layout based on the Brandes-Kopf algorithm. This layout is designed to handle general directed acyclic graphs (DAGs) and is not limited to tree structures.
+ * The state a graph-based layout serializes. Both graph layouts share it, because they build the
+ * same graph and differ only in where the nodes end up horizontally.
  */
-export class BrandesKopfLayout {
+export type GraphLayoutData = {
+    graph: FamilyGraph;
+    nodes: Record<string, GraphNode>;
+};
+
+/**
+ * A family graph layout. Handles general directed acyclic graphs (DAGs) and is not limited to
+ * tree structures.
+ *
+ * This class is not tied to a single algorithm: it is composed with the {@link PositionX}
+ * function it should use, so a new graph-based layout is a new positioner plus a name, and
+ * nothing else.
+ */
+export class GraphLayout {
     family: Index;
     graph: GraphBuilder;
+    private readonly name: GraphLayoutName;
+    private readonly positionX: PositionX;
 
     /**
-     * Constructs a new instance of the Brandes-Kopf layout.
+     * Constructs a new instance of the graph layout.
      *
      * @param {Index} family - The family index containing all the information about persons and marriages.
+     * @param {GraphLayoutName} name - The layout name to write into the serialized state.
+     * @param {PositionX} positionX - The x coordinates assignment to use.
+     * @param {GraphBuilder} graph - An already built graph. When omitted, an empty one is created.
      */
-    constructor(family: Index, graph?: GraphBuilder) {
+    constructor(family: Index, name: GraphLayoutName, positionX: PositionX, graph?: GraphBuilder) {
         this.family = family;
+        this.name = name;
+        this.positionX = positionX;
+
         if (graph) {
             this.graph = graph;
         } else {
@@ -86,7 +106,7 @@ export class BrandesKopfLayout {
             throw new Error(`Node/Marriage ${id} not found`);
         };
 
-        const xCoords = positionX(familyGraph, nodeWidth, NODES_GAP);
+        const xCoords = this.positionX(familyGraph, nodeWidth, NODES_GAP);
         const yCoords = positionY(familyGraph, (_id) => NODE_HEIGHT, NODES_GAP);
 
         const nodes: Node[] = [];
@@ -346,15 +366,15 @@ export class BrandesKopfLayout {
     /**
      * Returns the layout state ready for serialization. Is it safe to stringify it to the JSON
      * and parse back again.
-     * For the `BrandesKopfLayout`, the `data` field has `{ graph: FamilyGraph, nodes: Record<string, GraphNode> }` type.
+     * For the graph layouts, the `data` field has the {@link GraphLayoutData} type.
      *
-     * @returns {SerializableLayout} - A object ready to be serialized.
+     * @returns {SerializableLayoutData} - A object ready to be serialized.
      */
     toSerializableObject(): SerializableLayoutData {
         const nodes: Record<string, GraphNode> = Object.fromEntries(this.graph.getNodes());
 
         return {
-            name: BRANDES_KORF,
+            name: this.name,
             data: {
                 graph: this.graph.buildFamilyGraph(),
                 nodes,
@@ -383,29 +403,4 @@ export class BrandesKopfLayout {
 
         return this.buildNodesInternal();
     }
-}
-
-export type BrandesKopfLayoutData = {
-    graph: FamilyGraph;
-    nodes: Record<string, GraphNode>;
-};
-
-/**
- * Then the user wants to save the layout into a file or somewhere else, it generates
- * the {@link SerializableLayout} object using the `toSerializableObject` method on the
- * {@link BrandesKopfLayout} class. Later, the user can use this method to construct and use
- * the {@link BrandesKopfLayout} object back again.
- *
- * @param {SerializableLayout} layout - Layout data.
- * @param {Index} family - The family index containing all the people and their relationships.
- * @returns {BrandesKopfLayout} - {@link BrandesKopfLayout} instance.
- */
-export function fromSerializableObject(
-    layout: SerializableLayoutData & { name: typeof BRANDES_KORF },
-    family: Index,
-): BrandesKopfLayout {
-    return new BrandesKopfLayout(
-        family,
-        new GraphBuilder(family, layout.data.graph, layout.data.nodes),
-    );
 }
