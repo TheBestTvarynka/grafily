@@ -12,9 +12,11 @@
 import { Edge, Node } from '@xyflow/react';
 
 import {
+    BRANDES_KORF,
     FamilyGraph,
     GraphNode,
     LayoutKind,
+    QUADRATIC,
     MARRIAGE_GAP,
     MARRIAGE_NODE_SIZE,
     MARRIAGE_NODE_TYPE,
@@ -31,21 +33,43 @@ import {
     TREE,
     personIdToNodeId,
 } from './';
-import { positionY } from './positioning/brandesKopf';
+import { positionX as positionBrandesKopf, positionY } from './positioning/brandesKopf';
+import { positionQuadratic } from './positioning/quadratic/quadratic';
 import { GraphBuilder } from './builder';
 import { Index, LEFT_SIDE, NONE_SIDE, RIGHT_SIDE } from '../model';
 import { MarriageNodeData, PersonNodeData } from 'view/node';
 
 /**
  * Assigns an x coordinate - the geometrical center of the node - to every node of the graph.
- * The `positionX` function of the `brandesKopf` module and the `positionQuadratic` function of
- * the `beta` module are the two implementations.
+ * See the `positioning` module for the implementations.
  */
 export type PositionX = (
     graph: FamilyGraph,
     nodeWidth: (v: string) => number,
     nodeSep: number,
 ) => Record<string, number>;
+
+/**
+ * Returns the function that implements the given positioning algorithm.
+ *
+ * @param {PositioningAlgorithm} algorithm - The algorithm to look up.
+ * @returns {PositionX} - The x coordinates assignment implementing it.
+ */
+export function positionerFor(algorithm: PositioningAlgorithm): PositionX {
+    switch (algorithm) {
+        case BRANDES_KORF:
+            return positionBrandesKopf;
+        case QUADRATIC:
+            return positionQuadratic;
+        default: {
+            // Turns a forgotten algorithm into a compile error rather than an undefined
+            // positioner at run time.
+            const unsupported: never = algorithm;
+
+            throw new Error(`Unsupported positioning algorithm: ${String(unsupported)}`);
+        }
+    }
+}
 
 /**
  * The state a graph-based layout serializes. Both graph layouts share it, because they build the
@@ -68,8 +92,10 @@ export class GraphLayout {
     family: Index;
     graph: GraphBuilder;
     private readonly kind: LayoutKind;
-    private readonly algorithm: PositioningAlgorithm;
-    private readonly positionX: PositionX;
+    // These two must always agree, so they are only ever set together - by the constructor or by
+    // `setAlgorithm`. Read the current algorithm through the `algorithm` getter.
+    private currentAlgorithm: PositioningAlgorithm;
+    private positionX: PositionX;
 
     /**
      * Constructs a new instance of the graph layout.
@@ -89,7 +115,7 @@ export class GraphLayout {
     ) {
         this.family = family;
         this.kind = kind;
-        this.algorithm = algorithm;
+        this.currentAlgorithm = algorithm;
         this.positionX = positionX;
 
         if (graph) {
@@ -97,6 +123,29 @@ export class GraphLayout {
         } else {
             this.graph = new GraphBuilder(family);
         }
+    }
+
+    /**
+     * The positioning algorithm currently in use.
+     */
+    get algorithm(): PositioningAlgorithm {
+        return this.currentAlgorithm;
+    }
+
+    /**
+     * Switches the positioning algorithm and recalculates every node position.
+     *
+     * The graph itself is untouched: this only changes where the existing nodes are drawn, so
+     * everything the user has collapsed, expanded or rearranged survives the switch.
+     *
+     * @param {PositioningAlgorithm} algorithm - The algorithm to switch to.
+     * @returns {[Node[], Edge[]]} Returns a resulting graph nodes and edges ready to be rendered.
+     */
+    setAlgorithm(algorithm: PositioningAlgorithm): [Node[], Edge[]] {
+        this.currentAlgorithm = algorithm;
+        this.positionX = positionerFor(algorithm);
+
+        return this.buildNodesInternal();
     }
 
     /**

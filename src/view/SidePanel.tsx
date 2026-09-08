@@ -3,10 +3,13 @@ import { getIcon } from 'obsidian';
 import { useReactFlow } from '@xyflow/react';
 import { useApp, useGraph } from 'hooks';
 import {
+    BRANDES_KORF,
     MOVE_PERSON_LEFT,
     MOVE_PERSON_RIGHT,
     NodeCapabilities,
     PersonVisibility,
+    PositioningAlgorithm,
+    QUADRATIC,
     SWAP_MARRIAGE_SPOUSES,
 } from 'layout';
 import { SimplePersonNode } from './node';
@@ -198,6 +201,18 @@ export function SidePanel({
         <>
             <div className="grafily-save-panel">
                 <div className="grafily-direction-buttons">
+                    <select
+                        className="grafily-algorithm-select"
+                        value={graph?.layout.algorithm ?? QUADRATIC}
+                        onChange={(e) =>
+                            graph?.setAlgorithm(e.target.value as PositioningAlgorithm)
+                        }
+                        title="Node positioning algorithm"
+                        disabled={!graph}
+                    >
+                        <option value={QUADRATIC}>Quadratic</option>
+                        <option value={BRANDES_KORF}>Brandes-Kopf</option>
+                    </select>
                     {selectedPerson && (
                         <>
                             <button
