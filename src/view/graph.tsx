@@ -1,4 +1,4 @@
-import { createContext, useEffect, useId, useState } from 'react';
+import { createContext, useEffect, useId, useRef, useState } from 'react';
 
 import {
     ReactFlow,
@@ -113,12 +113,16 @@ function FamilyGraph({
     plugin,
     dataDir,
     initialRequest,
+    initialGraphName,
     onTitleChange,
+    onGraphNameChange,
 }: {
     plugin: Plugin;
     dataDir: string;
     onTitleChange: (title: string) => void;
+    onGraphNameChange?: (graphName: string | null) => void;
     initialRequest?: GrafilyViewRequest | null;
+    initialGraphName?: string | null;
 }) {
     // Each Obsidian tab mounts its own React Flow instance in the same document, so the
     // background dot pattern needs a per-instance id — otherwise the SVG <pattern> ids collide
@@ -132,8 +136,12 @@ function FamilyGraph({
     const [isInitialized, setIsInitialized] = useState(false);
     const [isChanged, setIsChanged] = useState(false);
     const [savedGraphs, setSavedGraphs] = useState<Record<string, GraphDto>>({});
+    const [savedGraphsLoaded, setSavedGraphsLoaded] = useState(false);
     const [loadedGraphName, setLoadedGraphName] = useState<string | null>(null);
     const [selectedPerson, setSelectedPerson] = useState<SelectedPerson | null>(null);
+
+    // Guards the one-shot restore of the saved graph this tab had open before the restart.
+    const restoredGraphRef = useRef(false);
 
     const app = useApp();
 
@@ -203,9 +211,50 @@ function FamilyGraph({
                 console.error('Failed to load saved graphs:', err);
 
                 setSavedGraphs({});
+            } finally {
+                setSavedGraphsLoaded(true);
             }
         })().catch((err) => console.error(err));
     }, [plugin]);
+
+    // Reopens the saved graph this tab had open when Obsidian was last closed. Needs both the
+    // saved graphs and the family index, because the restored layout is rebound to the index.
+    useEffect(() => {
+        if (!initialGraphName || !savedGraphsLoaded || index.personById.size < 1) {
+            return;
+        }
+
+        // Obsidian can call `setState` more than once for the same leaf, and React StrictMode
+        // runs effects twice - restoring is not idempotent enough to want either.
+        if (restoredGraphRef.current) {
+            return;
+        }
+        restoredGraphRef.current = true;
+
+        if (savedGraphs[initialGraphName]) {
+            handleLoadSavedGraph(initialGraphName);
+        } else {
+            // Deleted since the workspace was written. Drop the stale name so the tab stops
+            // trying on every restart, and fall through to the startup menu.
+            console.warn(
+                `Grafily: saved graph "${initialGraphName}" no longer exists. Opening the startup menu.`,
+            );
+            onGraphNameChange?.(null);
+        }
+    }, [initialGraphName, savedGraphsLoaded, index]);
+
+    // Keeps the view in sync so it can persist which saved graph is open. Covers every path that
+    // changes it: loading, saving, deleting, and going home.
+    useEffect(() => {
+        // On mount `loadedGraphName` is still null while a restore is pending. Reporting that
+        // would clear the very name the view is about to restore - and ask Obsidian to write the
+        // cleared state to the workspace file while doing it.
+        if (initialGraphName && !restoredGraphRef.current) {
+            return;
+        }
+
+        onGraphNameChange?.(loadedGraphName);
+    }, [loadedGraphName]);
 
     const collapseChildren = (nodeId: string) => {
         const newGraph = layout.collapseChildren(nodeId);
@@ -627,12 +676,16 @@ export function FamilyFlow({
     plugin,
     dataDir,
     initialRequest,
+    initialGraphName,
     onTitleChange,
+    onGraphNameChange,
 }: {
     plugin: Plugin;
     dataDir: string;
     onTitleChange: (title: string) => void;
+    onGraphNameChange?: (graphName: string | null) => void;
     initialRequest?: GrafilyViewRequest | null;
+    initialGraphName?: string | null;
 }) {
     return (
         <div
@@ -647,7 +700,9 @@ export function FamilyFlow({
                     plugin={plugin}
                     dataDir={dataDir}
                     onTitleChange={onTitleChange}
+                    onGraphNameChange={onGraphNameChange}
                     initialRequest={initialRequest}
+                    initialGraphName={initialGraphName}
                 />
             </ReactFlowProvider>
         </div>
