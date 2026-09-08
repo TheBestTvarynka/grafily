@@ -57,6 +57,32 @@ If your plugin does not need CSS, delete this file.
     height: 16px;
 }
 
+/* Sits at the start of the direction button row, so it matches the buttons' height and chrome.
+   It gets a wider share than a button because it shows a word, not an icon. */
+.grafily-algorithm-select {
+    height: 32px;
+    padding: 0 4px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 200ms ease;
+    flex: 3;
+    min-width: 0;
+}
+
+.grafily-algorithm-select:hover {
+    background-color: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+}
+
+.grafily-algorithm-select:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
 .grafily-home-button {
     display: flex;
     align-items: center;

@@ -1,8 +1,6 @@
 import { Index, Marriage } from '../model';
-import { positionX as positionBrandesKopf } from './positioning/brandesKopf';
 import { GraphBuilder } from './builder';
-import { GraphLayout, GraphLayoutData, PositionX } from './graph';
-import { positionQuadratic } from './positioning/quadratic/quadratic';
+import { GraphLayout, GraphLayoutData, positionerFor } from './graph';
 
 /**
  * Node width.
@@ -267,25 +265,13 @@ export function createLayout(
     family: Index,
     graph?: GraphBuilder,
 ): GraphLayout {
-    let positionX: PositionX;
-
-    switch (options.algorithm) {
-        case BRANDES_KORF:
-            positionX = positionBrandesKopf;
-            break;
-        case QUADRATIC:
-            positionX = positionQuadratic;
-            break;
-        default: {
-            // Turns a forgotten algorithm into a compile error rather than an undefined
-            // positioner at run time.
-            const unsupported: never = options.algorithm;
-
-            throw new Error(`Unsupported positioning algorithm: ${String(unsupported)}`);
-        }
-    }
-
-    return new GraphLayout(family, options.kind, options.algorithm, positionX, graph);
+    return new GraphLayout(
+        family,
+        options.kind,
+        options.algorithm,
+        positionerFor(options.algorithm),
+        graph,
+    );
 }
 
 /**

@@ -23,6 +23,7 @@ import {
     NODE_HEIGHT,
     NODE_WIDTH,
     PersonVisibility,
+    PositioningAlgorithm,
     RearrangeAction,
     SerializableLayoutData,
     TREE,
@@ -47,6 +48,7 @@ export type GraphContextValue = {
     expandChildren: (nodeId: string) => void;
     expandParents: (personId: string) => void;
     rearrange: (personId: string, action: RearrangeAction) => void;
+    setAlgorithm: (algorithm: PositioningAlgorithm) => void;
     contains: (personId: string) => PersonVisibility;
     toggleSiblingVisibility: (personIds: string[]) => void;
 
@@ -271,6 +273,24 @@ function FamilyGraph({
                 capabilities: layout.capabilities(selectedPerson.id),
             });
         }
+    };
+
+    const setAlgorithm = (algorithm: PositioningAlgorithm) => {
+        if (algorithm === layout.algorithm) {
+            return;
+        }
+
+        const newGraph = layout.setAlgorithm(algorithm);
+
+        const anchorId: string | null = selectedPerson
+            ? personIdToNodeId(selectedPerson.id, index)[0].id
+            : null;
+        if (anchorId) {
+            newGraph[0] = shiftGraphByAnchorNode(graph[0], newGraph[0], anchorId);
+        }
+
+        setGraph(newGraph);
+        setIsChanged(true);
     };
 
     const rearrange = (personId: string, action: RearrangeAction) => {
@@ -556,6 +576,7 @@ function FamilyGraph({
                 expandChildren,
                 expandParents,
                 rearrange,
+                setAlgorithm,
                 index,
                 selectedPerson: selectedPerson,
                 selectPerson: setSelectedPerson,
