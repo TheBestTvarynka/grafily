@@ -1,7 +1,7 @@
 import { Handle, Position } from '@xyflow/react';
 import { useApp, useGraph } from '../../hooks';
 import { MINUS_ICON, PLUS_ICON, PROFILE_IMAGE_PLACEHOLDER } from '../../images';
-import { NODE_HEIGHT, NODE_WIDTH } from '../../layout';
+import { NODE_HEIGHT, NODE_WIDTH, PERSON_TOP_HANDLE_Y } from '../../layout';
 import {
     FEMALE,
     Gender,
@@ -215,7 +215,7 @@ export function PersonNode({
                     type="target"
                     position={Position.Top}
                     id="top"
-                    style={{ top: `${NODE_HEIGHT / 2}px`, background: 'none', border: 'none' }}
+                    style={{ top: `${PERSON_TOP_HANDLE_Y}px`, background: 'none', border: 'none' }}
                 />
             ) : (
                 <></>
