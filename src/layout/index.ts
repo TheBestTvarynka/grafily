@@ -13,6 +13,17 @@ export const NODE_WIDTH = 140;
 export const NODE_HEIGHT = 70;
 
 /**
+ * Side length of a React Flow handle, as set by its default stylesheet (`.react-flow__handle`).
+ */
+export const HANDLE_SIZE = 6;
+
+/**
+ * Vertical offset of the person's `top` handle from the node's top edge. It sits at the vertical
+ * center of the node rather than on its top edge, so the parents' edge ends under the node.
+ */
+export const PERSON_TOP_HANDLE_Y = NODE_HEIGHT / 2;
+
+/**
  * Marriage node size.
  */
 export const MARRIAGE_NODE_SIZE = 10;

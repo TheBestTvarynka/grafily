@@ -36,7 +36,8 @@ import {
 import { positionX as positionBrandesKopf, positionY } from './positioning/brandesKopf';
 import { positionQuadratic } from './positioning/quadratic/quadratic';
 import { GraphBuilder } from './builder';
-import { Index, LEFT_SIDE, NONE_SIDE, RIGHT_SIDE } from '../model';
+import { Index, LEFT_SIDE, MarriageNodeSide, NONE_SIDE, RIGHT_SIDE } from '../model';
+import { marriageNodeHandles, personNodeHandles } from './handles';
 import { MarriageNodeData, PersonNodeData } from 'view/node';
 
 /**
@@ -191,6 +192,24 @@ export class GraphLayout {
             return (this.graph.getChildren().get(marriageId) ?? []).length === 0;
         };
 
+        // Every node declares its size and handles up front (see `handles.ts`), so React Flow can
+        // show it and route its edges on the very first render instead of hiding it until a
+        // `ResizeObserver` has measured the DOM. Besides removing a blank frame after each
+        // rebuild, this matters in a popout window, where those measurements are delayed.
+        const personGeometry = (personId: string, side: MarriageNodeSide) => ({
+            initialWidth: NODE_WIDTH,
+            initialHeight: NODE_HEIGHT,
+            handles: personNodeHandles(this.family.personParents.has(personId), side),
+        });
+
+        const marriageGeometry = (marriageId: string) => ({
+            initialWidth: MARRIAGE_NODE_SIZE,
+            initialHeight: MARRIAGE_NODE_SIZE,
+            handles: marriageNodeHandles(
+                (this.family.marriageById.get(marriageId)?.childrenIds.length ?? 0) > 0,
+            ),
+        });
+
         this.graph.getNodes().forEach((node, id) => {
             // (x; y) is the geometrical center of the node.
             const x = xCoords[id] ?? 0;
@@ -207,6 +226,7 @@ export class GraphLayout {
                     id,
                     data: nodeData,
                     type: MARRIAGE_NODE_TYPE,
+                    ...marriageGeometry(id),
                     position: {
                         x: x - MARRIAGE_NODE_SIZE / 2,
                         y: y - MARRIAGE_NODE_SIZE / 2,
@@ -233,6 +253,7 @@ export class GraphLayout {
                     nodes.push({
                         id: node.persons.person1,
                         data: nodeData,
+                        ...personGeometry(node.persons.person1, RIGHT_SIDE),
                         position: {
                             x: x - MARRIAGE_WIDTH / 2,
                             y: y - NODE_HEIGHT / 2,
@@ -264,6 +285,7 @@ export class GraphLayout {
                     nodes.push({
                         id: node.persons.person2,
                         data: nodeData,
+                        ...personGeometry(node.persons.person2, LEFT_SIDE),
                         position: {
                             x: x + MARRIAGE_GAP,
                             y: y - NODE_HEIGHT / 2,
@@ -295,6 +317,7 @@ export class GraphLayout {
                 nodes.push({
                     id,
                     data: nodeData,
+                    ...personGeometry(id, NONE_SIDE),
                     position: {
                         x: x - NODE_WIDTH / 2,
                         y: y - NODE_HEIGHT / 2,

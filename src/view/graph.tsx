@@ -143,6 +143,50 @@ function FamilyGraph({
     // Guards the one-shot restore of the saved graph this tab had open before the restart.
     const restoredGraphRef = useRef(false);
 
+    // The element this graph renders into. Looked up through a ref rather than `document`, because
+    // the tab may live in a popout window - a different document from the global one - and because
+    // several Grafily tabs can be open at once.
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // React Flow measures nodes and the container through a `ResizeObserver` created with the
+    // main window's constructor - plugin code always runs in the main window's realm - and
+    // Chromium only serves such an observer while the main window renders a frame. In a popout
+    // the main window sits idle, so those measurements arrive only when something else repaints
+    // it (the "Reveal node" animation, the mouse crossing the main window). Nodes do not wait
+    // for them: they declare their geometry up front (see `layout/handles.ts`). The container
+    // size does, and "Fit view" is held back until every node is measured, so asking the main
+    // window for one animation frame after each graph change and popout resize keeps both
+    // prompt. Not needed for a tab in the main window: there, the same frame that renders the
+    // nodes also delivers the measurements.
+    const isPopout = () => {
+        const container = containerRef.current;
+
+        return !!container && container.ownerDocument !== document;
+    };
+
+    const flushPopoutMeasurements = () => {
+        if (isPopout()) {
+            window.requestAnimationFrame(() => {});
+        }
+    };
+
+    useEffect(flushPopoutMeasurements, [graph]);
+
+    useEffect(() => {
+        if (!isPopout()) {
+            return;
+        }
+
+        const popoutWindow = containerRef.current?.ownerDocument.defaultView;
+        if (!popoutWindow) {
+            return;
+        }
+
+        popoutWindow.addEventListener('resize', flushPopoutMeasurements);
+
+        return () => popoutWindow.removeEventListener('resize', flushPopoutMeasurements);
+    }, []);
+
     const app = useApp();
 
     useEffect(() => {
@@ -411,7 +455,7 @@ function FamilyGraph({
             // It is not center-perfect (because it does not include node size), but it is good enough.
             //
             // Important: the viewport scale must be 1.0 and viewport (x; y) mut be (0; 0).
-            const familyGraphContainer = document.getElementById('familyGraphContainer');
+            const familyGraphContainer = containerRef.current;
             let dx = 0;
             let dy = 0;
             if (familyGraphContainer) {
@@ -586,7 +630,8 @@ function FamilyGraph({
     const { getViewport, setViewport } = useReactFlow();
 
     const handleRevealNode = (nodeX: number, nodeY: number) => {
-        const container = activeDocument.querySelector('.react-flow');
+        // React Flow fills the container, so the container's size is the visible viewport's size.
+        const container = containerRef.current;
         if (!container) {
             return;
         }
@@ -634,10 +679,7 @@ function FamilyGraph({
                 toggleSiblingVisibility,
             }}
         >
-            <div
-                id="familyGraphContainer"
-                style={{ position: 'relative', width: '100%', height: '100%' }}
-            >
+            <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
                 <ReactFlow id={flowId} nodes={graph[0]} edges={graph[1]} nodeTypes={nodeTypes}>
                     <Background
                         id={flowId}
