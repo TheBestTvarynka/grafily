@@ -1,0 +1,32 @@
+{
+    "permissions": {
+        "allow": [
+            "Bash(grep -E \"^\\(styles|main\\)\\\\.css$\")",
+            "Bash(npx tsc *)",
+            "Bash(npm run *)",
+            "Bash(npx eslint *)",
+            "Bash(npx prettier *)",
+            "Bash(echo \"exit: $?\")",
+            "Read(//tmp/**)",
+            "Bash(mkdir -p asar_extract)",
+            "Bash(npx asar *)",
+            "WebFetch(domain:raw.githubusercontent.com)",
+            "Bash(echo \"build exit: $?\")",
+            "Bash(echo \"eslint exit: $?\")",
+            "Bash(npx --prefix /home/pavlo-myroniuk/.obsidian/tbt/.obsidian/plugins/grafily esbuild check.ts --bundle --platform=node --format=cjs --outfile=check.cjs --log-level=error)",
+            "Bash(node check.cjs)",
+            "Bash(git --no-pager diff -- src/layout/fullGraph/index.ts src/layout/index.ts src/view/graph.tsx src/view/StartupMenu.tsx)",
+            "Bash(sed -i \"s|export type LayoutName = typeof BRANDES_KORF | typeof REINGOLD_TILFORD | typeof QUADRATIC;|&|\" src/layout/index.ts)",
+            "Bash(perl -pi -e \"s/\\(export type LayoutName = typeof BRANDES_KORF \\\\| typeof REINGOLD_TILFORD \\\\| typeof QUADRATIC;\\)/\\\\$1\\\\nexport type _Probe = LayoutName | 'notALayout';/\" src/layout/index.ts)",
+            "Bash(perl -pi -e \"s/^\\(export type LayoutName = .*\\)\\\\$/export type LayoutName = typeof BRANDES_KORF | typeof REINGOLD_TILFORD | typeof QUADRATIC | 'notALayout';/ if \\\\$. < 200 && /^export type LayoutName = /\" src/layout/index.ts)",
+            "Bash(npx --prefix /home/pavlo-myroniuk/.obsidian/tbt/.obsidian/plugins/grafily esbuild smoke.ts --bundle --platform=node --format=cjs --outfile=smoke.cjs --log-level=error --alias:obsidian=./obsidian-stub.js --loader:.css=empty)",
+            "Bash(node smoke.cjs)",
+            "Bash(git mv *)",
+            "Bash(node run.cjs)",
+            "Bash(awk -F: '$1>100 && $1<135')",
+            "Bash(awk -F: '$1>240')",
+            "Bash(python3 -)",
+            "Bash(grep -n \"rearrange,$\" src/view/graph.tsx)"
+        ]
+    }
+}
