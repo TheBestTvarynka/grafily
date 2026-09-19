@@ -23,7 +23,6 @@ At this point, you can observe the files to understand their structure. All pers
 **Parents**: [[Adam_Crosby]], [[Karen_Crosby]]
 
 ---
-
 ```
 
 His page contains only metadata and no additional information.
