@@ -2,17 +2,17 @@
 
 ### Project purpose
 
-This project is an Obsidian plugin for building family relationship graphs. It scans the user's Obsidian vault for `.md` files that describe persons, then internally builds relationships graph representation, then calculates coordinates for each node, and finally renders the graph.
+This project is an Obsidian plugin for building family relationship graphs. It scans the user's Obsidian vault for `.md` files that describe people, builds an internal relationship graph, calculates coordinates for each node, and renders the graph.
 
-The project implements custom positioning algorithms - a set of algorithm for calculating graph node `x` and `y` coordinates.
+The project implements custom positioning algorithms - a set of algorithms for calculating graph node `x` and `y` coordinates.
 
-Graph is rendered using the `reactflow` React library.
+The graph is rendered using the `reactflow` React library.
 
-Read [plugin's philosophy](./README.md#app-philosophy) and follow it every time you design any complex feature.
+Read [plugin's philosophy](./README.md#app-philosophy) and follow it whenever you design a complex feature.
 
 ## Environment & tooling
 
-- Node.js: use current LTS.
+- Node.js: use the current LTS.
 - **Package manager: npm** (required for this sample - `package.json` defines npm scripts and dependencies).
 - **Bundler: esbuild** (required for this sample - `esbuild.config.mjs` and build scripts depend on it). Alternative bundlers like Rollup or webpack are acceptable for other projects if they bundle all external dependencies into `main.js`.
 - Types: `obsidian` type definitions.
@@ -37,7 +37,7 @@ npm run build
 
 ## Linting
 
-After every change run linter and formatter:
+After every change, run the linter and formatter:
 
 ```bash
 npx eslint .
@@ -51,8 +51,8 @@ npx prettier . --write
 - **Do not commit build artifacts**: Never commit `node_modules/`, `main.js`, or other generated files to version control.
 - Keep the plugin small. Avoid large dependencies. Prefer browser-compatible packages.
 - Generated output should be placed at the plugin root or `dist/` depending on your build setup. Release artifacts must end up at the top level of the plugin folder in the vault (`main.js`, `manifest.json`, `styles.css`).
-- Follow this files and directories guideline:
-    - `./src/layout` directory contains **only** graph building and positioning algorithm. The purpose of this module is to provide a set of algorithm of building the graph nodes and edges, calculating nodes coordinates.
+- Follow these file and directory guidelines:
+    - `./src/layout` directory contains **only** graph building and positioning algorithm. This module provides algorithms for building graph nodes and edges and calculating node coordinates.
     - `./src/view` directory contains React components needed for this plugin.
 
 ## Manifest rules (`manifest.json`)
@@ -70,7 +70,7 @@ DO NOT EDIT `manifest.json` file. The manifest file is intended to be edited man
 
 Follow Obsidian's **Developer Policies** and **Plugin Guidelines**. In particular:
 
-- Default to local/offline operation. Only make network requests when essential to the feature.
+- Default to local/offline operation. Make network requests only when essential to the feature.
 - No hidden telemetry. If you collect optional analytics or call third-party services, require explicit opt-in and document clearly in `README.md` and in settings.
 - Never execute remote code, fetch and eval scripts, or auto-update plugin code outside of normal releases.
 - Minimize scope: read/write only what's necessary inside the vault. Do not access files outside the vault.
