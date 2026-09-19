@@ -657,6 +657,91 @@ If your plugin does not need CSS, delete this file.
     flex: 1;
 }
 
+/* Scan report view */
+.grafily-scan-report-loading {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+    color: var(--text-muted);
+}
+
+.grafily-scan-report-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--background-modifier-border);
+    border-top-color: var(--interactive-accent);
+    border-radius: 50%;
+    animation: grafily-spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .grafily-scan-report-spinner {
+        animation-duration: 3s;
+    }
+}
+
+@keyframes grafily-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.grafily-scan-report-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--size-4-2);
+}
+
+.grafily-scan-report-summary {
+    display: flex;
+    gap: var(--size-4-3);
+    margin-bottom: var(--size-4-4);
+}
+
+.grafily-scan-report-stat {
+    min-width: 100px;
+    padding: var(--size-4-2) var(--size-4-4);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    background-color: var(--background-secondary);
+}
+
+.grafily-scan-report-stat-value {
+    font-size: var(--font-ui-large);
+    font-weight: var(--font-semibold);
+}
+
+.grafily-scan-report-stat-label {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+}
+
+.grafily-scan-report-stat.mod-valid .grafily-scan-report-stat-value {
+    color: var(--text-success);
+}
+
+.grafily-scan-report-stat.mod-invalid .grafily-scan-report-stat-value {
+    color: var(--text-error);
+}
+
+.grafily-scan-report-category {
+    margin-bottom: var(--size-4-6);
+}
+
+.grafily-scan-report-category h3 {
+    margin-bottom: var(--size-4-1);
+}
+
+.grafily-scan-report-category li {
+    margin-bottom: var(--size-4-1);
+}
+
+.grafily-scan-report-detail {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+}
+
 /* node_modules/@xyflow/react/dist/style.css */
 .react-flow {
     direction: ltr;
