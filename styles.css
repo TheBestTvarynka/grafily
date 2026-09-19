@@ -13,11 +13,20 @@ If your plugin does not need CSS, delete this file.
     top: 12px;
     right: 12px;
     z-index: 50;
-    pointer-events: auto;
+    /*
+        The panel's box spans its widest control, leaving empty space next to the narrower ones.
+        Only the controls themselves take pointer events, so graph nodes behind that empty space
+        stay clickable.
+    */
+    pointer-events: none;
     display: flex;
     flex-direction: column;
     gap: 8px;
     align-items: flex-end;
+}
+
+.grafily-save-panel > * {
+    pointer-events: auto;
 }
 
 .grafily-direction-buttons {
