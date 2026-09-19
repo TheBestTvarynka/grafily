@@ -3,6 +3,7 @@ import { Menu, MenuItem, Plugin, TAbstractFile, TFile } from 'obsidian';
 import { DEFAULT_SETTINGS, GrafilySettings, GrafilySettingTab } from './settings';
 import { GrafilyView, GrafilyViewRequest, VIEW_TYPE } from './view/GrafilyView';
 import { renderNavigationBlock } from './view/navigationBlock';
+import { openScanReport, SCAN_REPORT_VIEW_TYPE, ScanReportView } from './view/ScanReportView';
 import { extractPageMeta } from './parsing';
 import { DEFAULT_ALGORITHM, GRAPH, TREE } from './layout';
 
@@ -37,6 +38,15 @@ export default class Grafily extends Plugin {
         });
 
         this.registerView(VIEW_TYPE, (leaf) => new GrafilyView(leaf, this.settings.dataDir, this));
+        this.registerView(SCAN_REPORT_VIEW_TYPE, (leaf) => new ScanReportView(leaf, this));
+
+        this.addCommand({
+            id: 'scan',
+            name: 'Scan person pages',
+            callback: () => {
+                openScanReport(this.app).catch((err) => console.error(err));
+            },
+        });
 
         this.registerMarkdownCodeBlockProcessor('grafily-navigation', (_source, el, ctx) => {
             renderNavigationBlock(el, ctx, this);
