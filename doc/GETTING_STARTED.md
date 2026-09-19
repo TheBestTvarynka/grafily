@@ -7,9 +7,9 @@ Before diving into it, make sure you read and understand the [Metadata](./METADA
 
 ## Populate the vault
 
-First, create the `genealogy` directory at the root of the vault and specify it in the Grafily plugin settings. Next, create an `images` directory alongside the `genealogy` directory.
+First, create the `genealogy` directory at the vault root and specify it in the Grafily plugin settings. Next, create an `images` directory alongside the `genealogy` directory.
 
-The next step is creating people's files. To simplify the guide, I already prepared all the needed data. You can download it here: https://github.com/TheBestTvarynka/trash-code/tree/grafily_demo/grafily_demo.
+Next, create people files. To simplify the guide, I already prepared all the needed data. You can download it here: https://github.com/TheBestTvarynka/trash-code/tree/grafily_demo/grafily_demo.
 
 At this point, you can observe the files to understand their structure. All persons and images are AI-generated. Let's take `Alica_Mondor` as an example:
 
@@ -39,7 +39,7 @@ Open the grafily plugin by pressing a new button on the left panel:
 ![](./images/plugin_button.png)
 
 You will see the start-up menu.
-You need to select a starting graph type: a tree-like graph (`Family tree`) of an extended graph of relatives (`Graph explorer`).
+Select a starting graph type: a tree-like graph (`Family tree`) or an extended graph of relatives (`Graph explorer`).
 That's it!
 Nothing more.
 The difference between visualization layouts is described here: https://tbt.qkation.com/posts/announcing-grafily-0-3/#layout-algorithms.
@@ -52,6 +52,6 @@ Next, let's compare it to the `Graph explorer` starting type:
 
 ![](Alica_Mondor_graph_explorer.png)
 
-If you do not like the layout, you can change it from `quadratic` to `brandes-kopf` by clicking on the drop-down on the side panel:
+If you do not like the layout, you can change it from `quadratic` to `brandes-kopf` by clicking on the drop-down in the side panel:
 
 ![](Alica_Mondor_graph_explorer_bk.png)
