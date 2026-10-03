@@ -1,6 +1,6 @@
 {
 	"name": "grafily",
-	"version": "0.3.6",
+	"version": "0.4.1",
 	"description": "Obsidian plugin for rendering family graph (family trees)",
 	"main": "main.js",
 	"type": "module",
