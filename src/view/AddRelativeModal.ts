@@ -1,19 +1,21 @@
 /**
  * The form the new person helper asks the user to fill in.
  *
- * It collects only what cannot be derived: the name parts and the dates. The gender and every
- * link follow from the relation being added, so asking for them would just be another chance to
- * make a mistake.
+ * It collects only what cannot be derived: the name parts and the dates. Every link follows from
+ * the relation being added, so asking for them would just be another chance to make a mistake, and
+ * so does the gender - except for a child, where the relation says nothing about it and the form
+ * has to ask.
  *
  * @module view/AddRelativeModal
  */
 
 import { App, Modal, Setting } from 'obsidian';
 
-import { FEMALE, MALE, Person, formatPersonName } from '../model';
+import { FEMALE, Gender, MALE, Person, UNDEFINED_GENDER, formatPersonName } from '../model';
 import { DraftInput, PersonDraft, buildDraft, emptyDraftInput } from '../creation/page';
 import {
     ADD_BROTHER,
+    ADD_CHILD,
     ADD_PARENTS,
     ADD_SISTER,
     ADD_SPOUSE,
@@ -39,15 +41,29 @@ function relationHint(kind: RelationKind, person: Person): string {
             return `A new spouse of ${name}.`;
         case ADD_PARENTS:
             return `Both parents of ${name}. A person with only one parent is not supported, so both are required.`;
+        case ADD_CHILD:
+            return `A new child of ${name} and their spouse.`;
     }
 }
+
+/**
+ * The gender options a child's form offers. Unknown is the default: it is what the page would say
+ * if it were written by hand and left out, and it is better than a guess that looks deliberate.
+ */
+const GENDER_OPTIONS: Record<Gender, string> = {
+    [UNDEFINED_GENDER]: 'Unknown',
+    [MALE]: 'Male',
+    [FEMALE]: 'Female',
+};
 
 export class AddRelativeModal extends Modal {
     private kind: RelationKind;
     private person: Person;
     private onSubmit: (request: RelativeRequest) => void;
-    // One entry for a sibling or a spouse, two for a pair of parents (father first).
+    // One entry for a sibling, a spouse or a child, two for a pair of parents (father first).
     private inputs: DraftInput[];
+    // Only ever read for a child; every other relation derives the gender.
+    private childGender: Gender = UNDEFINED_GENDER;
     private errorEl: HTMLElement | null = null;
 
     constructor(
@@ -152,7 +168,36 @@ export class AddRelativeModal extends Modal {
                         input[key] = value;
                     }),
             );
+
+            // Grouped with the name parts rather than with the dates: like them, it says who the
+            // person is, and it decides how their node is drawn.
+            if (key === 'parentalName' && this.kind === ADD_CHILD) {
+                new Setting(container).setName('Gender').addDropdown((dropdown) => {
+                    for (const [value, display] of Object.entries(GENDER_OPTIONS)) {
+                        dropdown.addOption(value, display);
+                    }
+
+                    dropdown.setValue(this.childGender).onChange((value) => {
+                        this.childGender = value as Gender;
+                    });
+                });
+            }
         }
+    }
+
+    /**
+     * The gender of the person at `position`, which every relation but a child derives.
+     */
+    private genderAt(position: number): Gender {
+        if (this.kind === ADD_PARENTS) {
+            return position === 0 ? MALE : FEMALE;
+        }
+
+        if (this.kind === ADD_CHILD) {
+            return this.childGender;
+        }
+
+        return genderFor(this.kind, this.person.gender);
     }
 
     private showError(message: string) {
@@ -172,14 +217,7 @@ export class AddRelativeModal extends Modal {
         const drafts: PersonDraft[] = [];
 
         for (const [position, input] of this.inputs.entries()) {
-            const gender =
-                this.kind === ADD_PARENTS
-                    ? position === 0
-                        ? MALE
-                        : FEMALE
-                    : genderFor(this.kind, this.person.gender);
-
-            const result = buildDraft(input, gender);
+            const result = buildDraft(input, this.genderAt(position));
             if ('error' in result) {
                 const prefix =
                     this.kind === ADD_PARENTS ? (position === 0 ? 'Father: ' : 'Mother: ') : '';

@@ -18,16 +18,18 @@ export const ADD_BROTHER = 'brother';
 export const ADD_SISTER = 'sister';
 export const ADD_SPOUSE = 'spouse';
 export const ADD_PARENTS = 'parents';
+export const ADD_CHILD = 'child';
 
 /**
  * The relations the helper can add. A person with exactly one parent is not supported, so parents
- * are always added as a pair.
+ * are always added as a pair, and a child is added to a couple rather than to one person.
  */
 export type RelationKind =
     | typeof ADD_BROTHER
     | typeof ADD_SISTER
     | typeof ADD_SPOUSE
-    | typeof ADD_PARENTS;
+    | typeof ADD_PARENTS
+    | typeof ADD_CHILD;
 
 /**
  * Menu and modal titles, as a `Record` so a new relation kind becomes a compile error here.
@@ -37,6 +39,7 @@ export const RELATION_TITLE: Record<RelationKind, string> = {
     [ADD_SISTER]: 'Add sister',
     [ADD_SPOUSE]: 'Add spouse',
     [ADD_PARENTS]: 'Add parents',
+    [ADD_CHILD]: 'Add children',
 };
 
 /**
@@ -44,7 +47,7 @@ export const RELATION_TITLE: Record<RelationKind, string> = {
  */
 export type RelativeRequest =
     | {
-          kind: typeof ADD_BROTHER | typeof ADD_SISTER | typeof ADD_SPOUSE;
+          kind: typeof ADD_BROTHER | typeof ADD_SISTER | typeof ADD_SPOUSE | typeof ADD_CHILD;
           draft: PersonDraft;
       }
     | { kind: typeof ADD_PARENTS; father: PersonDraft; mother: PersonDraft };
@@ -84,9 +87,32 @@ export function spouseOf(personId: string, index: Index): string | null {
 }
 
 /**
+ * Returns the couple a new sibling or child belongs under, or `null` when the person has no such
+ * couple: a sibling shares the person's own parents, a child belongs to the person and their
+ * spouse. Both need two known persons, because a person with one parent is not supported.
+ *
+ * Validation and page writing both go through this, so they cannot disagree about which couple a
+ * relation would attach to.
+ */
+export function coupleFor(
+    kind: RelationKind,
+    personId: string,
+    index: Index,
+): [string, string] | null {
+    if (kind === ADD_CHILD) {
+        const spouseId = spouseOf(personId, index);
+
+        return spouseId ? [personId, spouseId] : null;
+    }
+
+    return parentsOf(personId, index);
+}
+
+/**
  * The gender a new relative gets. It follows from the relation, so the form does not ask for it:
  * a brother is male, a sister is female, and a spouse is the other gender than the person they
- * marry - unknown when the person's own gender is unknown.
+ * marry - unknown when the person's own gender is unknown. A child is the exception: nothing about
+ * the relation implies it, so the form asks (see {@link module:view/AddRelativeModal}).
  */
 export function genderFor(kind: RelationKind, personGender: Gender): Gender {
     switch (kind) {
@@ -96,6 +122,9 @@ export function genderFor(kind: RelationKind, personGender: Gender): Gender {
             return FEMALE;
         case ADD_PARENTS:
             // Handled per parent by the caller; a pair has no single gender.
+            return UNDEFINED_GENDER;
+        case ADD_CHILD:
+            // Nothing to derive it from; the form asks instead.
             return UNDEFINED_GENDER;
         case ADD_SPOUSE:
             if (personGender === MALE) {
@@ -135,8 +164,14 @@ export function validateRelation(
     switch (kind) {
         case ADD_BROTHER:
         case ADD_SISTER:
-            if (!parentsOf(personId, index)) {
+            if (!coupleFor(kind, personId, index)) {
                 return `Cannot add a sibling: ${name} has no parents. Add both parents first - a sibling is a person who shares them.`;
+            }
+
+            return null;
+        case ADD_CHILD:
+            if (!coupleFor(kind, personId, index)) {
+                return `Cannot add a child: ${name} is not married. Add a spouse first - a child needs both parents.`;
             }
 
             return null;
@@ -261,25 +296,28 @@ export async function createRelative(
     const reserved = new Set<string>();
 
     switch (request.kind) {
+        // A sibling and a child are written the same way - a new person under a couple - and only
+        // differ in which couple that is.
         case ADD_BROTHER:
-        case ADD_SISTER: {
-            const parents = parentsOf(personId, index);
+        case ADD_SISTER:
+        case ADD_CHILD: {
+            const parents = coupleFor(request.kind, personId, index);
             if (!parents) {
-                throw new Error('the selected person has no parents');
+                throw new Error(`the selected person has no couple to add a ${request.kind} to`);
             }
 
-            const siblingId = reserveFileName(app, dataDir, request.draft, reserved);
+            const childId = reserveFileName(app, dataDir, request.draft, reserved);
             const file = await createPage(
                 app,
                 dataDir,
-                siblingId,
+                childId,
                 renderPersonPage(request.draft, { parents }),
             );
 
             for (const parentId of parents) {
                 // The whole children list is written when the parent page has no `**Children**`
                 // field yet, so the new field does not read as "this is their only child".
-                const children = [...(index.personChildren.get(parentId) ?? []), siblingId];
+                const children = [...(index.personChildren.get(parentId) ?? []), childId];
 
                 await linkFromPage(app, index, parentId, 'Children', children);
             }
