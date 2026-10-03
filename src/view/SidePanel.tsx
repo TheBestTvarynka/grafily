@@ -14,6 +14,7 @@ import {
 } from 'layout';
 import { SimplePersonNode } from './node';
 import { confirmDialog } from './ConfirmModal';
+import { AddRelativeButton } from './AddRelativeButton';
 
 export type ChildNodePreview = {
     personId: string;
@@ -30,6 +31,8 @@ export type SelectedPerson = {
 
 export type SidePanelProps = {
     loadedGraphName: string | null;
+    // The directory with person pages, needed to create a new one.
+    dataDir: string;
     selectedPerson: SelectedPerson | null;
     onSave: (name: string) => Promise<void>;
     onDelete: (graphName: string) => Promise<void>;
@@ -46,6 +49,7 @@ export type SidePanelProps = {
 
 export function SidePanel({
     loadedGraphName,
+    dataDir,
     selectedPerson,
     onSave,
     onDelete,
@@ -279,6 +283,13 @@ export function SidePanel({
                         __html: getIcon('refresh-ccw')?.outerHTML || '',
                     }}
                 />
+                {selectedPerson && (
+                    <AddRelativeButton
+                        personId={selectedPerson.id}
+                        dataDir={dataDir}
+                        onCreated={onRefresh}
+                    />
+                )}
                 {loadedGraphName && (
                     <button
                         className="grafily-delete-button"

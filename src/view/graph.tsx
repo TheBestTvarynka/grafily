@@ -692,6 +692,7 @@ function FamilyGraph({
                 {isInitialized && (
                     <SidePanel
                         loadedGraphName={loadedGraphName}
+                        dataDir={dataDir}
                         selectedPerson={selectedPerson}
                         onSave={handleSaveGraph}
                         onDelete={handleDeleteGraph}
