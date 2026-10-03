@@ -143,6 +143,13 @@ function FamilyGraph({
     // Guards the one-shot restore of the saved graph this tab had open before the restart.
     const restoredGraphRef = useRef(false);
 
+    // The build request this tab has already built, so that it is built once and not again.
+    // Building needs a populated index, which arrives after the first render, so the effect below
+    // has to watch the index - and the index changes again on every rescan. Without this guard a
+    // rescan rebuilds the graph from the request's person, throwing away what the user did to it
+    // and reselecting someone they did not select.
+    const builtRequestRef = useRef<string | null>(null);
+
     // The element this graph renders into. Looked up through a ref rather than `document`, because
     // the tab may live in a popout window - a different document from the global one - and because
     // several Grafily tabs can be open at once.
@@ -214,6 +221,18 @@ function FamilyGraph({
             console.warn('Initial request is not defined or index is not populated yet');
             return;
         }
+
+        // Keyed by what the request asks for rather than by object identity: Obsidian can call
+        // `setState` more than once for the same leaf, and each call builds a new request object
+        // that would otherwise look like a new request to build.
+        const requestKey = `${initialRequest.personId}|${initialRequest.options.kind}|${initialRequest.options.algorithm}`;
+        if (builtRequestRef.current === requestKey) {
+            return;
+        }
+        // Marked before building, and whether or not the person turns out to be there: a request
+        // that could not be built is not retried on the next rescan, because by then the user may
+        // well have built a graph of their own from the startup menu.
+        builtRequestRef.current = requestKey;
 
         if (index.personById.has(initialRequest.personId)) {
             const person = index.personById.get(initialRequest.personId);
@@ -692,6 +711,7 @@ function FamilyGraph({
                 {isInitialized && (
                     <SidePanel
                         loadedGraphName={loadedGraphName}
+                        dataDir={dataDir}
                         selectedPerson={selectedPerson}
                         onSave={handleSaveGraph}
                         onDelete={handleDeleteGraph}

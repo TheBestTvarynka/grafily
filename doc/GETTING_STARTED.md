@@ -4,6 +4,7 @@ Before diving into it, make sure you read and understand the [Metadata](./METADA
 
 - [Populate the vault](#populate-the-vault)
 - [Visualize](#visualize)
+- [Add a relative](#add-a-relative)
 
 ## Populate the vault
 
@@ -54,3 +55,26 @@ Next, let's compare it to the `Graph explorer` starting type:
 If you do not like the layout, you can change it from `quadratic` to `brandes-kopf` by clicking on the drop-down in the side panel:
 
 ![](Alica_Mondor_graph_explorer_bk.png)
+
+## Add a relative
+
+Writing a person page by hand is easy to get wrong.
+The Grafily plugin has a built-in person creation helper.
+
+Select a person in the graph, then select the **user-plus** button in the side panel and pick what to add: **Add brother**, **Add sister**, **Add spouse**, or **Add parents**.
+Grafily asks for the name, surname, parental name, and the birth and death dates - everything else is derived from the relation, so there is nothing else to fill in.
+
+On submit, Grafily creates the page in your pages directory and opens it.
+It also records the new relation on every page involved: a new sibling is listed under both parents' **Children**, and a new spouse link is written on both pages.
+Parents are always added as a pair, because a person with only one parent is not supported.
+
+Page names follow the `<surname>_<name>_<parental name>.md` pattern. When you leave the parental name out, `???` takes its place, and when such a page already exists, a number is appended.
+
+Some relations cannot be added, and Grafily says so instead of writing an inconsistent vault:
+
+- A sibling needs parents to share, so add both parents first.
+- Only one spouse per person is supported.
+- A person who already has parents cannot get a second pair.
+
+The graph itself is not rebuilt around the new person.
+Select **Refresh** and build the graph again when you want to see them in it.

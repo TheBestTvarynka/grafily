@@ -2,6 +2,23 @@ import { TFile } from 'obsidian';
 
 import { Person, Date, Name, Gender, MALE, FEMALE, UNDEFINED_GENDER } from 'model';
 
+/**
+ * Strips the `[[...]]` wrapping off a metadata link, leaving the person id (or file path).
+ */
+export function stripLinkBrackets(link: string): string {
+    link = link.trim();
+
+    if (link.startsWith('[[')) {
+        link = link.substring(2);
+    }
+
+    if (link.endsWith(']]')) {
+        link = link.substring(0, link.length - 2);
+    }
+
+    return link;
+}
+
 export function extractPageMeta(page: string, fileName: string, file: TFile): Person {
     const lines = page.split('\n').map((line) => line.trim());
     const headerEnd = lines.indexOf('---');
@@ -24,20 +41,6 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         );
     }
 
-    const removeSquarePrentness = (link: string) => {
-        link = link.trim();
-
-        if (link.startsWith('[[')) {
-            link = link.substring(2);
-        }
-
-        if (link.endsWith(']]')) {
-            link = link.substring(0, link.length - 2);
-        }
-
-        return link;
-    };
-
     const birth = parseDate(
         lines
             .find((line) => line.startsWith('**Birth**'))
@@ -56,7 +59,7 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         ?.split(':')[1]
         ?.trim();
     if (image) {
-        image = removeSquarePrentness(image);
+        image = stripLinkBrackets(image);
     }
 
     let gender = parseGender(
@@ -70,17 +73,17 @@ export function extractPageMeta(page: string, fileName: string, file: TFile): Pe
         .find((line) => line.startsWith('**Parents**'))
         ?.split(':')[1]
         ?.split(',')
-        .map(removeSquarePrentness);
+        .map(stripLinkBrackets);
     const children = lines
         .find((line) => line.startsWith('**Children**'))
         ?.split(':')[1]
         ?.split(',')
-        .map(removeSquarePrentness);
+        .map(stripLinkBrackets);
     const spouse = lines
         .find((line) => line.startsWith('**Spouse**'))
         ?.split(':')[1]
         ?.split(',')
-        .map(removeSquarePrentness);
+        .map(stripLinkBrackets);
 
     return {
         id: fileName,
