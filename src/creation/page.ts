@@ -78,6 +78,12 @@ export function personFileName(draft: PersonDraft): string {
     return `${draft.surname}_${draft.name}_${draft.parentalName ?? UNKNOWN_PARENTAL_NAME}`;
 }
 
+/**
+ * The shortcut buttons code block, rendered at the end of the metadata block. `addMetadataLinks`
+ * keeps later fields above it, so it stays the last thing before the `---` separator.
+ */
+const NAVIGATION_BLOCK = ['```grafily-navigation', '```'];
+
 function formatLinkField(field: LinkField, ids: string[]): string {
     return `**${field}**: ${ids.map((id) => `[[${id}]]`).join(', ')}`;
 }
@@ -88,6 +94,9 @@ function formatLinkField(field: LinkField, ids: string[]): string {
  * Optional fields are left out rather than written empty, so the page reads like a hand-written
  * one. The parental name is omitted from the title when it is unknown: `parseName` accepts a
  * two-part title, and a `???` in the title would only be noise.
+ *
+ * The page also gets a {@link NAVIGATION_BLOCK}, so the new person can be used as a starting
+ * point for a graph straight away.
  *
  * @param {PersonDraft} draft - The person to render.
  * @param {PersonRelations} relations - The links to put on the page.
@@ -116,7 +125,7 @@ export function renderPersonPage(draft: PersonDraft, relations: PersonRelations)
         lines.push(formatLinkField('Children', relations.children));
     }
 
-    lines.push('', '---', '');
+    lines.push('', ...NAVIGATION_BLOCK, '', '---', '');
 
     return lines.join('\n');
 }

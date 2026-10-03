@@ -81,10 +81,25 @@ export class AddRelativeModal extends Modal {
         });
 
         if (this.kind === ADD_PARENTS) {
-            this.renderPersonFields(0, 'Father');
-            this.renderPersonFields(1, 'Mother');
+            // Two parents, two columns: the forms are identical, so standing them next to each
+            // other makes the pair obvious and keeps the modal short enough to take in at once.
+            // The columns wrap back into a single one when the modal is too narrow for both.
+            this.modalEl.addClass('grafily-add-person-modal');
+
+            const columns = contentEl.createDiv({ cls: 'grafily-add-person-columns' });
+
+            this.renderPersonFields(
+                columns.createDiv({ cls: 'grafily-add-person-column' }),
+                0,
+                'Father',
+            );
+            this.renderPersonFields(
+                columns.createDiv({ cls: 'grafily-add-person-column' }),
+                1,
+                'Mother',
+            );
         } else {
-            this.renderPersonFields(0);
+            this.renderPersonFields(contentEl, 0);
         }
 
         this.errorEl = contentEl.createEl('p', { cls: 'grafily-add-person-error' });
@@ -110,16 +125,14 @@ export class AddRelativeModal extends Modal {
         this.contentEl.empty();
     }
 
-    private renderPersonFields(position: number, heading?: string) {
+    private renderPersonFields(container: HTMLElement, position: number, heading?: string) {
         const input = this.inputs[position];
         if (!input) {
             return;
         }
 
-        const { contentEl } = this;
-
         if (heading) {
-            new Setting(contentEl).setName(heading).setHeading();
+            new Setting(container).setName(heading).setHeading();
         }
 
         const fields: [string, keyof DraftInput, string][] = [
@@ -131,7 +144,7 @@ export class AddRelativeModal extends Modal {
         ];
 
         for (const [label, key, placeholder] of fields) {
-            new Setting(contentEl).setName(label).addText((text) =>
+            new Setting(container).setName(label).addText((text) =>
                 text
                     .setPlaceholder(placeholder)
                     .setValue(input[key])

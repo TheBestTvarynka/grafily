@@ -66,8 +66,7 @@ Grafily asks for the name, surname, parental name, and the birth and death dates
 
 On submit, Grafily creates the page in your pages directory and opens it.
 It also records the new relation on every page involved: a new sibling is listed under both parents' **Children**, and a new spouse link is written on both pages.
-Parents are always added as a pair, because a person with only one parent is not supported; the two
-new pages open side by side.
+Parents are always added as a pair, because a person with only one parent is not supported.
 
 Page names follow the `<surname>_<name>_<parental name>.md` pattern. When you leave the parental name out, `???` takes its place, and when such a page already exists, a number is appended.
 

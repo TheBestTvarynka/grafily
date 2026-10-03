@@ -1492,3 +1492,46 @@ svg.react-flow__connectionline {
     margin-bottom: 0;
     color: var(--text-error);
 }
+
+/* Two parents side by side. The columns wrap into one when the modal is too narrow for both. */
+.grafily-add-person-modal {
+    width: var(--modal-width);
+    max-width: 52rem;
+}
+
+.grafily-add-person-columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--size-4-4);
+    margin-bottom: var(--size-4-4);
+}
+
+.grafily-add-person-column {
+    flex: 1 1 16rem;
+    /* Without this a long placeholder keeps the column from ever shrinking, and the pair stops
+       fitting side by side well before the modal runs out of room. */
+    min-width: 0;
+}
+
+/*
+    A `Setting` puts its name and its control on opposite ends of one row. That is too wide for a
+    column half the modal, so inside one the control moves under the name and fills the width.
+*/
+.grafily-add-person-column .setting-item {
+    display: block;
+    border-top: none;
+    padding: var(--size-4-1) 0;
+}
+
+.grafily-add-person-column .setting-item-heading {
+    padding-top: 0;
+}
+
+.grafily-add-person-column .setting-item-control {
+    justify-content: flex-start;
+    padding-top: var(--size-4-1);
+}
+
+.grafily-add-person-column .setting-item-control input[type='text'] {
+    width: 100%;
+}
