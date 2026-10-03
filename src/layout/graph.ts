@@ -36,6 +36,7 @@ import {
 import { positionX as positionBrandesKopf, positionY } from './positioning/brandesKopf';
 import { positionQuadratic } from './positioning/quadratic/quadratic';
 import { GraphBuilder } from './builder';
+import { NavigationAction, NavigationTarget, navigate } from './navigation';
 import { Index, LEFT_SIDE, MarriageNodeSide, NONE_SIDE, RIGHT_SIDE } from '../model';
 import { marriageNodeHandles, personNodeHandles } from './handles';
 import { MarriageNodeData, PersonNodeData } from 'view/node';
@@ -445,6 +446,40 @@ export class GraphLayout {
         this.graph.rearrange(id, action);
 
         return this.buildNodesInternal();
+    }
+
+    /**
+     * Finds the person to select when the user moves the selection with the keyboard. The graph
+     * is not changed, so there is nothing to rebuild. See {@link NavigationAction} for the moves.
+     *
+     * @param {string} personId - The currently selected person.
+     * @param {NavigationAction} action - Where to move the selection.
+     * @returns {NavigationTarget | null} - The person to select and their node, or null when there is no one in that direction.
+     */
+    navigate(personId: string, action: NavigationAction): NavigationTarget | null {
+        return navigate(this.graph, this.family, personId, action);
+    }
+
+    /**
+     * Checks if the children of the given marriage are expanded: at least one of them is on the graph.
+     *
+     * @param {string} marriageId - The marriage node id.
+     * @returns {boolean} - true when the marriage children are expanded. Otherwise, false.
+     */
+    isChildrenExpanded(marriageId: string): boolean {
+        return (this.graph.getChildren().get(marriageId) ?? []).length > 0;
+    }
+
+    /**
+     * Checks if the person's own parents are expanded: their marriage node is on the graph.
+     *
+     * @param {string} personId - The person id.
+     * @returns {boolean} - true when the person's parents are expanded. Otherwise, false.
+     */
+    isParentsExpanded(personId: string): boolean {
+        const parentsId = this.family.personParents.get(personId);
+
+        return !!parentsId && this.graph.contains(parentsId);
     }
 
     capabilities(personId: string): NodeCapabilities {

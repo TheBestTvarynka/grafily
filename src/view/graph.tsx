@@ -1,4 +1,11 @@
-import { createContext, useEffect, useId, useRef, useState } from 'react';
+import {
+    createContext,
+    KeyboardEvent as ReactKeyboardEvent,
+    useEffect,
+    useId,
+    useRef,
+    useState,
+} from 'react';
 
 import {
     ReactFlow,
@@ -20,11 +27,14 @@ import {
     GRAPH,
     LayoutKind,
     LayoutOptions,
+    MOVE_PERSON_LEFT,
+    MOVE_PERSON_RIGHT,
     NODE_HEIGHT,
     NODE_WIDTH,
     PersonVisibility,
     PositioningAlgorithm,
     RearrangeAction,
+    SWAP_MARRIAGE_SPOUSES,
     SerializableLayoutData,
     TREE,
     createLayout,
@@ -32,6 +42,13 @@ import {
     personIdToNodeId,
 } from 'layout';
 import { GraphLayout } from 'layout/graph';
+import {
+    NAVIGATE_DOWN,
+    NAVIGATE_LEFT,
+    NAVIGATE_RIGHT,
+    NAVIGATE_UP,
+    NavigationAction,
+} from 'layout/navigation';
 import { StartupMenu } from './StartupMenu';
 import { SelectedPerson, SidePanel } from './SidePanel';
 import { App, Notice, Plugin } from 'obsidian';
@@ -83,6 +100,53 @@ const DEFAULT_EMPTY_LAYOUT: GraphLayout = createLayout(
 const LAYOUT_TAB_NAME: Record<LayoutKind, string> = {
     [TREE]: 'Family tree',
     [GRAPH]: 'Family explorer',
+};
+
+/**
+ * Keys that move the selection to a neighboring person. They work only while a person is selected.
+ */
+const NAVIGATION_KEYS: Record<string, NavigationAction> = {
+    w: NAVIGATE_UP,
+    s: NAVIGATE_DOWN,
+    a: NAVIGATE_LEFT,
+    d: NAVIGATE_RIGHT,
+};
+
+const TOGGLE_CHILDREN = 'toggle_children';
+const TOGGLE_PARENTS = 'toggle_parents';
+/**
+ * Keyboard shortcuts for the graph editing buttons:
+ * - {@link RearrangeAction}s: the side panel's move and swap buttons.
+ * - {@link TOGGLE_CHILDREN}: the marriage node's button, which expands or collapses the children.
+ * - {@link TOGGLE_PARENTS}: the person node's button, which expands or collapses the parents.
+ */
+type EditAction = RearrangeAction | typeof TOGGLE_CHILDREN | typeof TOGGLE_PARENTS;
+
+/**
+ * Keys that change the graph around the selected person. They work only while a person is selected.
+ */
+const EDIT_KEYS: Record<string, EditAction> = {
+    h: MOVE_PERSON_LEFT,
+    l: MOVE_PERSON_RIGHT,
+    g: SWAP_MARRIAGE_SPOUSES,
+    j: TOGGLE_CHILDREN,
+    k: TOGGLE_PARENTS,
+};
+
+/**
+ * Returns `true` if the keyboard event is aimed at a text field, so it must not move the selection.
+ */
+const isTextInput = (target: EventTarget): boolean => {
+    if (!(target instanceof HTMLElement)) {
+        return false;
+    }
+
+    return (
+        target.isContentEditable ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT'
+    );
 };
 
 async function scanVaultForPersons(app: App, dataDir: string): Promise<Index> {
@@ -671,6 +735,110 @@ function FamilyGraph({
         );
     };
 
+    const navigateSelection = (personId: string, action: NavigationAction) => {
+        const target = layout.navigate(personId, action);
+        if (!target) {
+            return;
+        }
+
+        // Person nodes have no parent node in React Flow, so their positions are absolute.
+        const personNode = graph[0].find((node) => node.id === target.personId);
+        if (!personNode) {
+            console.error(`Person node with id ${target.personId} not found in the graph.`);
+            return;
+        }
+
+        const { x, y } = personNode.position;
+        const children = index.personChildren.get(target.personId) ?? [];
+
+        setSelectedPerson({
+            id: target.personId,
+            x,
+            y,
+            capabilities: layout.capabilities(target.personId),
+            childrenNodes: children.map((childId) => ({
+                personId: childId,
+                visibility: layout.contains(childId),
+            })),
+        });
+        handleRevealNode(x, y);
+    };
+
+    // Does what the corresponding button does, and nothing when that button is disabled or absent.
+    const editGraph = (personId: string, action: EditAction) => {
+        switch (action) {
+            case MOVE_PERSON_LEFT:
+            case MOVE_PERSON_RIGHT:
+            case SWAP_MARRIAGE_SPOUSES: {
+                const capabilities = layout.capabilities(personId);
+                const allowed = {
+                    [MOVE_PERSON_LEFT]: capabilities.movableLeft,
+                    [MOVE_PERSON_RIGHT]: capabilities.movableRight,
+                    [SWAP_MARRIAGE_SPOUSES]: capabilities.spousesSwappable,
+                }[action];
+
+                if (allowed) {
+                    rearrange(personId, action);
+                }
+
+                return;
+            }
+            case TOGGLE_CHILDREN: {
+                const [, marriage] = personIdToNodeId(personId, layout.family);
+                if (!marriage || marriage.childrenIds.length === 0) {
+                    return;
+                }
+
+                if (layout.isChildrenExpanded(marriage.id)) {
+                    collapseChildren(marriage.id);
+                } else {
+                    expandChildren(marriage.id);
+                }
+
+                return;
+            }
+            case TOGGLE_PARENTS: {
+                if (!layout.family.personParents.has(personId)) {
+                    return;
+                }
+
+                if (layout.isParentsExpanded(personId)) {
+                    collapseParents(personId);
+                } else {
+                    expandParents(personId);
+                }
+
+                return;
+            }
+        }
+    };
+
+    const handleKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+        if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || isTextInput(e.target)) {
+            return;
+        }
+
+        const key = e.key.toLowerCase();
+        const navigation = NAVIGATION_KEYS[key];
+        const edit = EDIT_KEYS[key];
+        if ((!navigation && !edit) || !selectedPerson) {
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        // The key may come from a focused node that this very action removes from the graph, which
+        // would leave the focus nowhere and the next key unheard. The container outlives every node.
+        containerRef.current?.focus({ preventScroll: true });
+
+        if (navigation) {
+            navigateSelection(selectedPerson.id, navigation);
+        } else if (edit) {
+            editGraph(selectedPerson.id, edit);
+        }
+    };
+
     const refreshIndex = async () => {
         if (!app) {
             return;
@@ -698,7 +866,13 @@ function FamilyGraph({
                 toggleSiblingVisibility,
             }}
         >
-            <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
+            {/* Focusable, so clicking the graph pane lets it receive the navigation keys. */}
+            <div
+                ref={containerRef}
+                tabIndex={-1}
+                onKeyDown={handleKeyDown}
+                style={{ position: 'relative', width: '100%', height: '100%', outline: 'none' }}
+            >
                 <ReactFlow id={flowId} nodes={graph[0]} edges={graph[1]} nodeTypes={nodeTypes}>
                     <Background
                         id={flowId}
