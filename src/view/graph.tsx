@@ -1,4 +1,11 @@
-import { createContext, useEffect, useId, useRef, useState } from 'react';
+import {
+    createContext,
+    KeyboardEvent as ReactKeyboardEvent,
+    useEffect,
+    useId,
+    useRef,
+    useState,
+} from 'react';
 
 import {
     ReactFlow,
@@ -32,6 +39,13 @@ import {
     personIdToNodeId,
 } from 'layout';
 import { GraphLayout } from 'layout/graph';
+import {
+    NAVIGATE_DOWN,
+    NAVIGATE_LEFT,
+    NAVIGATE_RIGHT,
+    NAVIGATE_UP,
+    NavigationAction,
+} from 'layout/navigation';
 import { StartupMenu } from './StartupMenu';
 import { SelectedPerson, SidePanel } from './SidePanel';
 import { App, Notice, Plugin } from 'obsidian';
@@ -83,6 +97,32 @@ const DEFAULT_EMPTY_LAYOUT: GraphLayout = createLayout(
 const LAYOUT_TAB_NAME: Record<LayoutKind, string> = {
     [TREE]: 'Family tree',
     [GRAPH]: 'Family explorer',
+};
+
+/**
+ * Keys that move the selection to a neighboring person. They work only while a person is selected.
+ */
+const NAVIGATION_KEYS: Record<string, NavigationAction> = {
+    w: NAVIGATE_UP,
+    s: NAVIGATE_DOWN,
+    a: NAVIGATE_LEFT,
+    d: NAVIGATE_RIGHT,
+};
+
+/**
+ * Returns `true` if the keyboard event is aimed at a text field, so it must not move the selection.
+ */
+const isTextInput = (target: EventTarget): boolean => {
+    if (!(target instanceof HTMLElement)) {
+        return false;
+    }
+
+    return (
+        target.isContentEditable ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT'
+    );
 };
 
 async function scanVaultForPersons(app: App, dataDir: string): Promise<Index> {
@@ -671,6 +711,47 @@ function FamilyGraph({
         );
     };
 
+    const handleKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+        if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || isTextInput(e.target)) {
+            return;
+        }
+
+        const action = NAVIGATION_KEYS[e.key.toLowerCase()];
+        if (!action || !selectedPerson) {
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const target = layout.navigate(selectedPerson.id, action);
+        if (!target) {
+            return;
+        }
+
+        // Person nodes have no parent node in React Flow, so their positions are absolute.
+        const personNode = graph[0].find((node) => node.id === target.personId);
+        if (!personNode) {
+            console.error(`Person node with id ${target.personId} not found in the graph.`);
+            return;
+        }
+
+        const { x, y } = personNode.position;
+        const children = index.personChildren.get(target.personId) ?? [];
+
+        setSelectedPerson({
+            id: target.personId,
+            x,
+            y,
+            capabilities: layout.capabilities(target.personId),
+            childrenNodes: children.map((childId) => ({
+                personId: childId,
+                visibility: layout.contains(childId),
+            })),
+        });
+        handleRevealNode(x, y);
+    };
+
     const refreshIndex = async () => {
         if (!app) {
             return;
@@ -698,7 +779,13 @@ function FamilyGraph({
                 toggleSiblingVisibility,
             }}
         >
-            <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
+            {/* Focusable, so clicking the graph pane lets it receive the navigation keys. */}
+            <div
+                ref={containerRef}
+                tabIndex={-1}
+                onKeyDown={handleKeyDown}
+                style={{ position: 'relative', width: '100%', height: '100%', outline: 'none' }}
+            >
                 <ReactFlow id={flowId} nodes={graph[0]} edges={graph[1]} nodeTypes={nodeTypes}>
                     <Background
                         id={flowId}

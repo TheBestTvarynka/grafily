@@ -156,6 +156,16 @@ export class GraphBuilder {
     }
 
     /**
+     * Returns the layering matrix: the layer number mapped to the node ids of that layer, ordered
+     * from left to right.
+     *
+     * @returns {Map<number, string[]>} - All layers in the graph.
+     */
+    getLayers(): Map<number, string[]> {
+        return this.layers;
+    }
+
+    /**
      * Builds the initial graph for the given person's perspective. The initial graph contains all
      * ancestors and descendants of the given person, and the siblings of all of them.
      *
