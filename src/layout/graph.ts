@@ -460,6 +460,28 @@ export class GraphLayout {
         return navigate(this.graph, this.family, personId, action);
     }
 
+    /**
+     * Checks if the children of the given marriage are expanded: at least one of them is on the graph.
+     *
+     * @param {string} marriageId - The marriage node id.
+     * @returns {boolean} - true when the marriage children are expanded. Otherwise, false.
+     */
+    isChildrenExpanded(marriageId: string): boolean {
+        return (this.graph.getChildren().get(marriageId) ?? []).length > 0;
+    }
+
+    /**
+     * Checks if the person's own parents are expanded: their marriage node is on the graph.
+     *
+     * @param {string} personId - The person id.
+     * @returns {boolean} - true when the person's parents are expanded. Otherwise, false.
+     */
+    isParentsExpanded(personId: string): boolean {
+        const parentsId = this.family.personParents.get(personId);
+
+        return !!parentsId && this.graph.contains(parentsId);
+    }
+
     capabilities(personId: string): NodeCapabilities {
         const [id] = personIdToNodeId(personId, this.family);
 

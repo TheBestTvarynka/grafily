@@ -75,6 +75,13 @@ When a person is selected (<kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + click on the person)
 - <kbd>S</kbd> - to the person's leftmost child.
 - <kbd>A</kbd> / <kbd>D</kbd> - to the next person on the left/right in the same row. The spouse comes first.
 
+and change the graph around them:
+
+- <kbd>H</kbd> / <kbd>L</kbd> - move the person to the left/right among their siblings.
+- <kbd>G</kbd> - swap the person's position with their spouse.
+- <kbd>J</kbd> - expand or collapse the person's children.
+- <kbd>K</kbd> - expand or collapse the person's parents.
+
 If you want to read more about interactivity, please read my blog post: [Genealogy Graph Interactivity](https://tbt.qkation.com/posts/genealogy-graph-interactivity/).
 
 # Motivation
