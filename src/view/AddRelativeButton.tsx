@@ -15,6 +15,7 @@ import { Index } from '../model';
 import { useApp, useGraph } from '../hooks';
 import {
     ADD_BROTHER,
+    ADD_CHILD,
     ADD_PARENTS,
     ADD_SISTER,
     ADD_SPOUSE,
@@ -31,6 +32,7 @@ const MENU_ITEMS: { kind: RelationKind; icon: string }[] = [
     { kind: ADD_SISTER, icon: 'user' },
     { kind: ADD_SPOUSE, icon: 'heart' },
     { kind: ADD_PARENTS, icon: 'users' },
+    { kind: ADD_CHILD, icon: 'baby' },
 ];
 
 export type AddRelativeButtonProps = {

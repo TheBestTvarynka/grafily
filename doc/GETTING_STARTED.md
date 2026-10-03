@@ -61,11 +61,12 @@ If you do not like the layout, you can change it from `quadratic` to `brandes-ko
 Writing a person page by hand is easy to get wrong.
 The Grafily plugin has a built-in person creation helper.
 
-Select a person in the graph, then select the **user-plus** button in the side panel and pick what to add: **Add brother**, **Add sister**, **Add spouse**, or **Add parents**.
+Select a person in the graph, then select the **user-plus** button in the side panel and pick what to add: **Add brother**, **Add sister**, **Add spouse**, **Add parents**, or **Add children**.
 Grafily asks for the name, surname, parental name, and the birth and death dates - everything else is derived from the relation, so there is nothing else to fill in.
+The one exception is a child's gender: nothing about the relation implies it, so the form asks, and it defaults to unknown.
 
 On submit, Grafily creates the page in your pages directory and opens it.
-It also records the new relation on every page involved: a new sibling is listed under both parents' **Children**, and a new spouse link is written on both pages.
+It also records the new relation on every page involved: a new sibling or child is listed under both parents' **Children**, and a new spouse link is written on both pages.
 Parents are always added as a pair, because a person with only one parent is not supported.
 
 Page names follow the `<surname>_<name>_<parental name>.md` pattern. When you leave the parental name out, `???` takes its place, and when such a page already exists, a number is appended.
@@ -73,6 +74,7 @@ Page names follow the `<surname>_<name>_<parental name>.md` pattern. When you le
 Some relations cannot be added, and Grafily says so instead of writing an inconsistent vault:
 
 - A sibling needs parents to share, so add both parents first.
+- A child needs both parents too, so the person must be married first.
 - Only one spouse per person is supported.
 - A person who already has parents cannot get a second pair.
 
